@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>スーベニアメダル管理</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: sans-serif;
+  margin: 10px;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.card {
+  width: 180px;
+  margin: 10px;
+}
+img {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 5px;
+}
+
+.name {
+  font-size: 12px;
+  margin-top: 0px;
+   color: gray;
+}
+
+.location {
+  font-size: 12px;
+  color: rgb(4, 4, 4);
+  margin-bottom: 0px;
+}
+.date {
+  font-size: 11px;
+  color: #999;
+}
+.type {
+  font-size: 12px;
+  color: #999;
+}
+.detail {
+  font-size: 12px;
+  color: #000000;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>メダル管理</h2>
+
+<input type="text" id="search" placeholder="検索（名前・場所）">
+
+<div class="grid" id="grid"></div>
+<script>
+fetch("data.json")
+  .then(res => res.json())
+  .then(data => {
+    render(data)
+  })
+
+// ここで表示
+render(data)
+
+function render(list){
+  const grid = document.getElementById("grid")
+  grid.innerHTML = ""
+
+  list.forEach(item => {
+    const div = document.createElement("div")
+    div.className = "card"
+
+    div.innerHTML = `
+      <img src="images/${item.image}">
+      <div><b>${item.id}</b>/<span class="type">${item.type}</span></div>
+      <div class="detail">${item.detail || ""}</div>
+      <div class="date">${item.date}</div>
+      <div class="location">${item.location}</div>
+      <div class="name">${item.name}</div>
+    `
+
+    grid.appendChild(div)
+  })
+}
+</script>
+
+
+</body>
+</html>
