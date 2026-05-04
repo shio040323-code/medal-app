@@ -191,26 +191,24 @@ function checkMissing() {
     return
   }
 
-  const numbers = data
-    .map(item => parseInt(item.id.replace(/\D/g, "")))
+  const nums = data
+    .map(item => parseInt(item.id.match(/\d+/)?.[0]))
     .filter(n => !isNaN(n))
 
-  numbers.sort((a, b) => a - b)
+  const set = new Set(nums)
+
+  const min = Math.min(...nums)
+  const max = Math.max(...nums)
 
   let missing = []
 
-  const start = numbers[0]
-  const end = numbers[numbers.length - 1]
-
-  for (let n = start; n <= end; n++) {
-    if (!numbers.includes(n)) {
-      missing.push(n)
-    }
+  for (let n = min; n <= max; n++) {
+    if (!set.has(n)) missing.push(n)
   }
 
   alert(
     missing.length
-      ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
+      ? "欠番:\n" + missing.map(n => String(n).padStart(4, "0")).join(", ")
       : "欠番なし"
   )
 }
