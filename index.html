@@ -163,7 +163,6 @@ function applyFilter() {
 }
 
 
-// 表示
 function render(list){
   const grid = document.getElementById("grid")
   grid.innerHTML = ""
@@ -186,6 +185,7 @@ function render(list){
 
     grid.appendChild(div)
   })
+}
 function checkMissing() {
 
   if (!data || data.length === 0) {
@@ -215,7 +215,6 @@ function checkMissing() {
       ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
       : "欠番なし"
   )
-}
 }
 </script>
 
