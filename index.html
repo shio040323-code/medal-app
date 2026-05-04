@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <title>スーベニアメダル管理</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png">
-<style>
 
+<style>
 body {
   font-family: sans-serif;
   margin: 10px;
 }
 
-
 input {
   width: 100%;
   padding: 10px;
   font-size: 16px;
+  margin-bottom: 10px;
+}
+
+#typeFilters {
   margin-bottom: 10px;
 }
 
@@ -32,6 +32,7 @@ input {
   width: 180px;
   margin: 10px;
 }
+
 img {
   width: 100%;
   height: 120px;
@@ -43,100 +44,59 @@ img {
 
 .name {
   font-size: 12px;
-  margin-top: 0px;
-   color: gray;
+  color: gray;
 }
 
 .location {
   font-size: 12px;
   color: rgb(4, 4, 4);
-  margin-bottom: 0px;
 }
+
 .date {
   font-size: 11px;
   color: #999;
 }
+
 .type {
   font-size: 12px;
   color: #999;
 }
+
 .detail {
   font-size: 12px;
-  color: #000000;
 }
 </style>
-
 </head>
 
 <body>
 
+<input type="text" id="search" placeholder="検索（名前・場所・ID）">
 
-<input type="text" id="search" placeholder="検索（名前・場所）">
 <button onclick="checkMissing()">欠番チェック</button>
+
 <div id="typeFilters"></div>
+
 <div class="grid" id="grid"></div>
+
 <script>
 let data = []
 
+// データ読み込み
 fetch("data.json")
   .then(res => res.json())
   .then(json => {
-    data = json   // ← ✅ これが正解
-     setupFilter()
+    data = json
+    setupFilter()
     applyFilter()
-   })
-
-
-
-function render(list){
-  const grid = document.getElementById("grid")
-  grid.innerHTML = ""
-
-  list.forEach(item => {
-    const div = document.createElement("div")
-    div.className = "card"
-
-    div.innerHTML = `
-      <img src="images/${item.id.replace(/^[A-Z]-/, '')}.png">
-      <div><b>${item.id}</b>/<span class="type">${item.type}</span></div>
-      <div class="detail">${item.detail || ""}</div>
-      <div class="date">${item.date}</div>
-      <div class="location">${item.location}</div>
-      <div class="name">${item.name}</div>
-    `
-
-    grid.appendChild(div)
   })
-}
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js")
-}
-function checkMissing() {
-  const numbers = data.map(item =>
-    parseInt(item.id.replace(/\D/g, ""))
-  )
 
-  numbers.sort((a, b) => a - b)
+// 検索
+document.getElementById("search").addEventListener("input", applyFilter)
 
-  let missing = []
-
-  let start = numbers[0]              // 0474
-  let end = numbers[numbers.length-1] // 0484
-
-  for (let n = start; n <= end; n++) {
-    if (!numbers.includes(n)) {
-      missing.push(n)
-    }
-  }
-
-  alert(
-    missing.length
-      ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
-      : "欠番なし"
-  )
-}
+// チェックボックス生成
 function setupFilter() {
   const container = document.getElementById("typeFilters")
+  container.innerHTML = ""
 
   const types = [...new Set(data.map(item => item.type))]
 
@@ -157,8 +117,8 @@ function setupFilter() {
     container.appendChild(label)
   })
 }
-document.getElementById("search").addEventListener("input", applyFilter)
 
+// フィルター本体（検索＋チェック統合）
 function applyFilter() {
   const q = document.getElementById("search").value.toLowerCase()
 
@@ -167,20 +127,76 @@ function applyFilter() {
 
   const filtered = data.filter(item => {
 
-    // テキスト検索
     const matchText =
       item.name.toLowerCase().includes(q) ||
       item.location.toLowerCase().includes(q) ||
       item.id.toLowerCase().includes(q)
 
-    // typeフィルター
-    const matchType = checkedTypes.includes(item.type)
+    const matchType =
+      checkedTypes.length === 0 || checkedTypes.includes(item.type)
 
     return matchText && matchType
   })
 
   render(filtered)
 }
+
+// 表示
+function render(list){
+  const grid = document.getElementById("grid")
+  grid.innerHTML = ""
+
+  list.forEach(item => {
+
+    const imgId = item.id.split("-").pop()
+
+    const div = document.createElement("div")
+    div.className = "card"
+
+    div.innerHTML = `
+      <img src="images/${imgId}.png">
+      <div><b>${item.id}</b>/<span class="type">${item.type}</span></div>
+      <div class="detail">${item.detail || ""}</div>
+      <div class="date">${item.date}</div>
+      <div class="location">${item.location}</div>
+      <div class="name">${item.name}</div>
+    `
+
+    grid.appendChild(div)
+  })
+}
+
+// 欠番チェック
+function checkMissing() {
+  const numbers = data.map(item =>
+    parseInt(item.id.replace(/\D/g, ""))
+  )
+
+  numbers.sort((a, b) => a - b)
+
+  let missing = []
+
+  let start = numbers[0]
+  let end = numbers[numbers.length - 1]
+
+  for (let n = start; n <= end; n++) {
+    if (!numbers.includes(n)) {
+      missing.push(n)
+    }
+  }
+
+  alert(
+    missing.length
+      ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
+      : "欠番なし"
+  )
+}
+
+// PWA
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+}
 </script>
+
 </body>
 </html>
