@@ -73,6 +73,7 @@ img {
 
 <input type="text" id="search" placeholder="検索（名前・場所）">
 <button onclick="checkMissing()">欠番チェック</button>
+<div id="typeFilters"></div>
 <div class="grid" id="grid"></div>
 <script>
 let data = []
@@ -81,6 +82,8 @@ fetch("data.json")
   .then(res => res.json())
   .then(json => {
     data = json   // ← ✅ これが正解
+     setupFilter()
+    applyFilter()
     render(data)
   })
 
@@ -133,6 +136,52 @@ function checkMissing() {
       ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
       : "欠番なし"
   )
+}
+function setupFilter() {
+  const container = document.getElementById("typeFilters")
+
+  const types = [...new Set(data.map(item => item.type))]
+
+  types.forEach(type => {
+    const label = document.createElement("label")
+    label.style.marginRight = "10px"
+
+    const cb = document.createElement("input")
+    cb.type = "checkbox"
+    cb.value = type
+    cb.checked = true
+
+    cb.addEventListener("change", applyFilter)
+
+    label.appendChild(cb)
+    label.appendChild(document.createTextNode(" " + type))
+
+    container.appendChild(label)
+  })
+}
+document.getElementById("search").addEventListener("input", applyFilter)
+
+function applyFilter() {
+  const q = document.getElementById("search").value.toLowerCase()
+
+  const checkedTypes = [...document.querySelectorAll("#typeFilters input:checked")]
+    .map(cb => cb.value)
+
+  const filtered = data.filter(item => {
+
+    // テキスト検索
+    const matchText =
+      item.name.toLowerCase().includes(q) ||
+      item.location.toLowerCase().includes(q) ||
+      item.id.toLowerCase().includes(q)
+
+    // typeフィルター
+    const matchType = checkedTypes.includes(item.type)
+
+    return matchText && matchType
+  })
+
+  render(filtered)
 }
 </script>
 </body>
