@@ -87,7 +87,7 @@ img {
 <body>
 
 <input type="text" id="search" placeholder="検索（名前・場所・ID）">
-<button style="display:block; margin-top:10px; background:red; color:white;">
+<button onclick="checkMissing()" style="display:block; margin-top:10px; background:red; color:white;">
 欠番チェック
 </button>
 <div id="typeFilters"></div>
@@ -186,7 +186,7 @@ function render(list){
 
     grid.appendChild(div)
   })
-  function checkMissing() {
+function checkMissing() {
 
   if (!data || data.length === 0) {
     alert("データがまだ読み込まれていません")
