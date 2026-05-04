@@ -75,9 +75,11 @@ img {
 <button onclick="checkMissing()">欠番チェック</button>
 <div class="grid" id="grid"></div>
 <script>
+let data = []   // ← これ追加（外に出す）
 fetch("data.json")
   .then(res => res.json())
   .then(data => {
+    data = json   // ← ここで代入
     render(data)
   })
 
