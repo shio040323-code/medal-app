@@ -110,32 +110,28 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js")
 }
 function checkMissing() {
-  // IDから数字だけ取り出し
   const numbers = data.map(item =>
-    parseInt(item.id.split('-')[1])
+    parseInt(item.id.replace(/\D/g, ""))
   )
 
-  // 昇順に並べる
   numbers.sort((a, b) => a - b)
 
   let missing = []
 
-  for (let i = 0; i < numbers.length - 1; i++) {
-    let current = numbers[i]
-    let next = numbers[i + 1]
+  let start = numbers[0]              // 0474
+  let end = numbers[numbers.length-1] // 0484
 
-    // 間が空いてたら全部追加
-    for (let n = current + 1; n < next; n++) {
+  for (let n = start; n <= end; n++) {
+    if (!numbers.includes(n)) {
       missing.push(n)
     }
   }
 
-  // 表示
-  if (missing.length === 0) {
-    alert("欠番なし 👍")
-  } else {
-    alert("欠番:\n" + missing.join(", "))
-  }
+  alert(
+    missing.length
+      ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
+      : "欠番なし"
+  )
 }
 </script>
 
