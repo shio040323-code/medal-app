@@ -93,7 +93,7 @@ function render(list){
     div.className = "card"
 
     div.innerHTML = `
-      <img src="images/${item.id}.png">
+      <img src="images/${item.id.replace(/^[A-Z]-/, '')}.png">
       <div><b>${item.id}</b>/<span class="type">${item.type}</span></div>
       <div class="detail">${item.detail || ""}</div>
       <div class="date">${item.date}</div>
