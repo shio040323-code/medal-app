@@ -6,16 +6,14 @@
 <title>スーベニアメダル管理</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
+<link rel="manifest" href="manifest.json">
 <style>
+
 body {
   font-family: sans-serif;
   margin: 10px;
 }
 
-h2 {
-  margin-bottom: 10px;
-}
 
 input {
   width: 100%;
@@ -71,7 +69,6 @@ img {
 
 <body>
 
-<h2>メダル管理</h2>
 
 <input type="text" id="search" placeholder="検索（名前・場所）">
 
@@ -105,6 +102,9 @@ function render(list){
 
     grid.appendChild(div)
   })
+}
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
 }
 </script>
 
