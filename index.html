@@ -179,6 +179,36 @@ function render(list){
 
     grid.appendChild(div)
   })
+  function checkMissing() {
+
+  if (!data || data.length === 0) {
+    alert("データがまだ読み込まれていません")
+    return
+  }
+
+  const numbers = data
+    .map(item => parseInt(item.id.replace(/\D/g, "")))
+    .filter(n => !isNaN(n))
+
+  numbers.sort((a, b) => a - b)
+
+  let missing = []
+
+  const start = numbers[0]
+  const end = numbers[numbers.length - 1]
+
+  for (let n = start; n <= end; n++) {
+    if (!numbers.includes(n)) {
+      missing.push(n)
+    }
+  }
+
+  alert(
+    missing.length
+      ? "欠番:\n" + missing.map(n => n.toString().padStart(4, "0")).join(", ")
+      : "欠番なし"
+  )
+}
 }
 </script>
 
