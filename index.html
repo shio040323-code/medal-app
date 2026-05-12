@@ -86,7 +86,7 @@ img {
 
 <body>
 
-<input type="text" id="search" placeholder="検索（名前・場所・ID）">
+<input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）">
 <button id="missingBtn">欠番チェック</button>
 <div id="typeFilters"></div>
 
@@ -106,6 +106,7 @@ fetch("data.json?v=" + Date.now())
 
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
+document.getElementById("search").addEventListener("input", searchData)
 
 
 // チェックボックス生成
@@ -183,6 +184,39 @@ function render(list){
 
     grid.appendChild(div)
   })
+}
+function normalize(text) {
+  return (text || "")
+    .toString()
+    .normalize("NFKC")      // 半角→全角統一
+    .toLowerCase()          // 小文字化
+    .replace(/\s/g, "")     // 半角/全角スペース削除
+    .replace(/-/g, "")      // ハイフン削除
+}
+
+function searchData() {
+
+  const keyword = normalize(
+    document.getElementById("search").value
+  )
+
+  // 検索欄が空なら全表示
+  if (keyword === "") {
+    render(data)
+    return
+  }
+
+  const filtered = data.filter(item =>
+
+    normalize(item.id).includes(keyword) ||
+    normalize(item.name).includes(keyword) ||
+    normalize(item.location).includes(keyword) ||
+    normalize(item.type).includes(keyword) ||
+    normalize(item.detail).includes(keyword)
+
+  )
+
+  render(filtered)
 }
 function checkMissing() {
 
