@@ -97,6 +97,7 @@ img {
 
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）">
 <button id="missingBtn">欠番チェック</button>
+<button onclick="clearFilters()">チェック</button>
 <div id="typeFilters"></div>
 <div id="locationFilters"></div>
 
@@ -184,6 +185,20 @@ function applyFilter() {
   })
 
   render(filtered)
+}
+function clearFilters() {
+
+  // type全部OFF
+  document
+    .querySelectorAll("#typeFilters input")
+    .forEach(cb => cb.checked = false)
+
+  // location全部OFF
+  document
+    .querySelectorAll("#locationFilters input")
+    .forEach(cb => cb.checked = false)
+
+  applyFilter()
 }
 function createLocationFilters() {
 
