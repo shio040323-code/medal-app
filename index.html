@@ -75,6 +75,7 @@ img {
 
 .filters label {
   min-width: 120px;
+
   display: flex;
   align-items: center;
   gap: 4px;
@@ -92,6 +93,7 @@ img {
 
   transition: 0.2s;
 }
+
 
 .filters label:hover {
   background: #e0e0e0;
@@ -266,20 +268,7 @@ function applyFilter() {
 
   render(filtered)
 }
-function clearFilters() {
 
-  // type全部OFF
-  document
-    .querySelectorAll("#typeFilters input")
-    .forEach(cb => cb.checked = false)
-
-  // location全部OFF
-  document
-    .querySelectorAll("#locationFilters input")
-    .forEach(cb => cb.checked = false)
-
-  applyFilter()
-}
 function render(list){
   const grid = document.getElementById("grid")
   grid.innerHTML = ""
