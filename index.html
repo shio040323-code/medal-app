@@ -111,12 +111,12 @@ fetch("data.json?v=" + Date.now())
   .then(json => {
     data = json
     setupFilter()
+    createLocationFilters()
     applyFilter()
   })
 
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
-document.getElementById("search").addEventListener("input", searchData)
 
 
 // チェックボックス生成
@@ -144,7 +144,47 @@ function setupFilter() {
   })
 }
 
+function applyFilter() {
 
+  const keyword = normalize(
+    document.getElementById("search").value
+  )
+
+  // typeチェック
+  const checkedTypes = [
+    ...document.querySelectorAll("#typeFilters input:checked")
+  ].map(cb => cb.value)
+
+  // locationチェック
+  const checkedLocations = [
+    ...document.querySelectorAll("#locationFilters input:checked")
+  ].map(cb => cb.value)
+
+  const filtered = data.filter(item => {
+
+    const matchKeyword =
+
+      normalize(item.id).includes(keyword) ||
+      normalize(item.name).includes(keyword) ||
+      normalize(item.location).includes(keyword) ||
+      normalize(item.type).includes(keyword) ||
+      normalize(item.detail).includes(keyword)
+
+    const matchType =
+      checkedTypes.length === 0
+        ? true
+        : checkedTypes.includes(item.type)
+
+    const matchLocation =
+      checkedLocations.length === 0
+        ? true
+        : checkedLocations.includes(item.location)
+
+    return matchKeyword && matchType && matchLocation
+  })
+
+  render(filtered)
+}
 // フィルター本体
 function applyFilter() {
   const q = document.getElementById("search").value.toLowerCase()
@@ -194,7 +234,7 @@ function createLocationFilters() {
   // チェック変更時に検索
   container.querySelectorAll("input")
     .forEach(input => {
-      input.addEventListener("change", searchData)
+      input.addEventListener("change", applyFilter)
     })
 }   
 
@@ -233,35 +273,7 @@ const checkedLocations = [
   ...document.querySelectorAll("#locationFilters input:checked")
 ].map(input => input.value)
 
-function searchData() {
 
-  const keyword = normalize(
-    document.getElementById("search").value
-  )
-
-  // 検索欄が空なら全表示
-  if (keyword === "") {
-    render(data)
-    return
-  }
-
-  const filtered = data.filter(item =>
-
-  checkedLocations.includes(item.location)
-
-  && (
-
-    normalize(item.id).includes(keyword) ||
-    normalize(item.name).includes(keyword) ||
-    normalize(item.location).includes(keyword) ||
-    normalize(item.type).includes(keyword) ||
-    normalize(item.detail).includes(keyword)
-
-  )
-)
-
-  render(filtered)
-}
 function checkMissing() {
 
   if (!data || data.length === 0) {
