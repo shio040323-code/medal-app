@@ -157,6 +157,7 @@ img {
 <select id="locationSelect">
   <option value="">すべての場所</option>
 </select>
+</div>
 <div class="grid" id="grid"></div>
 
 <script>
@@ -236,9 +237,8 @@ function applyFilter() {
   ].map(cb => cb.value)
 
   // locationチェック
-  const selectedLocation = [
+  const selectedLocation = 
   document.getElementById("locationSelect").value
-  ].map(cb => cb.value)
 
 
   const filtered = data.filter(item => {
@@ -311,9 +311,18 @@ function normalize(text) {
     .replace(/\s/g, "")     // 半角/全角スペース削除
     .replace(/-/g, "")      // ハイフン削除
 }
-const checkedLocations = [
-  ...document.querySelectorAll("#locationFilters input:checked")
-].map(input => input.value)
+function clearFilters() {
+
+  // type全部OFF
+  document
+    .querySelectorAll("#typeFilters input")
+    .forEach(cb => cb.checked = false)
+
+  // location初期化
+  document.getElementById("locationSelect").value = ""
+
+  applyFilter()
+}
 
 
 function checkMissing() {
