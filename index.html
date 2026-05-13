@@ -163,7 +163,7 @@ img {
 let data = []
 
 // データ読み込み
-fetch("data.json?v=" + Date.now())
+fetch("data.json")
   .then(res => res.json())
   .then(json => {
     data = json
