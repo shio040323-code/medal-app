@@ -74,6 +74,7 @@ img {
 }
 
 .filters label {
+  min-width: 120px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -132,17 +133,30 @@ img {
 .filters input[type="checkbox"] {
   margin: 0;
 }
+.topbar {
+  position: sticky;
+  top: 0;
 
+  background: white;
+
+  z-index: 999;
+
+  padding: 10px 0;
+
+  border-bottom: 1px solid #ddd;
+}
 </style>
 </head>
 
 <body>
-
+<div class="topbar">
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）">
 <button id="missingBtn">欠番</button>
 <button onclick="clearFilters()">□</button>
 <div id="typeFilters" class="filters"></div>
-<div id="locationFilters" class="filters"></div>
+<select id="locationSelect">
+  <option value="">すべての場所</option>
+</select>
 <div class="grid" id="grid"></div>
 
 <script>
@@ -154,7 +168,7 @@ fetch("data.json?v=" + Date.now())
   .then(json => {
     data = json
     setupFilter()
-    createLocationFilters()
+    createLocationSelect()
     applyFilter()
   })
 
@@ -199,9 +213,10 @@ function applyFilter() {
   ].map(cb => cb.value)
 
   // locationチェック
-  const checkedLocations = [
-    ...document.querySelectorAll("#locationFilters input:checked")
+  const selectedLocation = [
+  document.getElementById("locationSelect").value
   ].map(cb => cb.value)
+
 
   const filtered = data.filter(item => {
 
@@ -219,9 +234,9 @@ function applyFilter() {
         : checkedTypes.includes(item.type)
 
     const matchLocation =
-      checkedLocations.length === 0
-        ? true
-        : checkedLocations.includes(item.location)
+  selectedLocation === ""
+    ? true
+    : item.location === selectedLocation
 
     return matchKeyword && matchType && matchLocation
   })
@@ -242,34 +257,6 @@ function clearFilters() {
 
   applyFilter()
 }
-function createLocationFilters() {
-
-  const container = document.getElementById("locationFilters")
-
-  // location一覧（重複除去）
-  const locations = [...new Set(data.map(item => item.location))]
-
-  container.innerHTML = ""
-
-  locations.forEach(location => {
-
-    const label = document.createElement("label")
-
-    label.innerHTML = `
-      <input type="checkbox" value="${location}" checked>
-      <span>${location}</span>
-    `
-
-    container.appendChild(label)
-  })
-
-  // チェック変更時に検索
-  container.querySelectorAll("input")
-    .forEach(input => {
-      input.addEventListener("change", applyFilter)
-    })
-}   
-
 function render(list){
   const grid = document.getElementById("grid")
   grid.innerHTML = ""
