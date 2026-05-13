@@ -25,21 +25,6 @@ button {
   display: block;
   margin: 5px 0;
 }
-#typeFilters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-}
-
-#typeFilters label {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  margin: 0;
-}
-
 .grid {
   display: flex;
   flex-wrap: wrap;
@@ -81,15 +66,73 @@ img {
 .detail {
   font-size: 12px;
 }
-#locationFilters {
-  margin-bottom: 10px;
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-#locationFilters label {
-  display: inline-block;
-  margin-right: 10px;
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 6px 10px;
+
+  background: #f3f3f3;
+  border-radius: 999px;
+
   font-size: 12px;
+
+  cursor: pointer;
+
+  user-select: none;
+
+  transition: 0.2s;
 }
+
+.filters label:hover {
+  background: #e0e0e0;
+}
+
+.filters input[type="checkbox"] {
+  margin: 0;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 6px 10px;
+
+  background: #f3f3f3;
+  border-radius: 999px;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  user-select: none;
+
+  transition: 0.2s;
+}
+
+.filters label:hover {
+  background: #e0e0e0;
+}
+
+.filters input[type="checkbox"] {
+  margin: 0;
+}
+
 </style>
 </head>
 
@@ -98,9 +141,8 @@ img {
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）">
 <button id="missingBtn">欠番</button>
 <button onclick="clearFilters()">□</button>
-<div id="typeFilters"></div>
-<div id="locationFilters"></div>
-
+<div id="typeFilters" class="filters"></div>
+<div id="locationFilters" class="filters"></div>
 <div class="grid" id="grid"></div>
 
 <script>
@@ -215,7 +257,7 @@ function createLocationFilters() {
 
     label.innerHTML = `
       <input type="checkbox" value="${location}" checked>
-      ${location}
+      <span>${location}</span>
     `
 
     container.appendChild(label)
