@@ -200,7 +200,30 @@ function setupFilter() {
     container.appendChild(label)
   })
 }
+function createLocationSelect() {
 
+  const select =
+    document.getElementById("locationSelect")
+
+  // 重複なしlocation一覧
+  const locations = [
+    ...new Set(data.map(item => item.location))
+  ]
+
+  // option追加
+  locations.forEach(location => {
+
+    const option = document.createElement("option")
+
+    option.value = location
+    option.textContent = location
+
+    select.appendChild(option)
+  })
+
+  // 選択変更時
+  select.addEventListener("change", applyFilter)
+}
 function applyFilter() {
 
   const keyword = normalize(
