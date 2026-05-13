@@ -185,31 +185,6 @@ function applyFilter() {
 
   render(filtered)
 }
-// フィルター本体
-function applyFilter() {
-  const q = document.getElementById("search").value.toLowerCase()
-
-  const checkedTypes = [...document.querySelectorAll("#typeFilters input:checked")]
-    .map(cb => cb.value)
-
-  const filtered = data.filter(item => {
-
-    const matchText =
-      item.name.toLowerCase().includes(q) ||
-      item.location.toLowerCase().includes(q) ||
-      item.id.toLowerCase().includes(q)
-
-    // ★ここが重要（チェック0個＝全部表示）
-    const matchType =
-      checkedTypes.length === 0
-        ? true
-        : checkedTypes.includes(item.type)
-
-    return matchText && matchType
-  })
-
-  render(filtered)
-}
 function createLocationFilters() {
 
   const container = document.getElementById("locationFilters")
