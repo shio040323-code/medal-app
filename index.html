@@ -249,12 +249,17 @@ function render(list){
     div.className = "card"
 
     div.innerHTML = `
-      <img src="images/${imgId}.png">
-      <div><b>${item.id}</b> / <span class="type">${item.type}</span></div>
-      <div class="detail">${item.detail || ""}</div>
-      <div class="date">${item.date}</div>
-      <div class="location">${item.location}</div>
-      <div class="name">${item.name}</div>
+  <img
+  loading="lazy"
+  src="images/${imgId}.png"
+  onerror="this.src='noimage.png'"
+  >
+  <div><b>${item.id}</b> / <span class="type">${item.type}</span></div>
+  <div class="detail">${item.detail || ""}</div>
+  <div class="date">${item.date}</div>
+  <div class="location">${item.location}</div>
+  <div class="name">${item.name}</div>
+
     `
 
     grid.appendChild(div)
