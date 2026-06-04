@@ -31,7 +31,8 @@ button {
 
 .card {
   width: 180px;
-  margin: 10px;
+  margin: 2px;
+  padding: 2px;
 }
 
 img {
@@ -40,9 +41,12 @@ img {
   object-fit: contain;
   background: #f5f5f5;
   border-radius: 10px;
-  padding: 5px;
+  padding: 1px;
 }
-
+.id {
+     font-size: 18px;
+     font-weight: bold; 
+    }
 .name {
   font-size: 12px;
 }
@@ -64,6 +68,7 @@ img {
 
 .detail {
   font-size: 12px;
+  font-weight: bold;
 }
 .filters {
   display: flex;
@@ -118,12 +123,215 @@ img {
 
   border-bottom: 1px solid #ddd;
 }
+.book{
+  margin-left: 6px;
+  font-size: 12px;
+  color: #999;
+}
+@media print {
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .topbar {
+    display: none;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  .card {
+    break-inside: avoid;
+  }
+}
+@media print {
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  .topbar {
+    display: none;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  .grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 4px;
+
+}
+
+  .card {
+
+    width: 118px;
+  
+    height: 200px;
+
+    border: 1px solid #000;
+
+    border-radius: 8px;
+
+    padding: 4px;
+
+    background: #ffffff !important;
+
+    -webkit-print-color-adjust: exact;
+
+    print-color-adjust: exact;
+  
+    box-sizing: border-box;
+
+    break-inside: avoid;
+
+    page-break-inside: avoid;
+  }
+
+  img {
+    width: 100%;
+    height: 75px;
+
+    object-fit: contain;
+
+    background: #f5e6d3 !important;
+
+    padding: 0;
+
+    border-radius: 6px;
+  }
+  .id {
+     font-size: 12px;
+     font-weight: bold; 
+    }
+  .name {
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .detail {
+  font-size: 10px;
+  font-weight: bold;
+}
+ 
+  .location,
+  .type,
+  .book{
+    font-size: 7px;
+  }
+  .date {
+  display: none;
+}
+.simpleLabels {
+
+  font-family: "HG創英角ｺﾞｼｯｸUB";
+
+  font-size: 12px;
+
+  line-height: 2;
+
+  white-space: pre-wrap;
+
+  word-break: break-all;
+}
+#pageInput{
+  width: 40px;
+  padding: 2px 4px;
+  font-size: 16px;
+  margin: 0;
+}
+@media print {
+
+  body.label-print .simpleLabels {
+
+    font-size: 20px;
+
+    line-height: 2;
+
+    word-break: break-all;
+
+    white-space: pre-wrap;
+  }
+
+  @page {
+
+    size: postcard landscape;
+
+    margin: 5mm;
+  }
+}
+@media print {
+
+  body.label-print .simpleLabels {
+
+    font-family: "HG創英角ｺﾞｼｯｸUB";
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    white-space: pre-wrap;
+
+    word-break: break-all;
+  }
+
+  @page {
+
+    size: postcard landscape;
+
+    margin: 5mm;
+  }
+}
+}
+
 </style>
 </head>
 
 <body>
 <div class="topbar">
-<input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）">
+<input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
+style="
+  width:250px;
+  padding:2px 4px;
+  font-size:12px;
+  "
+>
+<br>
+<input
+  type="text"
+  id="printIds"
+  placeholder="印刷番号"
+  style="
+  width:100px;
+  padding:2px 4px;
+  font-size:12px;
+  "
+>
+<button onclick="printSelected()"> 指定印刷</button>
+<button onclick="printPage()">印刷</button>
+<button onclick="printLabel()">ラベル印刷</button>
+<br>
+<button onclick="prevPage()">← BACK</button>
+<input
+  type="number"
+  id="pageInput"
+  min="1"
+  style="
+  width:30px;
+  padding:2px 4px;
+  font-size:12px;
+  "
+>
+<span id="totalPages"></span>
+
+<button onclick="nextPage()">NEXT →</button>
 <button id="missingBtn">欠番</button>
 <button onclick="clearFilters()">□</button>
 <div id="typeFilters" class="filters"></div>
@@ -134,17 +342,65 @@ img {
 <div class="grid" id="grid"></div>
 
 <script>
-let data = []
+const locationGroups = {
+
+  "ランド": [
+    "ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ",
+    "ｱﾄﾞﾍﾞﾝﾁｬｰﾗﾝﾄﾞ",
+    "ｳｴｽﾀﾝﾗﾝﾄﾞ",
+    "ﾌｧﾝﾀｼﾞｰﾗﾝﾄﾞ",
+    "ﾄｩｰﾝﾀｳﾝ",
+    "ﾄｩﾓﾛｰﾗﾝﾄﾞ"
+  ],
+
+  "シー": [
+    "ﾒﾃﾞｨﾃﾚｰﾆｱﾝﾊｰﾊﾞｰ",
+    "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
+    "ﾛｽﾄﾘﾊﾞｰﾃﾞﾙﾀ",
+    "ﾏｰﾒｲﾄﾞﾗｸﾞｰﾝ",
+    "ﾐｽﾃﾘｱｽｱｲﾗﾝﾄﾞ",
+    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽ"
+  ],
+
+  "ホテル": [
+    "ﾐﾗｺｽﾀ",
+    "ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
+    "ﾄｲｽﾄｰﾘｰﾎﾃﾙ",
+    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽﾎﾃﾙ"
+  ],
+
+  "リゾートライン": [
+    "ﾘｿﾞｰﾄﾗｲﾝ",  
+  ]
+}
+let imageFolder = "images"
+let currentPage = 1
+const pageSize = 100
+let filteredData = []
+
 
 // データ読み込み
-fetch("data.json")
-  .then(res => res.json())
-  .then(json => {
-    data = json
-    setupFilter()
-    createLocationSelect()
-    applyFilter()
-  })
+async function loadData() {
+
+ fetch("./data.json")
+    .then(res => res.json())
+    .then(json => {
+
+      data = json
+
+      setupFilter()
+
+      createLocationSelect()
+
+      applyFilter()
+    })
+}
+
+loadData()
+
+
+
 
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
@@ -179,25 +435,37 @@ function createLocationSelect() {
   const select =
     document.getElementById("locationSelect")
 
-  // 重複なしlocation一覧
-  const locations = [
-    ...new Set(data.map(item => item.location))
-  ]
+  select.innerHTML =
+    `<option value="">すべて</option>`
 
-  // option追加
-  locations.forEach(location => {
+  for (const groupName in locationGroups) {
 
-    const option = document.createElement("option")
+    const optgroup =
+      document.createElement("optgroup")
 
-    option.value = location
-    option.textContent = location
+    optgroup.label = groupName
 
-    select.appendChild(option)
-  })
+    locationGroups[groupName]
+      .forEach(location => {
 
-  // 選択変更時
-  select.addEventListener("change", applyFilter)
+        const option =
+          document.createElement("option")
+
+        option.value = location
+        option.textContent = location
+
+        optgroup.appendChild(option)
+      })
+
+    select.appendChild(optgroup)
+  }
+
+  select.addEventListener(
+    "change",
+    applyFilter
+  )
 }
+
 function applyFilter() {
 
   const keyword = normalize(
@@ -222,7 +490,9 @@ function applyFilter() {
       normalize(item.name).includes(keyword) ||
       normalize(item.location).includes(keyword) ||
       normalize(item.type).includes(keyword) ||
-      normalize(item.detail).includes(keyword)
+      normalize(item.detail).includes(keyword) ||
+      normalize(String(item.bookNum || "")).includes(keyword) ||
+      normalize(toRoman(item.bookNum || 0)).includes(keyword)
 
     const matchType =
       checkedTypes.length === 0
@@ -237,37 +507,75 @@ function applyFilter() {
     return matchKeyword && matchType && matchLocation
   })
 
-  render(filtered)
+filteredData = filtered
+currentPage = 1
+renderPage()
+
 }
 
 function render(list){
-  const grid = document.getElementById("grid")
+
+  const grid =
+    document.getElementById("grid")
+
   grid.innerHTML = ""
 
   list.forEach(item => {
 
-    const imgId = item.id.split("-").pop()
+    const imgId =
+      item.id.split("-").pop()
 
-    const div = document.createElement("div")
+    const div =
+      document.createElement("div")
+
     div.className = "card"
 
-    div.innerHTML = `
-  <img
-  loading="lazy"
-  src="images/${imgId}.webp"
-  onerror="this.src='noimage.png'"
-  >
-  <div><b>${item.id}</b> / <span class="type">${item.type}</span></div>
-  <div class="detail">${item.detail || ""}</div>
-  <div class="date">${item.date}</div>
-  <div class="location">${item.location}</div>
-  <div class="name">${item.name}</div>
+    const imgPath =
+      `${imageFolder}/${imgId}.webp`
 
+    const finalImg =imgPath
+
+     <img
+  loading="lazy"
+  src="${finalImg}"
+  onerror="this.src='noimage.png'"
+>
+    div.innerHTML = `
+      <img
+        loading="lazy"
+        src="${finalImg}"
+      >
+
+      <div>
+        <span class="id">${item.id}</span> /
+        <span class="type">${item.type}</span>
+        <span class="book">
+          ${toRoman(item.bookNum)}
+        </span>
+      </div>
+
+      <div class="detail">
+        ${item.detail || ""}
+      </div>
+
+      <div class="date">
+        ${item.date}
+      </div>
+
+      <div class="location">
+        ${item.location}
+      </div>
+
+      <div class="name">
+        ${item.name}
+      </div>
     `
 
     grid.appendChild(div)
   })
 }
+
+
 function normalize(text) {
   return (text || "")
     .toString()
@@ -275,6 +583,38 @@ function normalize(text) {
     .toLowerCase()          // 小文字化
     .replace(/\s/g, "")     // 半角/全角スペース削除
     .replace(/-/g, "")      // ハイフン削除
+}
+function toRoman(num) {
+
+  if (!num) return ""
+
+  const roman = [
+    ["M",1000],
+    ["CM",900],
+    ["D",500],
+    ["CD",400],
+    ["C",100],
+    ["XC",90],
+    ["L",50],
+    ["XL",40],
+    ["X",10],
+    ["IX",9],
+    ["V",5],
+    ["IV",4],
+    ["I",1]
+  ]
+
+  let result = ""
+
+  for (const [letter, value] of roman) {
+
+    while (num >= value) {
+      result += letter
+      num -= value
+    }
+  }
+
+  return result
 }
 function clearFilters() {
 
@@ -321,7 +661,288 @@ function checkMissing() {
 document.getElementById("missingBtn")
   .addEventListener("click", checkMissing);
 
-</script>
+async function printPage() {
 
+  const images = document.images
+
+  await Promise.all(
+    [...images].map(img => {
+
+      if (img.complete) {
+        return Promise.resolve()
+      }
+
+      return new Promise(resolve => {
+        img.onload = resolve
+        img.onerror = resolve
+      })
+
+    })
+  )
+
+  setTimeout(() => {
+    window.print()
+  }, 500)
+
+}
+
+function updateFolderPath() {
+
+  document.getElementById("folderPath")
+    .textContent =
+      "画像: " + imageFolder
+}
+
+async function selectImageFolder() {
+
+  const folder =
+    await window.electronAPI.selectFolder()
+
+  if (!folder) return
+
+  imageFolder = folder
+
+  localStorage.setItem(
+    "imageFolder",
+    folder
+  )
+
+  updateFolderPath()
+
+  applyFilter()
+}
+function renderPage() {
+
+  const start =
+    (currentPage - 1) * pageSize
+
+  const end =
+    start + pageSize
+
+  const pageData =
+    filteredData.slice(start, end)
+
+  render(pageData)
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+document.getElementById("pageInput")
+  .value = currentPage
+
+   document.getElementById("totalPages")
+  .textContent = ` / ${totalPages}`
+}
+
+
+function nextPage() {
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+  if (currentPage < totalPages) {
+
+    currentPage++
+
+    renderPage()
+  }
+}
+
+function prevPage() {
+
+  if (currentPage > 1) {
+
+    currentPage--
+
+    renderPage()
+  }
+}
+function goPage() {
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+  const value =
+    parseInt(
+      document.getElementById("pageInput").value
+    )
+
+  if (
+    isNaN(value) ||
+    value < 1 ||
+    value > totalPages
+  ) {
+    return
+  }
+
+  currentPage = value
+
+  renderPage()
+}
+document
+  .getElementById("pageInput")
+  .addEventListener("keydown", e => {
+
+    if (e.key === "Enter") {
+
+      goPage()
+    }
+  })
+
+updateFolderPath()
+
+function printSelected() {
+
+  const text =
+    document.getElementById("printIds").value
+
+  if (!text) return
+
+  const targets = new Set()
+
+  // カンマ区切り
+  const parts =
+    text.split(",")
+
+  parts.forEach(part => {
+
+    part = part.trim()
+
+    // 範囲指定
+    if (part.includes("-")) {
+
+      const [start, end] =
+        part.split("-").map(Number)
+
+      for (let i = start; i <= end; i++) {
+
+        targets.add(
+          String(i).padStart(4, "0")
+        )
+      }
+
+    } else {
+
+      // 単体番号
+      targets.add(
+        String(Number(part))
+          .padStart(4, "0")
+      )
+    }
+  })
+
+  // 該当データ抽出
+  const selected =
+    data.filter(item => {
+
+      const num =
+        item.id.split("-").pop()
+
+      return targets.has(num)
+    })
+
+  if (selected.length === 0) {
+
+    alert("対象なし")
+    return
+  }
+
+  // 表示
+  render(selected)
+
+  // 印刷
+  setTimeout(() => {
+
+    window.print()
+
+    // 元へ戻す
+    renderPage()
+
+  }, 300)
+  }
+function printLabel() {
+
+  const text =
+    document.getElementById("printIds").value
+
+  if (!text) return
+
+  const targets = new Set()
+
+  const parts =
+    text.split(",")
+
+  parts.forEach(part => {
+
+    part = part.trim()
+
+    if (part.includes("-")) {
+
+      const [start, end] =
+        part.split("-").map(Number)
+
+      for (let i = start; i <= end; i++) {
+
+        targets.add(
+          String(i).padStart(4, "0")
+        )
+      }
+
+    } else {
+
+      targets.add(
+        String(Number(part))
+          .padStart(4, "0")
+      )
+    }
+  })
+
+  const selected =
+    data.filter(item => {
+
+      const num =
+        item.id.split("-").pop()
+
+      return targets.has(num)
+    })
+
+  if (selected.length === 0) {
+    alert("対象なし")
+    return
+  }
+
+  const grid =
+    document.getElementById("grid")
+
+  grid.innerHTML = ""
+
+  const div =
+    document.createElement("div")
+
+  div.className = "simpleLabels"
+
+  div.textContent =
+    selected.map(item => item.id).join("  ")
+
+  grid.appendChild(div)
+
+  document.body.classList.add(
+    "label-print"
+  )
+
+  setTimeout(() => {
+
+    window.print()
+
+    document.body.classList.remove(
+      "label-print"
+    )
+
+    renderPage()
+
+  }, 300)
+}
+
+</script>
 </body>
 </html>
