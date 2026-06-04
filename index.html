@@ -530,9 +530,8 @@ function render(list){
 
     div.className = "card"
 
-    const imgPath =
-      `${imageFolder}/${imgId}.webp`
-
+     const imgPath =
+  `images/${imgId}.webp`
     const finalImg =imgPath
 
      
@@ -690,9 +689,13 @@ async function printPage() {
 
 function updateFolderPath() {
 
-  document.getElementById("folderPath")
-    .textContent =
-      "画像: " + imageFolder
+  const el =
+    document.getElementById("folderPath")
+
+  if (!el) return
+
+  el.textContent =
+    "画像: " + imageFolder
 }
 
 async function selectImageFolder() {
@@ -709,7 +712,6 @@ async function selectImageFolder() {
     folder
   )
 
-  updateFolderPath()
 
   applyFilter()
 }
