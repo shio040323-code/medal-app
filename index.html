@@ -535,12 +535,14 @@ function render(list){
 
     const finalImg =imgPath
 
-     <img
-  loading="lazy"
-  src="${finalImg}"
-  onerror="this.src='noimage.png'"
->
+     
+      
     div.innerHTML = `
+     <img
+     loading="lazy"
+     src="${finalImg}"
+     onerror="this.src='noimage.png'"
+     >
       <img
         loading="lazy"
         src="${finalImg}"
