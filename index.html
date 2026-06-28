@@ -542,15 +542,16 @@ function render(list){
      `${imageFolder}/${imgId}.webp`
       
     div.innerHTML = `
+     
      <img
-     loading="lazy"
-     src="${finalImg}"
-     onerror="
-     this.classList.add('no-image');
-     this.src='noimage.png';
-     "
-     >
-
+      loading="lazy"
+      src="${finalImg}"
+      onerror="
+      this.onerror=null;
+      this.src='./noimage.png';
+      this.classList.add('noimage');
+      "
+      >
       <div>
         <span class="id">${item.id}</span> /
         <span class="type">${item.type}</span>
