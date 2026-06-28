@@ -534,17 +534,18 @@ function render(list){
     const imgPath =
   `./images/${imgId}.webp`
 
-    const finalImg =
-     imgPath
-     
+     const finalImg =
+     `${imageFolder}/${imgId}.webp`
       
     div.innerHTML = `
      <img
      loading="lazy"
      src="${finalImg}"
-     onerror="this.src='noimage.png'"
+     onerror="
+     this.classList.add('no-image');
+     this.src='noimage.png';
+     "
      >
-    
 
       <div>
         <span class="id">${item.id}</span> /
