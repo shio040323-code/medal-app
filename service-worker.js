@@ -37,38 +37,53 @@ self.addEventListener("activate", event => {
 // 通信
 self.addEventListener("fetch", event => {
 
-  // imagesフォルダは取得したら保存
-  if (event.request.url.includes("/images/")) {
-
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache =>
-        cache.match(event.request).then(response => {
-
-          return response || fetch(event.request)
-            .then(networkResponse => {
-
-              cache.put(
-                event.request,
-                networkResponse.clone()
-              );
-
-              return networkResponse;
-            });
-        })
-      )
-    );
-
-    return;
-  }
-
-  // HTML・JSON
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
 
-        return response || fetch(event.request);
+    caches.match(event.request).then(async cached => {
 
-      })
+      // キャッシュがあれば即返す
+      if (cached) {
+        return cached;
+      }
+
+      try {
+
+        const response = await fetch(event.request);
+
+        // 成功したものだけ保存
+        if (
+          event.request.method === "GET" &&
+          response.ok
+        ) {
+
+          const cache =
+            await caches.open(CACHE_NAME);
+
+          cache.put(
+            event.request,
+            response.clone()
+          );
+
+        }
+
+        return response;
+
+      } catch (e) {
+
+        // 画像だけ noimage を返す
+        if (
+          event.request.destination === "image"
+        ) {
+          return caches.match("./noimage.png");
+        }
+
+        throw e;
+      }
+
+    })
+
   );
 
 });
+
+  
