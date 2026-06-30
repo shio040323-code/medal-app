@@ -380,7 +380,7 @@ const locationGroups = {
 }
 let imageFolder = "images"
 let currentPage = 1
-const pageSize = 100
+const pageSize = 50
 let filteredData = []
 
 
@@ -398,6 +398,9 @@ async function loadData() {
       createLocationSelect()
 
       applyFilter()
+
+      cacheImages(data);
+
     })
 }
 
@@ -951,8 +954,43 @@ function printLabel() {
 
   }, 300)
 }
+async function cacheImages(data) {
+
+  if (!("caches" in window)) return;
+
+  const cache = await caches.open("medal-app-v4");
+
+  for (const item of data) {
+
+    const imgId = item.id.split("-").pop();
+
+    const url = `./images/${imgId}.webp`;
+
+    try {
+
+      const exists = await cache.match(url);
+
+      if (!exists) {
+
+        const res = await fetch(url);
+
+        if (res.ok) {
+          await cache.put(url, res.clone());
+        }
+
+      }
+
+    } catch (e) {
+      // 画像が無ければ無視
+    }
+
+  }
+
+  console.log("画像キャッシュ完了");
+
+}
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./service-worker.js");
+  navigator.serviceWorker.register("./service-worker.js");  
 }
 </script>
 </body>
