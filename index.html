@@ -958,35 +958,52 @@ async function cacheImages(data) {
 
   if (!("caches" in window)) return;
 
-  const cache = await caches.open("medal-app-v4");
+  const cache = await caches.open("medal-app-v5");
 
-  for (const item of data) {
+  const batchSize = 100;
 
-    const imgId = item.id.split("-").pop();
+  for (let i = 0; i < data.length; i += batchSize) {
 
-    const url = `./images/${imgId}.webp`;
+    const batch = data.slice(i, i + batchSize);
 
-    try {
+    await Promise.all(
 
-      const exists = await cache.match(url);
+      batch.map(async item => {
 
-      if (!exists) {
+        const imgId = item.id.split("-").pop();
 
-        const res = await fetch(url);
+        const url = `./images/${imgId}.webp`;
 
-        if (res.ok) {
-          await cache.put(url, res.clone());
-        }
+        try {
 
-      }
+          const cached = await cache.match(url);
 
-    } catch (e) {
-      // 画像が無ければ無視
-    }
+          if (!cached) {
+
+            const response = await fetch(url);
+
+            if (response.ok) {
+              await cache.put(url, response.clone());
+            }
+
+          }
+
+        } catch (e) {}
+
+      })
+
+    );
+
+    console.log(
+      `画像キャッシュ ${Math.min(i + batchSize, data.length)} / ${data.length}`
+    );
+
+    // iPadを休ませる
+    await new Promise(resolve => setTimeout(resolve, 200));
 
   }
 
-  console.log("画像キャッシュ完了");
+  console.log("全画像キャッシュ完了");
 
 }
 if ("serviceWorker" in navigator) {
