@@ -35,6 +35,31 @@ self.addEventListener("activate", event => {
 });
 
 // 通信
+// imagesはキャッシュ優先
+if (event.request.url.includes("/images/")) {
+
+  event.respondWith(
+
+    caches.open(CACHE_NAME).then(async cache => {
+
+      const cached = await cache.match(event.request);
+
+      if (cached) return cached;
+
+      const response = await fetch(event.request);
+
+      if (response.ok) {
+        cache.put(event.request, response.clone());
+      }
+
+      return response;
+
+    })
+
+  );
+
+  return;
+}
 self.addEventListener("fetch", event => {
 
   event.respondWith(
