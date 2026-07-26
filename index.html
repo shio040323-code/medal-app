@@ -386,22 +386,32 @@ let filteredData = []
 
 // データ読み込み
 async function loadData() {
+  try {
+    const response = await fetch("./data.json", {
+      cache: "no-store"
+    });
 
- fetch("./data.json")
-    .then(res => res.json())
-    .then(json => {
+    if (!response.ok) {
+      throw new Error(
+        `data.json読み込みエラー: ${response.status}`
+      );
+    }
 
-      data = json
+    data = await response.json();
 
-      setupFilter()
+    setupFilter();
+    createLocationSelect();
+    applyFilter();
 
-      createLocationSelect()
+    cacheImages(data);
 
-      applyFilter()
-
-      cacheImages(data);
-
-    })
+    console.log("最新のdata.jsonを読み込みました");
+  } catch (error) {
+    console.error(
+      "data.jsonの読み込みに失敗しました",
+      error
+    );
+  }
 }
 
 loadData()
