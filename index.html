@@ -402,11 +402,19 @@ async function loadData() {
 
     data = await response.json();
 
-    setupFilter();
-    createLocationSelect();
-    applyFilter();
+setupFilter();
+createLocationSelect();
 
-    cacheImages(data);
+filteredData = data;
+
+currentPage = Math.max(
+  1,
+  Math.ceil(filteredData.length / pageSize)
+);
+
+renderPage();
+
+cacheImages(data);
 
     console.log("最新のdata.jsonを読み込みました");
   } catch (error) {
@@ -527,9 +535,21 @@ function applyFilter() {
     return matchKeyword && matchType && matchLocation
   })
 
-filteredData = filtered
-currentPage = 1
-renderPage()
+filteredData = filtered;
+
+const savedPage =
+  parseInt(localStorage.getItem("currentPage")) || 1;
+
+const totalPages =
+  Math.max(
+    1,
+    Math.ceil(filteredData.length / pageSize)
+  );
+
+currentPage =
+  Math.min(savedPage, totalPages);
+
+renderPage();
 
 }
 
@@ -757,6 +777,8 @@ document.getElementById("pageInput")
 
    document.getElementById("totalPages")
   .textContent = ` / ${totalPages}`
+   // 現在のページを記憶
+  localStorage.setItem("currentPage", currentPage);
 }
 
 
