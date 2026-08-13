@@ -134,6 +134,13 @@ img.noimage{
   font-size: 12px;
   color: #999;
 }
+.legend {
+  font-size: 12px;
+  color: #666;
+  padding: 3px 0;
+  white-space: nowrap;
+  overflow-x: auto;
+}
 @media print {
 
   * {
@@ -248,21 +255,6 @@ img.noimage{
 
   word-break: break-all;
 }
-.legend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  font-size: 12px;
-  padding: 4px 2px;
-
-  white-space: nowrap;
-  overflow-x: auto;
-}
-
-.legend span {
-  flex: 0 0 auto;
-}
 #pageInput{
   width: 40px;
   padding: 2px 4px;
@@ -356,18 +348,15 @@ style="
 <button onclick="nextPage()">NEXT →</button>
 <button id="missingBtn">欠番</button>
 <button onclick="clearFilters()">□</button>
+<div class="legend">
+  L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
+</div>
 <div id="typeFilters" class="filters"></div>
 <select id="locationSelect">
   <option value="">すべての場所</option>
 </select>
 </div>
 <div class="grid" id="grid"></div>
-
-<div class="legend">
-  <span>■ マンスリー</span>
-  <span>● イベント</span>
-  <span>▲ 周年</span>
-</div>
 <script>
 const locationGroups = {
 
