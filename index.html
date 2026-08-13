@@ -248,6 +248,21 @@ img.noimage{
 
   word-break: break-all;
 }
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  font-size: 12px;
+  padding: 4px 2px;
+
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.legend span {
+  flex: 0 0 auto;
+}
 #pageInput{
   width: 40px;
   padding: 2px 4px;
@@ -348,6 +363,11 @@ style="
 </div>
 <div class="grid" id="grid"></div>
 
+<div class="legend">
+  <span>■ マンスリー</span>
+  <span>● イベント</span>
+  <span>▲ 周年</span>
+</div>
 <script>
 const locationGroups = {
 
