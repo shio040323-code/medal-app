@@ -353,7 +353,11 @@ style="
 </div>
 <div id="typeFilters" class="filters"></div>
 <select id="locationSelect">
-  <option value="">すべての場所</option>
+  <option value="">すべてのエリア</option>
+</select>
+
+<select id="nameSelect">
+  <option value="">すべての店舗</option>
 </select>
 </div>
 <div class="grid" id="grid"></div>
@@ -469,12 +473,17 @@ function setupFilter() {
 }
 function createLocationSelect() {
 
-  const select =
+  const locationSelect =
     document.getElementById("locationSelect")
 
-  select.innerHTML =
-    `<option value="">すべて</option>`
+  const nameSelect =
+    document.getElementById("nameSelect")
 
+  // エリアを初期化
+  locationSelect.innerHTML =
+    `<option value="">すべてのエリア</option>`
+
+  // 今まで通りグループ分け
   for (const groupName in locationGroups) {
 
     const optgroup =
@@ -494,13 +503,86 @@ function createLocationSelect() {
         optgroup.appendChild(option)
       })
 
-    select.appendChild(optgroup)
+    locationSelect.appendChild(optgroup)
   }
 
-  select.addEventListener(
+
+  // エリアが変更されたとき
+  locationSelect.addEventListener(
+    "change",
+    () => {
+
+      createNameSelect()
+
+      applyFilter()
+    }
+  )
+
+
+  // 店舗が変更されたとき
+  nameSelect.addEventListener(
     "change",
     applyFilter
   )
+
+
+  // 最初の店舗一覧を作る
+  createNameSelect()
+}
+function createNameSelect() {
+
+  const locationSelect =
+    document.getElementById("locationSelect")
+
+  const nameSelect =
+    document.getElementById("nameSelect")
+
+  const selectedLocation =
+    locationSelect.value
+
+
+  // 店舗プルダウンを初期化
+  nameSelect.innerHTML =
+    `<option value="">すべての店舗</option>`
+
+
+  // 選択されたエリアのデータだけ取得
+  let targetData = data
+
+  if (selectedLocation !== "") {
+
+    targetData =
+      data.filter(item =>
+        item.location === selectedLocation
+      )
+  }
+
+
+  // nameだけ取り出して重複削除
+  const names = [
+    ...new Set(
+      targetData
+        .map(item => item.name)
+        .filter(name => name)
+    )
+  ]
+
+
+  // 名前順
+  names.sort()
+
+
+  // 店舗プルダウン作成
+  names.forEach(name => {
+
+    const option =
+      document.createElement("option")
+
+    option.value = name
+    option.textContent = name
+
+    nameSelect.appendChild(option)
+  })
 }
 
 function applyFilter() {
@@ -517,6 +599,8 @@ function applyFilter() {
   // locationチェック
   const selectedLocation = 
   document.getElementById("locationSelect").value
+  const selectedName =
+  document.getElementById("nameSelect").value
 
 
   const filtered = data.filter(item => {
@@ -540,8 +624,17 @@ function applyFilter() {
   selectedLocation === ""
     ? true
     : item.location === selectedLocation
+    const matchName =
+  selectedName === ""
+    ? true
+    : item.name === selectedName
 
-    return matchKeyword && matchType && matchLocation
+    return (
+  matchKeyword &&
+  matchType &&
+  matchLocation &&
+  matchName
+)
   })
 
 filteredData = filtered;
