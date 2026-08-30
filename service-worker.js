@@ -1,142 +1,208 @@
 const CACHE_NAME = "medal-app-v6";
 
-const APP_FILES = [
+const urlsToCache = [
   "./",
   "./index.html",
   "./data.json",
   "./noimage.png"
 ];
 
+
+// ==============================
 // インストール
+// ==============================
 self.addEventListener("install", event => {
+
   event.waitUntil(
+
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_FILES))
+      .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
+
   );
 
-  self.skipWaiting();
 });
 
-// 古いキャッシュを削除
+
+// ==============================
+// 有効化
+// ==============================
 self.addEventListener("activate", event => {
+
   event.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames
-            .filter(name => name !== CACHE_NAME)
-            .map(name => caches.delete(name))
-        );
-      })
-      .then(() => self.clients.claim())
+
+    caches.keys().then(keys =>
+
+      Promise.all(
+
+        keys.map(key => {
+
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+
+        })
+
+      )
+
+    ).then(() => self.clients.claim())
+
   );
+
 });
 
-// 通信処理
+
+// ==============================
+// 通信
+// ==============================
 self.addEventListener("fetch", event => {
+
+  // GET以外は処理しない
   if (event.request.method !== "GET") {
     return;
   }
 
-  const url = new URL(event.request.url);
 
-  /*
-   * data.json
-   * オンライン：最新データ取得
-   * オフライン：保存済みデータ表示
-   */
-  if (url.pathname.endsWith("/data.json")) {
+  // ==========================
+  // 画像
+  // ==========================
+  if (
+    event.request.destination === "image" &&
+    event.request.url.includes("/images/")
+  ) {
+
     event.respondWith(
+
       caches.open(CACHE_NAME).then(async cache => {
-        try {
-          const response = await fetch(event.request, {
-            cache: "no-store"
-          });
 
-          if (response.ok) {
-            await cache.put(
-              "./data.json",
-              response.clone()
-            );
-          }
-
-          return response;
-        } catch (error) {
-          const cached =
-            await cache.match("./data.json");
-
-          if (cached) {
-            return cached;
-          }
-
-          return new Response("[]", {
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
-        }
-      })
-    );
-
-    return;
-  }
-
-  /*
-   * 画像
-   * 保存済み画像を優先
-   */
-  if (url.pathname.includes("/images/")) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async cache => {
         const cached =
           await cache.match(event.request);
 
+
+        // --------------------------------
+        // キャッシュがある場合
+        // --------------------------------
         if (cached) {
+
+          // 表示はキャッシュを即使用
+          // 裏で最新版を確認
+          fetch(event.request)
+            .then(response => {
+
+              if (response.ok) {
+
+                cache.put(
+                  event.request,
+                  response.clone()
+                );
+
+              }
+
+            })
+            .catch(() => {});
+
           return cached;
         }
 
+
+        // --------------------------------
+        // キャッシュがない場合
+        // --------------------------------
         try {
+
           const response =
             await fetch(event.request);
 
           if (response.ok) {
-            await cache.put(
+
+            cache.put(
               event.request,
               response.clone()
             );
+
           }
 
           return response;
+
         } catch (error) {
+
           return caches.match("./noimage.png");
+
         }
+
       })
+
     );
 
     return;
   }
 
-  /*
-   * HTMLなど
-   * ネット接続を優先し、失敗時はキャッシュ
-   */
-  event.respondWith(
-    fetch(event.request)
-      .then(async response => {
-        if (response.ok) {
-          const cache =
-            await caches.open(CACHE_NAME);
 
-          await cache.put(
-            event.request,
-            response.clone()
-          );
+  // ==========================
+  // HTML・JSONなど
+  // ==========================
+  event.respondWith(
+
+    caches.match(event.request)
+      .then(async cached => {
+
+        if (cached) {
+
+          // キャッシュを即表示
+          // 裏で最新版を取得
+          fetch(event.request)
+            .then(response => {
+
+              if (response.ok) {
+
+                caches.open(CACHE_NAME)
+                  .then(cache => {
+
+                    cache.put(
+                      event.request,
+                      response.clone()
+                    );
+
+                  });
+
+              }
+
+            })
+            .catch(() => {});
+
+
+          return cached;
         }
 
-        return response;
+
+        // キャッシュがない場合
+        try {
+
+          const response =
+            await fetch(event.request);
+
+          if (response.ok) {
+
+            const cache =
+              await caches.open(CACHE_NAME);
+
+            cache.put(
+              event.request,
+              response.clone()
+            );
+
+          }
+
+          return response;
+
+        } catch (error) {
+
+          throw error;
+
+        }
+
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+
   );
+
 });
