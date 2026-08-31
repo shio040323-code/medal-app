@@ -1,4 +1,4 @@
-const CACHE_NAME = "medal-app-v6";
+const CACHE_NAME = "medal-app-v7";
 
 const urlsToCache = [
   "./",
@@ -82,27 +82,40 @@ self.addEventListener("fetch", event => {
         // --------------------------------
         // キャッシュがある場合
         // --------------------------------
-        if (cached) {
 
-          // 表示はキャッシュを即使用
-          // 裏で最新版を確認
-          fetch(event.request)
-            .then(response => {
+if (cached) {
 
-              if (response.ok) {
+  try {
 
-                cache.put(
-                  event.request,
-                  response.clone()
-                );
+    const response =
+      await fetch(event.request, {
+        cache: "no-store"
+      });
 
-              }
+    // GitHubに画像が存在する
+    if (response.ok) {
 
-            })
-            .catch(() => {});
+      await cache.put(
+        event.request,
+        response.clone()
+      );
 
-          return cached;
-        }
+      return response;
+    }
+
+    // 画像が削除されている
+    await cache.delete(event.request);
+
+    return caches.match("./noimage.png");
+
+  } catch (error) {
+
+    // オフラインなら古いキャッシュを使用
+    return cached;
+
+  }
+
+}
 
 
         // --------------------------------
