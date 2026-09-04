@@ -403,46 +403,5 @@ style="
 
       <label>ローマ数字
         <select id="simRoman"></select>
-
-<script>
-function romanNumber(text) {
-  const value = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
-  const s = String(text || "").trim().toUpperCase();
-  let total = 0;
-  for (let i = 0; i < s.length; i++) {
-    const current = value[s[i]] || 0;
-    const next = i + 1 < s.length ? (value[s[i + 1]] || 0) : 0;
-    total += current < next ? -current : current;
-  }
-  return total;
-}
-
-function sortSimulatorRoman() {
-  const select = document.getElementById("simRoman");
-  if (!select) return;
-
-  const options = Array.from(select.options);
-  const all = options.find(o => o.textContent.trim() === "すべて");
-  const romans = options.filter(o =>
-    /^[IVXLCDM]+$/i.test(o.textContent.trim())
-  );
-
-  if (!romans.length) return;
-
-  romans.sort((a,b) => romanNumber(b.textContent) - romanNumber(a.textContent));
-
-  select.innerHTML = "";
-  if (all) select.appendChild(all);
-  romans.forEach(o => select.appendChild(o));
-}
-
-const romanObserver = new MutationObserver(sortSimulatorRoman);
-
-document.addEventListener("DOMContentLoaded", () => {
-  sortSimulatorRoman();
-  romanObserver.observe(document.body, {childList:true, subtree:true});
-});
-</script>
-
 </body>
 </html>
