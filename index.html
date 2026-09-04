@@ -257,170 +257,91 @@ img.noimage{
     font-size: 10px;
   }
 }
-@media print {
 
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .topbar {
-    display: none;
-  }
-
-  body {
-    margin: 0;
-  }
-
-  .card {
-    break-inside: avoid;
-  }
+/* =========================
+   配置シミュレーター
+   ========================= */
+#simulator {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,.45);
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
 }
-@media print {
-
-  @page {
-    size: A4 portrait;
-    margin: 10mm;
-  }
-
-  .topbar {
-    display: none;
-  }
-
-  body {
-    margin: 0;
-  }
-
-  .grid {
+#simulator .sim-panel {
+  background: #fff;
+  max-width: 760px;
+  margin: 0 auto;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.sim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sim-controls {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  align-content: flex-start;
-  gap: 4px;
-
+  gap: 6px;
+  align-items: center;
 }
-
-  .card {
-
-    width: 118px;
-  
-    height: 200px;
-
-    border: 1px solid #000;
-
-    border-radius: 8px;
-
-    padding: 4px;
-
-    background: #ffffff !important;
-
-    -webkit-print-color-adjust: exact;
-
-    print-color-adjust: exact;
-  
-    box-sizing: border-box;
-
-    break-inside: avoid;
-
-    page-break-inside: avoid;
-  }
-
-  img {
-    width: 100%;
-    height: 75px;
-
-    object-fit: contain;
-
-    background: #f5e6d3 !important;
-
-    padding: 0;
-
-    border-radius: 6px;
-  }
-  
-  .id {
-     font-size: 12px;
-     font-weight: bold; 
-    }
-  .name {
-    font-size: 10px;
-    font-weight: bold;
-  }
-  .detail {
-  font-size: 10px;
-  font-weight: bold;
-}
- 
-  .location,
-  .type,
-  .book{
-    font-size: 7px;
-  }
-  .date {
-  display: none;
-}
-.simpleLabels {
-
-  font-family: "HG創英角ｺﾞｼｯｸUB";
-
-  font-size: 12px;
-
-  line-height: 2;
-
-  white-space: pre-wrap;
-
-  word-break: break-all;
-}
-#pageInput{
-  width: 40px;
-  padding: 2px 4px;
+.sim-controls input,
+.sim-controls select {
+  min-height: 38px;
+  box-sizing: border-box;
   font-size: 16px;
-  margin: 0;
+  padding: 5px 8px;
 }
-@media print {
-
-  body.label-print .simpleLabels {
-
-    font-size: 20px;
-
-    line-height: 2;
-
-    word-break: break-all;
-
-    white-space: pre-wrap;
-  }
-
-  @page {
-
-    size: postcard landscape;
-
-    margin: 5mm;
-  }
+.sim-controls input[type="number"] { width: 75px; }
+.sim-face {
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 10px;
 }
-@media print {
-
-  body.label-print .simpleLabels {
-
-    font-family: "HG創英角ｺﾞｼｯｸUB";
-
-    font-size: 12px;
-
-    line-height: 1.5;
-
-    white-space: pre-wrap;
-
-    word-break: break-all;
-  }
-
-  @page {
-
-    size: postcard landscape;
-
-    margin: 5mm;
-  }
+.sim-face-title {
+  font-weight: bold;
+  margin-bottom: 6px;
 }
+.sim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
 }
-
+.sim-slot {
+  min-height: 62px;
+  border: 2px solid #888;
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 4px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: pre-line;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sim-slot.empty { color: #aaa; }
+.sim-slot.drag-over { outline: 3px solid #333; }
+.sim-help {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+}
+@media screen and (min-width: 700px) and (max-width: 800px) {
+  #simulator { padding: 6px; }
+  #simulator .sim-panel { width: 100%; }
+  .sim-slot { min-height: 68px; font-size: 13px; }
+}
 </style>
 </head>
 
@@ -434,19 +355,6 @@ style="
   "
 >
 <br>
-<input
-  type="text"
-  id="printIds"
-  placeholder="印刷番号"
-  style="
-  width:100px;
-  padding:2px 4px;
-  font-size:12px;
-  "
->
-<button onclick="printSelected()"> 指定印刷</button>
-<button onclick="printPage()">印刷</button>
-<button onclick="printLabel()">ラベル印刷</button>
 <br>
 <button onclick="prevPage()">← BACK</button>
 <input
@@ -463,6 +371,7 @@ style="
 
 <button onclick="nextPage()">NEXT →</button>
 <button id="missingBtn">欠番</button>
+<button id="simulatorBtn">配置シミュレーター</button>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -476,6 +385,44 @@ style="
   <option value="">すべて</option>
 </select>
 </div>
+
+<div id="simulator">
+  <div class="sim-panel">
+    <div class="sim-header">
+      <strong>スーベニアメダル配置シミュレーター</strong>
+      <button id="simClose">閉じる</button>
+    </div>
+
+    <div class="sim-controls">
+      <label>面数
+        <select id="simFaces">
+          <option value="3">3面</option>
+          <option value="4">4面</option>
+        </select>
+      </label>
+
+      <label>ローマ数字
+        <select id="simRoman"></select>
+      </label>
+
+      <label>開始
+        <input id="simStart" type="number" value="1" min="1">
+      </label>
+
+      <label>終了
+        <input id="simEnd" type="number" value="45" min="1">
+      </label>
+
+      <button id="simDisplay">表示</button>
+    </div>
+
+    <div class="sim-help">
+      メダルを長押しして別のマスへ移動すると、2つのメダルを入れ替えできます。
+    </div>
+    <div id="simFacesArea"></div>
+  </div>
+</div>
+
 <div class="grid" id="grid"></div>
 <script>
 const locationGroups = {
@@ -925,31 +872,6 @@ function checkMissing() {
 document.getElementById("missingBtn")
   .addEventListener("click", checkMissing);
 
-async function printPage() {
-
-  const images = document.images
-
-  await Promise.all(
-    [...images].map(img => {
-
-      if (img.complete) {
-        return Promise.resolve()
-      }
-
-      return new Promise(resolve => {
-        img.onload = resolve
-        img.onerror = resolve
-      })
-
-    })
-  )
-
-  setTimeout(() => {
-    window.print()
-  }, 500)
-
-}
-
 function updateFolderPath() {
 
   const el =
@@ -1060,157 +982,177 @@ document
 
 updateFolderPath()
 
-function printSelected() {
 
-  const text =
-    document.getElementById("printIds").value
+/* =========================
+   iPad用 配置シミュレーター
+   VBA版の機能をJavaScriptへ移植
+   ========================= */
+const simState = {
+  faces: 3,
+  items: [],
+  drag: null
+};
 
-  if (!text) return
-
-  const targets = new Set()
-
-  // カンマ区切り
-  const parts =
-    text.split(",")
-
-  parts.forEach(part => {
-
-    part = part.trim()
-
-    // 範囲指定
-    if (part.includes("-")) {
-
-      const [start, end] =
-        part.split("-").map(Number)
-
-      for (let i = start; i <= end; i++) {
-
-        targets.add(
-          String(i).padStart(4, "0")
-        )
-      }
-
-    } else {
-
-      // 単体番号
-      targets.add(
-        String(Number(part))
-          .padStart(4, "0")
-      )
-    }
-  })
-
-  // 該当データ抽出
-  const selected =
-    data.filter(item => {
-
-      const num =
-        item.id.split("-").pop()
-
-      return targets.has(num)
-    })
-
-  if (selected.length === 0) {
-
-    alert("対象なし")
-    return
+function romanToNumber(text) {
+  const values = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+  let total = 0;
+  text = String(text || "").toUpperCase().trim();
+  for (let i = 0; i < text.length; i++) {
+    const cur = values[text[i]] || 0;
+    const next = i + 1 < text.length ? (values[text[i+1]] || 0) : 0;
+    total += cur < next ? -cur : cur;
   }
-
-  // 表示
-  render(selected)
-
-  // 印刷
-  setTimeout(() => {
-
-    window.print()
-
-    // 元へ戻す
-    renderPage()
-
-  }, 300)
-  }
-function printLabel() {
-
-  const text =
-    document.getElementById("printIds").value
-
-  if (!text) return
-
-  const targets = new Set()
-
-  const parts =
-    text.split(",")
-
-  parts.forEach(part => {
-
-    part = part.trim()
-
-    if (part.includes("-")) {
-
-      const [start, end] =
-        part.split("-").map(Number)
-
-      for (let i = start; i <= end; i++) {
-
-        targets.add(
-          String(i).padStart(4, "0")
-        )
-      }
-
-    } else {
-
-      targets.add(
-        String(Number(part))
-          .padStart(4, "0")
-      )
-    }
-  })
-
-  const selected =
-    data.filter(item => {
-
-      const num =
-        item.id.split("-").pop()
-
-      return targets.has(num)
-    })
-
-  if (selected.length === 0) {
-    alert("対象なし")
-    return
-  }
-
-  const grid =
-    document.getElementById("grid")
-
-  grid.innerHTML = ""
-
-  const div =
-    document.createElement("div")
-
-  div.className = "simpleLabels"
-
-  div.textContent =
-    selected.map(item => item.id).join("  ")
-
-  grid.appendChild(div)
-
-  document.body.classList.add(
-    "label-print"
-  )
-
-  setTimeout(() => {
-
-    window.print()
-
-    document.body.classList.remove(
-      "label-print"
-    )
-
-    renderPage()
-
-  }, 300)
+  return total;
 }
+
+function extractNumber(text) {
+  const m = String(text || "").match(/\d+/);
+  return m ? Number(m[0]) : -1;
+}
+
+function setupSimulatorRoman() {
+  const select = document.getElementById("simRoman");
+  if (!select || !Array.isArray(data)) return;
+
+  const romans = [...new Set(
+    data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
+  )];
+
+  romans.sort((a,b) => romanToNumber(b) - romanToNumber(a));
+
+  select.innerHTML = '<option value="">すべて</option>';
+  romans.forEach(roman => {
+    const option = document.createElement("option");
+    option.value = roman;
+    option.textContent = roman;
+    select.appendChild(option);
+  });
+}
+
+function makeSimulatorList() {
+  const start = Number(document.getElementById("simStart").value || 1);
+  const end = Number(document.getElementById("simEnd").value || 45);
+  const roman = document.getElementById("simRoman").value;
+
+  if (start > end) {
+    alert("開始番号が終了番号より大きくなっています。");
+    return [];
+  }
+
+  return data.filter(item => {
+    const num = extractNumber(item.id);
+    if (roman === "") {
+      return num >= start && num <= end;
+    }
+    return String(item.bookNum || "").trim() === roman;
+  });
+}
+
+function simItemText(item) {
+  if (!item) return "";
+  return [
+    item.id || "",
+    item.type || "",
+    item.detail || ""
+  ].filter(Boolean).join("\n");
+}
+
+function renderSimulator() {
+  const area = document.getElementById("simFacesArea");
+  area.innerHTML = "";
+
+  const slotsPerFace = 15;
+  for (let face = 0; face < simState.faces; face++) {
+    const faceBox = document.createElement("div");
+    faceBox.className = "sim-face";
+
+    const title = document.createElement("div");
+    title.className = "sim-face-title";
+    title.textContent = `${face + 1}面`;
+    faceBox.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "sim-grid";
+
+    for (let slot = 0; slot < slotsPerFace; slot++) {
+      const index = face * slotsPerFace + slot;
+      const item = simState.items[index];
+
+      const cell = document.createElement("div");
+      cell.className = "sim-slot" + (item ? "" : " empty");
+      cell.dataset.face = String(face);
+      cell.dataset.slot = String(slot);
+      cell.textContent = item ? simItemText(item) : "";
+
+      cell.addEventListener("pointerdown", e => {
+        if (!simState.items[index]) return;
+        simState.drag = { index, pointerId: e.pointerId };
+        cell.setPointerCapture?.(e.pointerId);
+        cell.style.opacity = "0.55";
+      });
+
+      cell.addEventListener("pointerup", e => {
+        if (!simState.drag || simState.drag.pointerId !== e.pointerId) return;
+        cell.style.opacity = "";
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        const targetCell = target?.closest?.(".sim-slot");
+        if (targetCell && targetCell !== cell) {
+          const targetIndex =
+            Number(targetCell.dataset.face) * slotsPerFace +
+            Number(targetCell.dataset.slot);
+
+          [simState.items[index], simState.items[targetIndex]] =
+            [simState.items[targetIndex], simState.items[index]];
+
+          renderSimulator();
+        }
+        simState.drag = null;
+      });
+
+      cell.addEventListener("pointercancel", () => {
+        cell.style.opacity = "";
+        simState.drag = null;
+      });
+
+      grid.appendChild(cell);
+    }
+
+    faceBox.appendChild(grid);
+    area.appendChild(faceBox);
+  }
+}
+
+function openSimulator() {
+  document.getElementById("simulator").style.display = "block";
+  setupSimulatorRoman();
+  simState.faces = Number(document.getElementById("simFaces").value || 3);
+  simState.items = makeSimulatorList();
+  renderSimulator();
+}
+
+function closeSimulator() {
+  document.getElementById("simulator").style.display = "none";
+  simState.drag = null;
+}
+
+document.getElementById("simulatorBtn").addEventListener("click", openSimulator);
+document.getElementById("simClose").addEventListener("click", closeSimulator);
+
+document.getElementById("simFaces").addEventListener("change", () => {
+  simState.faces = Number(document.getElementById("simFaces").value);
+  renderSimulator();
+});
+
+document.getElementById("simRoman").addEventListener("change", () => {
+  simState.items = makeSimulatorList();
+  renderSimulator();
+});
+
+document.getElementById("simDisplay").addEventListener("click", () => {
+  simState.items = makeSimulatorList();
+  renderSimulator();
+});
+
 async function cacheImages(data) {
 
   if (!("caches" in window)) return;
