@@ -404,6 +404,58 @@ style="
 
       <label>ローマ数字
         <select id="simRoman"></select>
+<script>
+(function () {
+  function romanToNumberForSort(text) {
+    const values = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+    text = String(text || "").trim().toUpperCase();
+    let total = 0;
+    for (let i = 0; i < text.length; i++) {
+      const cur = values[text[i]] || 0;
+      const next = i + 1 < text.length ? (values[text[i + 1]] || 0) : 0;
+      total += cur < next ? -cur : cur;
+    }
+    return total;
+  }
+
+  function sortRomanSelect(select) {
+    if (!select) return;
+
+    const options = Array.from(select.options);
+    const allOption = options.find(o => o.value === "すべて" || o.textContent.trim() === "すべて");
+    const romanOptions = options.filter(o => o !== allOption);
+
+    romanOptions.sort((a, b) =>
+      romanToNumberForSort(b.value || b.textContent) -
+      romanToNumberForSort(a.value || a.textContent)
+    );
+
+    select.innerHTML = "";
+    if (allOption) select.appendChild(allOption);
+    romanOptions.forEach(o => select.appendChild(o));
+  }
+
+  function applyRomanDescendingOrder() {
+    // シミュレーターが生成する可能性を考えて、候補selectを探す
+    const selects = Array.from(document.querySelectorAll("select"));
+    selects.forEach(select => {
+      const values = Array.from(select.options).map(o => o.textContent.trim());
+      if (values.includes("すべて") &&
+          values.some(v => /^[IVXLCDM]+$/.test(v))) {
+        sortRomanSelect(select);
+      }
+    });
+  }
+
+  // 初期表示
+  document.addEventListener("DOMContentLoaded", applyRomanDescendingOrder);
+
+  // シミュレーターを開いた後など、動的生成にも対応
+  const observer = new MutationObserver(applyRomanDescendingOrder);
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+
       </label>
 
       <label>開始
