@@ -403,5 +403,48 @@ style="
 
       <label>ローマ数字
         <select id="simRoman"></select>
+
+<script>
+(function () {
+  function romanValue(s) {
+    const v = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+    s = String(s || "").trim().toUpperCase();
+    let n = 0;
+    for (let i = 0; i < s.length; i++) {
+      const a = v[s[i]] || 0;
+      const b = i + 1 < s.length ? (v[s[i + 1]] || 0) : 0;
+      n += a < b ? -a : a;
+    }
+    return n;
+  }
+
+  function sortRomanSelects() {
+    document.querySelectorAll("select").forEach(select => {
+      const options = Array.from(select.options);
+      const romanOptions = options.filter(o =>
+        /^[IVXLCDM]+$/i.test(o.textContent.trim())
+      );
+      if (!romanOptions.length) return;
+
+      const all = options.find(o => o.textContent.trim() === "すべて");
+      romanOptions.sort((a, b) =>
+        romanValue(b.textContent) - romanValue(a.textContent)
+      );
+
+      const fragment = document.createDocumentFragment();
+      if (all) fragment.appendChild(all);
+      romanOptions.forEach(o => fragment.appendChild(o));
+      select.appendChild(fragment);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", sortRomanSelects);
+
+  // シミュレーターを開いた直後など、動的生成にも対応
+  const observer = new MutationObserver(() => sortRomanSelects());
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+
 </body>
 </html>
