@@ -342,6 +342,20 @@ img.noimage{
   #simulator .sim-panel { width: 100%; }
   .sim-slot { min-height: 68px; font-size: 13px; }
 }
+
+/* 検索バー直下の余白を詰める */
+#search {
+  display: block;
+  margin: 0 !important;
+  line-height: 1.2;
+}
+.topbar {
+  line-height: 1;
+}
+.topbar > br:first-of-type {
+  display: none !important;
+}
+
 </style>
 </head>
 
@@ -1262,5 +1276,55 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./service-worker.js");  
 }
 </script>
+
+<script>
+(function () {
+  function romanValue(s) {
+    const v = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+    s = String(s || "").trim().toUpperCase();
+    let n = 0;
+    for (let i = 0; i < s.length; i++) {
+      const a = v[s[i]] || 0;
+      const b = i + 1 < s.length ? (v[s[i + 1]] || 0) : 0;
+      n += a < b ? -a : a;
+    }
+    return n;
+  }
+
+  function forceRomanDescending() {
+    document.querySelectorAll("select").forEach(select => {
+      const options = Array.from(select.options);
+      const roman = options.filter(o => /^[IVXLCDM]+$/i.test(o.textContent.trim()));
+      const all = options.find(o => o.textContent.trim() === "すべて");
+
+      // ローマ数字の選択肢があるselectだけを対象
+      if (roman.length === 0) return;
+
+      roman.sort((a,b) => romanValue(b.textContent) - romanValue(a.textContent));
+
+      select.innerHTML = "";
+      if (all) select.appendChild(all);
+      roman.forEach(o => select.appendChild(o));
+    });
+  }
+
+  // シミュレーター表示後にも実行
+  const observer = new MutationObserver(() => {
+    forceRomanDescending();
+  });
+
+  function startRomanFix() {
+    forceRomanDescending();
+    observer.observe(document.body, {childList:true, subtree:true});
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startRomanFix);
+  } else {
+    startRomanFix();
+  }
+})();
+</script>
+
 </body>
 </html>
