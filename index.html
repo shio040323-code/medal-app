@@ -405,45 +405,43 @@ style="
         <select id="simRoman"></select>
 
 <script>
-(function () {
-  function romanValue(s) {
-    const v = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
-    s = String(s || "").trim().toUpperCase();
-    let n = 0;
-    for (let i = 0; i < s.length; i++) {
-      const a = v[s[i]] || 0;
-      const b = i + 1 < s.length ? (v[s[i + 1]] || 0) : 0;
-      n += a < b ? -a : a;
-    }
-    return n;
+function romanNumber(text) {
+  const value = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+  const s = String(text || "").trim().toUpperCase();
+  let total = 0;
+  for (let i = 0; i < s.length; i++) {
+    const current = value[s[i]] || 0;
+    const next = i + 1 < s.length ? (value[s[i + 1]] || 0) : 0;
+    total += current < next ? -current : current;
   }
+  return total;
+}
 
-  function sortRomanSelects() {
-    document.querySelectorAll("select").forEach(select => {
-      const options = Array.from(select.options);
-      const romanOptions = options.filter(o =>
-        /^[IVXLCDM]+$/i.test(o.textContent.trim())
-      );
-      if (!romanOptions.length) return;
+function sortSimulatorRoman() {
+  const select = document.getElementById("simRoman");
+  if (!select) return;
 
-      const all = options.find(o => o.textContent.trim() === "すべて");
-      romanOptions.sort((a, b) =>
-        romanValue(b.textContent) - romanValue(a.textContent)
-      );
+  const options = Array.from(select.options);
+  const all = options.find(o => o.textContent.trim() === "すべて");
+  const romans = options.filter(o =>
+    /^[IVXLCDM]+$/i.test(o.textContent.trim())
+  );
 
-      const fragment = document.createDocumentFragment();
-      if (all) fragment.appendChild(all);
-      romanOptions.forEach(o => fragment.appendChild(o));
-      select.appendChild(fragment);
-    });
-  }
+  if (!romans.length) return;
 
-  document.addEventListener("DOMContentLoaded", sortRomanSelects);
+  romans.sort((a,b) => romanNumber(b.textContent) - romanNumber(a.textContent));
 
-  // シミュレーターを開いた直後など、動的生成にも対応
-  const observer = new MutationObserver(() => sortRomanSelects());
-  observer.observe(document.body, { childList: true, subtree: true });
-})();
+  select.innerHTML = "";
+  if (all) select.appendChild(all);
+  romans.forEach(o => select.appendChild(o));
+}
+
+const romanObserver = new MutationObserver(sortSimulatorRoman);
+
+document.addEventListener("DOMContentLoaded", () => {
+  sortSimulatorRoman();
+  romanObserver.observe(document.body, {childList:true, subtree:true});
+});
 </script>
 
 </body>
