@@ -342,6 +342,90 @@ img.noimage{
   #simulator .sim-panel { width: 100%; }
   .sim-slot { min-height: 68px; font-size: 13px; }
 }
+
+/* iPad用 データ追加画面 */
+#addDataModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0,0,0,.45);
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+#addDataModal .add-data-panel {
+  background: #fff;
+  max-width: 520px;
+  margin: 20px auto;
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.add-data-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 17px;
+}
+
+.add-data-form {
+  display: grid;
+  gap: 9px;
+}
+
+.add-data-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.add-data-form input {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 7px 9px;
+  margin: 0;
+  font-size: 16px;
+  border: 1px solid #bbb;
+  border-radius: 7px;
+}
+
+.add-data-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.add-data-buttons button {
+  flex: 1;
+  min-height: 44px;
+}
+
+.add-data-message {
+  min-height: 18px;
+  font-size: 13px;
+  color: #b00020;
+}
+
+.sim-slot.empty {
+  cursor: pointer;
+}
+
+.sim-slot.empty::after {
+  content: "タップして追加";
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 8px;
+}
+
 </style>
 </head>
 
@@ -476,6 +560,53 @@ style="
   </div>
 </div>
 
+<!-- iPad用 データ追加画面 -->
+<div id="addDataModal">
+  <div class="add-data-panel">
+    <div class="add-data-header">
+      <strong>メダルデータを追加</strong>
+      <button type="button" id="addDataClose">閉じる</button>
+    </div>
+
+    <div class="add-data-form">
+      <label>管理番号
+        <input id="addId" type="text" placeholder="例：L-2501">
+      </label>
+
+      <label>店舗
+        <input id="addName" type="text" placeholder="店舗名">
+      </label>
+
+      <label>エリア
+        <input id="addLocation" type="text" placeholder="例：ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ">
+      </label>
+
+      <label>日付
+        <input id="addDate" type="text" placeholder="例：2026/09/11">
+      </label>
+
+      <label>種類
+        <input id="addType" type="text" placeholder="例：ﾚｷﾞｭﾗｰ">
+      </label>
+
+      <label>詳細
+        <input id="addDetail" type="text" placeholder="詳細">
+      </label>
+
+      <label>ローマ数字
+        <input id="addBookNum" type="text" placeholder="例：I、II、III">
+      </label>
+
+      <div id="addDataMessage" class="add-data-message"></div>
+
+      <div class="add-data-buttons">
+        <button type="button" id="addDataCancel">キャンセル</button>
+        <button type="button" id="addDataSave">このマスに追加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="grid" id="grid"></div>
 <script>
 const locationGroups = {
@@ -514,6 +645,9 @@ const locationGroups = {
     "特別付録",  
   ]
 }
+let data = []
+let masterData = []
+let addedData = []
 let imageFolder = "images"
 let currentPage = 1
 const pageSize = 50
@@ -522,6 +656,151 @@ let filteredData = []
 
 // データ読み込み
 async function loadData() {
+  try {
+    const response = await fetch("./data.json", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`data.json読み込みエラー: ${response.status}`);
+    }
+
+    masterData = await response.json();
+
+    // iPad内に保存した追加データを読み込む
+    addedData = await loadAddedData();
+
+    // GitHubのdata.jsonを優先して合体
+    data = mergeData(masterData, addedData);
+
+    setupFilter();
+    createLocationSelect();
+
+    filteredData = data;
+
+    currentPage = Math.max(
+      1,
+      Math.min(
+        parseInt(localStorage.getItem("currentPage")) || 1,
+        Math.max(1, Math.ceil(filteredData.length / pageSize))
+      )
+    );
+
+    renderPage();
+    setupSimulatorRoman();
+    cacheImages(data);
+
+    console.log("GitHubのdata.json + iPad追加データを読み込みました");
+  } catch (error) {
+    console.error("data.jsonの読み込みに失敗しました", error);
+
+    // オフライン時はiPad保存分だけでも表示
+    try {
+      addedData = await loadAddedData();
+      data = mergeData([], addedData);
+      setupFilter();
+      createLocationSelect();
+      filteredData = data;
+      renderPage();
+      setupSimulatorRoman();
+    } catch (e) {
+      console.error("iPad保存データの読み込みにも失敗しました", e);
+    }
+  }
+}
+
+// 管理番号の数字だけを取り出す
+// L-0001 / S-0001 / H-0001 / LS-0001 → 1
+function getNumberOnly(id) {
+  const match = String(id || "").match(/\d+/);
+  return match ? String(Number(match[0])) : "";
+}
+
+// GitHub側を優先してデータを合体
+function mergeData(master, additions) {
+  const result = Array.isArray(master) ? [...master] : [];
+
+  const masterNumbers = new Set(
+    result
+      .map(item => getNumberOnly(item.id))
+      .filter(Boolean)
+  );
+
+  (Array.isArray(additions) ? additions : []).forEach(item => {
+    const num = getNumberOnly(item.id);
+
+    // 同じ数字がGitHubにあればGitHub側を使用
+    if (num && masterNumbers.has(num)) return;
+
+    result.push(item);
+  });
+
+  return result;
+}
+
+// =========================
+// iPad内データ保存 IndexedDB
+// =========================
+const ADD_DB_NAME = "medalAppDB";
+const ADD_STORE_NAME = "addedData";
+const ADD_DB_VERSION = 1;
+
+function openAddedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(ADD_DB_NAME, ADD_DB_VERSION);
+
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
+        db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function loadAddedData() {
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readonly");
+      const request = tx.objectStore(ADD_STORE_NAME).getAll();
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+        db.close();
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+        db.close();
+      };
+    });
+  });
+}
+
+function saveAddedData(item) {
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+      tx.objectStore(ADD_STORE_NAME).put(item);
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  });
+}
+
+loadData() {
   try {
     const response = await fetch("./data.json", {
       cache: "no-store"
@@ -1138,7 +1417,14 @@ function renderSimulator() {
       cell.textContent = item ? simItemText(item) : "";
 
       cell.addEventListener("pointerdown", e => {
-        if (!simState.items[index]) return;
+        // 空きマスはタップでデータ入力
+        if (!simState.items[index]) {
+          e.preventDefault();
+          openAddDataModal(index);
+          return;
+        }
+
+        // データがあるマスは従来どおり入れ替え
         simState.drag = { index, pointerId: e.pointerId };
         cell.setPointerCapture?.(e.pointerId);
         cell.style.opacity = "0.55";
@@ -1146,9 +1432,16 @@ function renderSimulator() {
 
       cell.addEventListener("pointerup", e => {
         if (!simState.drag || simState.drag.pointerId !== e.pointerId) return;
+
         cell.style.opacity = "";
-        const target = document.elementFromPoint(e.clientX, e.clientY);
+
+        const target = document.elementFromPoint(
+          e.clientX,
+          e.clientY
+        );
+
         const targetCell = target?.closest?.(".sim-slot");
+
         if (targetCell && targetCell !== cell) {
           const targetIndex =
             Number(targetCell.dataset.face) * slotsPerFace +
@@ -1159,6 +1452,7 @@ function renderSimulator() {
 
           renderSimulator();
         }
+
         simState.drag = null;
       });
 
@@ -1205,6 +1499,134 @@ document.getElementById("simDisplay").addEventListener("click", () => {
   simState.items = makeSimulatorList();
   renderSimulator();
 });
+
+
+// =========================
+// 空きマス → データ追加
+// =========================
+let addTargetIndex = -1;
+
+function openAddDataModal(index) {
+  addTargetIndex = index;
+
+  document.getElementById("addDataModal").style.display = "block";
+  document.getElementById("addDataMessage").textContent = "";
+
+  document.getElementById("addId").value = "";
+  document.getElementById("addName").value = "";
+  document.getElementById("addLocation").value = "";
+  document.getElementById("addDate").value = "";
+  document.getElementById("addType").value = "";
+  document.getElementById("addDetail").value = "";
+  document.getElementById("addBookNum").value = "";
+
+  setTimeout(() => {
+    document.getElementById("addId").focus();
+  }, 50);
+}
+
+function closeAddDataModal() {
+  document.getElementById("addDataModal").style.display = "none";
+  addTargetIndex = -1;
+}
+
+async function addSimulatorData() {
+  const id = document.getElementById("addId").value.trim();
+  const name = document.getElementById("addName").value.trim();
+  const location = document.getElementById("addLocation").value.trim();
+  const date = document.getElementById("addDate").value.trim();
+  const type = document.getElementById("addType").value.trim();
+  const detail = document.getElementById("addDetail").value.trim();
+  const bookNum = document.getElementById("addBookNum").value.trim();
+
+  const message = document.getElementById("addDataMessage");
+
+  if (!id) {
+    message.textContent = "管理番号を入力してください。";
+    return;
+  }
+
+  const numberOnly = getNumberOnly(id);
+
+  if (!numberOnly) {
+    message.textContent = "管理番号に数字がありません。";
+    return;
+  }
+
+  const masterDuplicate = masterData.some(
+    item => getNumberOnly(item.id) === numberOnly
+  );
+
+  const addedDuplicate = addedData.some(
+    item => getNumberOnly(item.id) === numberOnly
+  );
+
+  if (masterDuplicate || addedDuplicate) {
+    message.textContent =
+      `番号 ${numberOnly.padStart(4, "0")} はすでに登録されています。`;
+    return;
+  }
+
+  const item = {
+    id,
+    name,
+    location,
+    date,
+    type,
+    detail,
+    bookNum
+  };
+
+  try {
+    await saveAddedData(item);
+    addedData.push(item);
+
+    data = mergeData(masterData, addedData);
+
+    setupFilter();
+    createLocationSelect();
+    applyFilter();
+
+    if (addTargetIndex >= 0) {
+      simState.items[addTargetIndex] = item;
+    }
+
+    setupSimulatorRoman();
+    renderSimulator();
+    closeAddDataModal();
+
+  } catch (error) {
+    console.error("追加データ保存エラー", error);
+    message.textContent =
+      "保存できませんでした。もう一度試してください。";
+  }
+}
+
+document.getElementById("addDataClose")
+  .addEventListener("click", closeAddDataModal);
+
+document.getElementById("addDataCancel")
+  .addEventListener("click", closeAddDataModal);
+
+document.getElementById("addDataSave")
+  .addEventListener("click", addSimulatorData);
+
+document.querySelectorAll("#addDataModal input")
+  .forEach(input => {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addSimulatorData();
+      }
+    });
+  });
+
+document.getElementById("addDataModal")
+  .addEventListener("pointerdown", e => {
+    if (e.target.id === "addDataModal") {
+      closeAddDataModal();
+    }
+  });
 
 async function cacheImages(data) {
 
