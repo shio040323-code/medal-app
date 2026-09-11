@@ -579,7 +579,7 @@ style="
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">iPad追加データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
     </div>
   </div>
 </div>
@@ -1594,8 +1594,13 @@ async function addSimulatorData() {
     (!oldItem || item.id !== oldItem.id)
   );
 
-  if (masterDuplicate || addedDuplicate) {
-    message.textContent = `番号 ${numberOnly.padStart(4, "0")} はすでに登録されています。`;
+  if (masterDuplicate) {
+    message.textContent = `番号 ${numberOnly.padStart(4, "0")} はGitHubのdata.jsonに登録済みです。`;
+    return;
+  }
+
+  if (addedDuplicate) {
+    message.textContent = `番号 ${numberOnly.padStart(4, "0")} はiPad内に登録済みです。古いテストデータが残っている可能性があります。`;
     return;
   }
 
@@ -1681,10 +1686,41 @@ async function deleteCurrentAddedData() {
   }
 }
 
+async function clearAllAddedData() {
+  if (!confirm("iPad内に保存されている追加データをすべて削除します。\nGitHubのdata.jsonは削除されません。\n実行しますか？")) return;
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+      tx.objectStore(ADD_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+    addedData = [];
+    data = mergeData(masterData, addedData);
+    simState.items = simState.items.map(item => item?._local ? null : item);
+    setupFilter();
+    createLocationSelect();
+    filteredData = data;
+    currentPage = 1;
+    renderPage();
+    setupSimulatorRoman();
+    renderSimulator();
+    closeAddDataModal();
+    alert("iPad追加データをすべて削除しました。");
+  } catch (error) {
+    console.error("iPad追加データ全削除エラー:", error);
+    alert("削除できませんでした。");
+  }
+}
+
 document.getElementById("addDataClose").onclick = closeAddDataModal;
 document.getElementById("addDataCancel").onclick = closeAddDataModal;
 document.getElementById("addDataSave").onclick = addSimulatorData;
 document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
+document.getElementById("addDataClearAll").onclick = clearAllAddedData;
 
 document.getElementById("addDataModal").onclick = e => {
   if (e.target.id === "addDataModal") {
