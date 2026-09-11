@@ -436,6 +436,9 @@ img.noimage{
   opacity:.75;
 }
 #addDataModal.show{display:block;}
+
+.sim-book{margin:14px 0 22px;padding:10px;border:2px solid #888;border-radius:10px;background:#fafafa;}
+.sim-book-title{font-size:18px;font-weight:700;margin:0 0 8px;}
 </style>
 </head>
 
@@ -498,8 +501,13 @@ style="
 
       <label>bookNo.
         <select id="simRoman"></select>
+      </label>
 
-
+      <label>book数
+        <select id="simBooks">
+          <option value="1">1book</option>
+          <option value="2">2book</option>
+        </select>
       </label>
 
       <label>開始
@@ -1209,6 +1217,7 @@ updateFolderPath()
    ========================= */
 const simState = {
   faces: 3,
+  books: 1,
   items: [],
   drag: null
 };
@@ -1289,29 +1298,43 @@ function renderSimulator() {
   area.innerHTML = "";
 
   const slotsPerFace = 15;
+  const slotsPerBook = simState.faces * slotsPerFace;
 
-  for (let face = 0; face < simState.faces; face++) {
-    const faceBox = document.createElement("div");
-    faceBox.className = "sim-face";
+  // bookを増やしても元データは複製しません。
+  // 同じメダルデータを各bookのシミュレーションに参照します。
+  for (let book = 0; book < simState.books; book++) {
+    const bookBox = document.createElement("div");
+    bookBox.className = "sim-book";
 
-    const title = document.createElement("div");
-    title.className = "sim-face-title";
-    title.textContent = `${face + 1}面`;
-    faceBox.appendChild(title);
+    const bookTitle = document.createElement("div");
+    bookTitle.className = "sim-book-title";
+    bookTitle.textContent = `${book + 1}book`;
+    bookBox.appendChild(bookTitle);
 
-    const grid = document.createElement("div");
-    grid.className = "sim-grid";
+    for (let face = 0; face < simState.faces; face++) {
+      const faceBox = document.createElement("div");
+      faceBox.className = "sim-face";
 
-    for (let slot = 0; slot < slotsPerFace; slot++) {
-      const index = face * slotsPerFace + slot;
-      const item = simState.items[index];
+      const title = document.createElement("div");
+      title.className = "sim-face-title";
+      title.textContent = `${face + 1}面`;
+      faceBox.appendChild(title);
+
+      const grid = document.createElement("div");
+      grid.className = "sim-grid";
+
+      for (let slot = 0; slot < slotsPerFace; slot++) {
+        const index = book * slotsPerBook + face * slotsPerFace + slot;
+        const sourceIndex = face * slotsPerFace + slot;
+        const item = simState.items[index] ?? simState.items[sourceIndex];
 
       const cell = document.createElement("div");
       cell.className = "sim-slot" + (item ? "" : " empty");
       if (item?._local) cell.classList.add("local-data");
 
-      cell.dataset.face = String(face);
-      cell.dataset.slot = String(slot);
+        cell.dataset.book = String(book);
+        cell.dataset.face = String(face);
+        cell.dataset.slot = String(slot);
       cell.textContent = item ? simItemText(item) : "";
 
       if (!item) {
@@ -1359,7 +1382,9 @@ function renderSimulator() {
           const targetCell = target?.closest?.(".sim-slot");
 
           if (targetCell && targetCell !== cell) {
+            const targetBook = Number(targetCell.dataset.book || 0);
             const targetIndex =
+              targetBook * slotsPerBook +
               Number(targetCell.dataset.face) * slotsPerFace +
               Number(targetCell.dataset.slot);
 
@@ -1381,8 +1406,11 @@ function renderSimulator() {
       grid.appendChild(cell);
     }
 
-    faceBox.appendChild(grid);
-    area.appendChild(faceBox);
+      faceBox.appendChild(grid);
+      bookBox.appendChild(faceBox);
+    }
+
+    area.appendChild(bookBox);
   }
 }
 
@@ -1390,7 +1418,15 @@ function openSimulator() {
   document.getElementById("simulator").style.display = "block";
   setupSimulatorRoman();
   simState.faces = Number(document.getElementById("simFaces").value || 3);
+  simState.books = Number(document.getElementById("simBooks")?.value || 1);
   simState.items = makeSimulatorList();
+  // 2bookでも元データを複製せず、同じ配列要素を参照して配置します。
+  if (simState.books > 1) {
+    const base = simState.items.slice();
+    for (let b = 1; b < simState.books; b++) {
+      simState.items.push(...base);
+    }
+  }
   renderSimulator();
 }
 
@@ -1409,11 +1445,23 @@ document.getElementById("simFaces").addEventListener("change", () => {
 
 document.getElementById("simRoman").addEventListener("change", () => {
   simState.items = makeSimulatorList();
+  const base = simState.items.slice();
+  for (let b = 1; b < simState.books; b++) simState.items.push(...base);
+  renderSimulator();
+});
+
+document.getElementById("simBooks").addEventListener("change", () => {
+  simState.books = Number(document.getElementById("simBooks").value || 1);
+  simState.items = makeSimulatorList();
+  const base = simState.items.slice();
+  for (let b = 1; b < simState.books; b++) simState.items.push(...base);
   renderSimulator();
 });
 
 document.getElementById("simDisplay").addEventListener("click", () => {
   simState.items = makeSimulatorList();
+  const base = simState.items.slice();
+  for (let b = 1; b < simState.books; b++) simState.items.push(...base);
   renderSimulator();
 });
 
