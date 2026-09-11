@@ -800,42 +800,6 @@ function saveAddedData(item) {
   });
 }
 
-loadData() {
-  try {
-    const response = await fetch("./data.json", {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `data.json読み込みエラー: ${response.status}`
-      );
-    }
-
-    data = await response.json();
-
-setupFilter();
-createLocationSelect();
-
-filteredData = data;
-
-currentPage = Math.max(
-  1,
-  Math.ceil(filteredData.length / pageSize)
-);
-
-renderPage();
-
-cacheImages(data);
-
-    console.log("最新のdata.jsonを読み込みました");
-  } catch (error) {
-    console.error(
-      "data.jsonの読み込みに失敗しました",
-      error
-    );
-  }
-}
 
 loadData()
 
