@@ -520,13 +520,6 @@ style="
         <select id="simRoman"></select>
       </label>
 
-      <label>book数
-        <select id="simBooks">
-          <option value="1">1book</option>
-          <option value="2">2book</option>
-        </select>
-      </label>
-
       <div id="simBookTabs" class="sim-book-tabs" style="display:none;">
         <button type="button" data-book-view="0" class="active">1book</button>
         <button type="button" data-book-view="1">2book</button>
@@ -1710,7 +1703,7 @@ async function clearAllAddedData() {
     setupFilter();
     createLocationSelect();
     filteredData = data;
-    currentPage = 1;
+    currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
     renderPage();
     setupSimulatorRoman();
     renderSimulator();
