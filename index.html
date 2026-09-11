@@ -1312,6 +1312,11 @@ function renderSimulator() {
   const area = document.getElementById("simFacesArea");
   if (!area) return;
 
+  // 再描画してもシミュレーターのスクロール位置を維持する
+  const simulator = document.getElementById("simulator");
+  const savedScrollTop = simulator ? simulator.scrollTop : 0;
+  const savedScrollLeft = simulator ? simulator.scrollLeft : 0;
+
   area.innerHTML = "";
 
   const slotsPerFace = 15;
@@ -1422,6 +1427,14 @@ function renderSimulator() {
     }
 
     area.appendChild(bookBox);
+  }
+
+  // DOM再生成後に元の位置へ戻す
+  if (simulator) {
+    requestAnimationFrame(() => {
+      simulator.scrollTop = savedScrollTop;
+      simulator.scrollLeft = savedScrollLeft;
+    });
   }
 }
 
