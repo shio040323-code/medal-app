@@ -1266,11 +1266,16 @@ function setupSimulatorRoman() {
     data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
   )];
 
-  // bookNo.は大きい番号から小さい番号へ降順
+  // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
   romans.sort((a, b) => {
-    const na = romanToNumber(a);
-    const nb = romanToNumber(b);
-    return nb - na;
+    const na = Number(a);
+    const nb = Number(b);
+
+    if (Number.isFinite(na) && Number.isFinite(nb)) {
+      return nb - na;
+    }
+
+    return romanToNumber(b) - romanToNumber(a);
   });
 
   select.innerHTML = '<option value="">すべて</option>';
