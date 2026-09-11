@@ -426,6 +426,15 @@ img.noimage{
   margin-top: 8px;
 }
 
+
+.add-delete-button{
+  background:#c62828 !important;
+  color:#fff !important;
+  border:none;
+}
+.add-delete-button:active{
+  opacity:.75;
+}
 </style>
 </head>
 
@@ -601,6 +610,7 @@ style="
 
       <div class="add-data-buttons">
         <button type="button" id="addDataCancel">キャンセル</button>
+        <button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button>
         <button type="button" id="addDataSave">このマスに追加</button>
       </div>
     </div>
@@ -1415,6 +1425,9 @@ function renderSimulator() {
             [simState.items[targetIndex], simState.items[index]];
 
           renderSimulator();
+        } else if (targetCell === cell && simState.items[index]?._local) {
+          // iPadで追加したデータは、同じマスをタップすると入力画面を開いて削除できる
+          openAddDataModal(index, true);
         }
 
         simState.drag = null;
@@ -1470,23 +1483,72 @@ document.getElementById("simDisplay").addEventListener("click", () => {
 // =========================
 let addTargetIndex = -1;
 
-function openAddDataModal(index) {
-  addTargetIndex = index;
 
-  document.getElementById("addDataModal").style.display = "block";
-  document.getElementById("addDataMessage").textContent = "";
+function updateAddDataModalTitle(editMode) {
+  const title = document.querySelector("#addDataModal h3, #addDataModal .modal-title");
+  if (title) title.textContent = editMode ? "入力データを削除" : "データ入力";
+}
 
-  document.getElementById("addId").value = "";
-  document.getElementById("addName").value = "";
-  document.getElementById("addLocation").value = "";
-  document.getElementById("addDate").value = "";
-  document.getElementById("addType").value = "";
-  document.getElementById("addDetail").value = "";
-  document.getElementById("addBookNum").value = "";
+function openAddDataModal(index, editMode = false) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
 
-  setTimeout(() => {
-    document.getElementById("addId").focus();
-  }, 50);
+  const item = editMode ? simState.items[index] : null;
+
+  const idPrefix = document.getElementById("addIdPrefix");
+  const idNumber = document.getElementById("addIdNumber");
+  const nameInput = document.getElementById("addName");
+  const typeSelect = document.getElementById("addType");
+  const detailInput = document.getElementById("addDetail");
+  const bookNumSelect = document.getElementById("addBookNum");
+  const deleteButton = document.getElementById("addDataDelete");
+  const saveButton = document.getElementById("addDataSave");
+
+  // 種類・ローマ数字の選択肢を現在のデータから作成
+  if (typeof setupAddTypeSelect === "function") setupAddTypeSelect();
+  if (typeof setupAddBookNumSelect === "function") setupAddBookNumSelect();
+
+  if (item) {
+    const idMatch = String(item.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+    if (idMatch) {
+      idPrefix.value = idMatch[1];
+      idNumber.value = idMatch[2];
+    } else {
+      idPrefix.value = "L";
+      idNumber.value = "";
+    }
+
+    if (nameInput) nameInput.value = item.name || "";
+    if (typeSelect) typeSelect.value = item.type || "";
+    if (detailInput) detailInput.value = item.detail || "";
+
+    if (bookNumSelect) {
+      const bookNum = String(item.bookNum ?? "");
+      bookNumSelect.value = bookNum;
+    }
+
+    if (deleteButton) {
+      deleteButton.style.display = item._local ? "" : "none";
+    }
+    if (saveButton) {
+      saveButton.textContent = "このデータを更新";
+    }
+  } else {
+    if (idPrefix) idPrefix.value = "L";
+    if (idNumber) idNumber.value = "";
+    if (nameInput) nameInput.value = "";
+    if (typeSelect) typeSelect.selectedIndex = typeSelect.options.length > 1 ? 1 : 0;
+    if (detailInput) detailInput.value = "";
+    if (bookNumSelect) bookNumSelect.value = "1";
+
+    if (deleteButton) deleteButton.style.display = "none";
+    if (saveButton) saveButton.textContent = "このマスに追加";
+  }
+
+  modal.dataset.simIndex = String(index);
+  modal.dataset.editMode = editMode ? "1" : "0";
+  updateAddDataModalTitle(editMode);
+  modal.classList.add("show");
 }
 
 function closeAddDataModal() {
