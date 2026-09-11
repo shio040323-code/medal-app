@@ -564,7 +564,7 @@ style="
     </div>
 
     <div class="sim-help">
-      メダルを長押しして別のマスへ移動すると、2つのメダルを入れ替えできます。
+      空きマスをタップすると入力できます。iPadで追加したメダルをタップすると入力画面から削除できます。ドラッグすると配置を入れ替えできます。
     </div>
     <div id="simFacesArea"></div>
   </div>
@@ -578,8 +578,7 @@ style="
       <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
-      <label>ローマ数字<select id="addBookNum" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
-      <div id="addDataMessage" class="add-data-message"></div>
+<div id="addDataMessage" class="add-data-message"></div>
       <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
     </div>
   </div>
@@ -1360,14 +1359,12 @@ function renderSimulator() {
       cell.dataset.slot = String(slot);
       cell.textContent = item ? simItemText(item) : "";
 
-      // 空きマスは「click」で入力画面を開く
-      // pointerdown では開かないので、iPadでの誤動作を減らす
       if (!item) {
+        // 空きマスは単純なタップで入力画面
         cell.addEventListener("click", () => {
           openAddDataModal(index, false);
         });
       } else {
-        // データがあるマスはドラッグして入れ替え
         cell.addEventListener("pointerdown", e => {
           if (e.pointerType === "mouse" && e.button !== 0) return;
 
@@ -1388,10 +1385,22 @@ function renderSimulator() {
 
           cell.style.opacity = "";
 
-          const target = document.elementFromPoint(
-            e.clientX,
-            e.clientY
-          );
+          const dx = e.clientX - drag.startX;
+          const dy = e.clientY - drag.startY;
+          const moved = Math.sqrt(dx * dx + dy * dy) > 12;
+
+          // 動かしていない = タップ
+          // iPadで追加したデータなら入力画面を開く
+          if (!moved) {
+            if (item._local) {
+              openAddDataModal(index, true);
+            }
+            simState.drag = null;
+            return;
+          }
+
+          // 動かした場合だけ入れ替え処理
+          const target = document.elementFromPoint(e.clientX, e.clientY);
           const targetCell = target?.closest?.(".sim-slot");
 
           if (targetCell && targetCell !== cell) {
@@ -1403,9 +1412,6 @@ function renderSimulator() {
               [simState.items[targetIndex], simState.items[index]];
 
             renderSimulator();
-          } else if (targetCell === cell && item._local) {
-            // iPad追加データだけ、同じマスをタップすると入力画面を開く
-            openAddDataModal(index, true);
           }
 
           simState.drag = null;
@@ -1488,24 +1494,6 @@ function setupAddTypeSelect() {
   });
 }
 
-function setupAddBookNumSelect() {
-  const select = document.getElementById("addBookNum");
-  if (!select) return;
-
-  const nums = (Array.isArray(data) ? data : [])
-    .map(item => Number(item.bookNum))
-    .filter(n => Number.isFinite(n) && n > 0);
-
-  const max = Math.max(20, ...(nums.length ? nums : [1]));
-
-  select.innerHTML = "";
-  for (let n = 1; n <= max; n++) {
-    const option = document.createElement("option");
-    option.value = String(n);
-    option.textContent = toRoman(n);
-    select.appendChild(option);
-  }
-}
 
 function openAddDataModal(index, editMode = false) {
   const modal = document.getElementById("addDataModal");
@@ -1514,13 +1502,11 @@ function openAddDataModal(index, editMode = false) {
   const item = editMode ? simState.items[index] : null;
 
   setupAddTypeSelect();
-  setupAddBookNumSelect();
 
   const prefix = document.getElementById("addIdPrefix");
   const number = document.getElementById("addIdNumber");
   const type = document.getElementById("addType");
   const detail = document.getElementById("addDetail");
-  const bookNum = document.getElementById("addBookNum");
   const deleteButton = document.getElementById("addDataDelete");
   const saveButton = document.getElementById("addDataSave");
   const message = document.getElementById("addDataMessage");
@@ -1535,7 +1521,6 @@ function openAddDataModal(index, editMode = false) {
     number.value = m?.[2] || "";
     type.value = item.type || "";
     detail.value = item.detail || "";
-    bookNum.value = String(item.bookNum || "1");
 
     // GitHubの元データには削除ボタンを出さない
     deleteButton.style.display = item._local ? "block" : "none";
@@ -1546,7 +1531,6 @@ function openAddDataModal(index, editMode = false) {
     number.value = "";
     type.value = "";
     detail.value = "";
-    bookNum.value = "1";
 
     deleteButton.style.display = "none";
     saveButton.textContent = "このマスに追加";
@@ -1584,7 +1568,7 @@ async function addSimulatorData() {
 
   const type = document.getElementById("addType").value.trim();
   const detail = document.getElementById("addDetail").value.trim();
-  const bookNum = Number(document.getElementById("addBookNum").value || 1);
+  const bookNum = 1;
   const message = document.getElementById("addDataMessage");
 
   if (!rawNumber) {
