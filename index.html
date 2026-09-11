@@ -520,7 +520,7 @@ style="
         <select id="simRoman"></select>
       </label>
 
-      <div id="simBookTabs" class="sim-book-tabs" style="display:none;">
+      <div id="simBookTabs" class="sim-book-tabs">
         <button type="button" data-book-view="0" class="active">1book</button>
         <button type="button" data-book-view="1">2book</button>
       </div>
@@ -628,13 +628,12 @@ async function loadData() {
 
     filteredData = data;
 
+    // アプリ起動時は必ずメイン画面の最終ページを表示
     currentPage = Math.max(
       1,
-      Math.min(
-        parseInt(localStorage.getItem("currentPage")) || 1,
-        Math.max(1, Math.ceil(filteredData.length / pageSize))
-      )
+      Math.ceil(filteredData.length / pageSize)
     );
+    localStorage.setItem("currentPage", currentPage);
 
     renderPage();
     setupSimulatorRoman();
@@ -651,6 +650,9 @@ async function loadData() {
       setupFilter();
       createLocationSelect();
       filteredData = data;
+      // オフライン起動時も最終ページを表示
+      currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
+      localStorage.setItem("currentPage", currentPage);
       renderPage();
       setupSimulatorRoman();
     } catch (e) {
@@ -1472,7 +1474,8 @@ function openSimulator() {
   document.getElementById("simulator").style.display = "block";
   setupSimulatorRoman();
   simState.faces = Number(document.getElementById("simFaces").value || 3);
-  simState.books = Number(document.getElementById("simBooks")?.value || 1);
+  // book数プルダウンは廃止。常に1book/2bookをタブで切り替える。
+  simState.books = 2;
   simState.currentBook = 0;
   simState.bookItems = [];
   buildSimulatorBooks();
@@ -1493,22 +1496,6 @@ document.getElementById("simFaces").addEventListener("change", () => {
 });
 
 document.getElementById("simRoman").addEventListener("change", () => {
-  buildSimulatorBooks();
-  renderSimulator();
-});
-
-document.getElementById("simBooks").addEventListener("change", () => {
-  const oldBookCount = simState.books;
-  simState.books = Number(document.getElementById("simBooks").value || 1);
-
-  // 2bookを追加したときは、2book画面へ切り替える。
-  // 2bookは空のまま開始し、すでに入力した内容は保持する。
-  if (simState.books >= 2 && oldBookCount < 2) {
-    simState.currentBook = 1;
-  } else if (simState.books === 1) {
-    simState.currentBook = 0;
-  }
-
   buildSimulatorBooks();
   renderSimulator();
 });
