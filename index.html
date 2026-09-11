@@ -861,10 +861,7 @@ function createLocationSelect() {
 
 
   // 店舗が変更されたとき
-  nameSelect.addEventListener(
-    "change",
-    applyFilter
-  )
+  nameSelect.onchange = applyFilter
 
 
   // 最初の店舗一覧を作る
@@ -1333,9 +1330,12 @@ function simItemText(item) {
 
 function renderSimulator() {
   const area = document.getElementById("simFacesArea");
+  if (!area) return;
+
   area.innerHTML = "";
 
   const slotsPerFace = 15;
+
   for (let face = 0; face < simState.faces; face++) {
     const faceBox = document.createElement("div");
     faceBox.className = "sim-face";
@@ -1354,57 +1354,68 @@ function renderSimulator() {
 
       const cell = document.createElement("div");
       cell.className = "sim-slot" + (item ? "" : " empty");
+      if (item?._local) cell.classList.add("local-data");
+
       cell.dataset.face = String(face);
       cell.dataset.slot = String(slot);
       cell.textContent = item ? simItemText(item) : "";
 
-      cell.addEventListener("pointerdown", e => {
-        // 空きマスはタップでデータ入力
-        if (!simState.items[index]) {
-          e.preventDefault();
-          openAddDataModal(index);
-          return;
-        }
+      // 空きマスは「click」で入力画面を開く
+      // pointerdown では開かないので、iPadでの誤動作を減らす
+      if (!item) {
+        cell.addEventListener("click", () => {
+          openAddDataModal(index, false);
+        });
+      } else {
+        // データがあるマスはドラッグして入れ替え
+        cell.addEventListener("pointerdown", e => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
 
-        // データがあるマスは従来どおり入れ替え
-        simState.drag = { index, pointerId: e.pointerId };
-        cell.setPointerCapture?.(e.pointerId);
-        cell.style.opacity = "0.55";
-      });
+          simState.drag = {
+            index,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY
+          };
 
-      cell.addEventListener("pointerup", e => {
-        if (!simState.drag || simState.drag.pointerId !== e.pointerId) return;
+          cell.setPointerCapture?.(e.pointerId);
+          cell.style.opacity = "0.55";
+        });
 
-        cell.style.opacity = "";
+        cell.addEventListener("pointerup", e => {
+          const drag = simState.drag;
+          if (!drag || drag.pointerId !== e.pointerId) return;
 
-        const target = document.elementFromPoint(
-          e.clientX,
-          e.clientY
-        );
+          cell.style.opacity = "";
 
-        const targetCell = target?.closest?.(".sim-slot");
+          const target = document.elementFromPoint(
+            e.clientX,
+            e.clientY
+          );
+          const targetCell = target?.closest?.(".sim-slot");
 
-        if (targetCell && targetCell !== cell) {
-          const targetIndex =
-            Number(targetCell.dataset.face) * slotsPerFace +
-            Number(targetCell.dataset.slot);
+          if (targetCell && targetCell !== cell) {
+            const targetIndex =
+              Number(targetCell.dataset.face) * slotsPerFace +
+              Number(targetCell.dataset.slot);
 
-          [simState.items[index], simState.items[targetIndex]] =
-            [simState.items[targetIndex], simState.items[index]];
+            [simState.items[index], simState.items[targetIndex]] =
+              [simState.items[targetIndex], simState.items[index]];
 
-          renderSimulator();
-        } else if (targetCell === cell && simState.items[index]?._local) {
-          // iPadで追加したデータは、同じマスをタップすると入力画面を開いて削除できる
-          openAddDataModal(index, true);
-        }
+            renderSimulator();
+          } else if (targetCell === cell && item._local) {
+            // iPad追加データだけ、同じマスをタップすると入力画面を開く
+            openAddDataModal(index, true);
+          }
 
-        simState.drag = null;
-      });
+          simState.drag = null;
+        });
 
-      cell.addEventListener("pointercancel", () => {
-        cell.style.opacity = "";
-        simState.drag = null;
-      });
+        cell.addEventListener("pointercancel", () => {
+          cell.style.opacity = "";
+          simState.drag = null;
+        });
+      }
 
       grid.appendChild(cell);
     }
@@ -1450,13 +1461,252 @@ document.getElementById("simDisplay").addEventListener("click", () => {
 // 空きマス → データ追加
 // =========================
 let addTargetIndex = -1;
-function setupAddTypeSelect(){const el=document.getElementById("addType");if(!el)return;const types=[...new Set((data||[]).map(x=>String(x.type||"").trim()).filter(Boolean))];if(!types.length)types.push("ﾚｷﾞｭﾗｰ");el.innerHTML='<option value="">種類を選択</option>';types.forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;el.appendChild(o);});}
-function setupAddBookNumSelect(){const el=document.getElementById("addBookNum");if(!el)return;const max=Math.max(20,...(data||[]).map(x=>Number(x.bookNum)||0));el.innerHTML="";for(let n=1;n<=max;n++){const o=document.createElement("option");o.value=n;o.textContent=toRoman(n);el.appendChild(o);}}
-function openAddDataModal(index,editMode=false){const modal=document.getElementById("addDataModal");if(!modal)return;const item=editMode?simState.items[index]:null;setupAddTypeSelect();setupAddBookNumSelect();const p=document.getElementById("addIdPrefix"),n=document.getElementById("addIdNumber"),t=document.getElementById("addType"),d=document.getElementById("addDetail"),b=document.getElementById("addBookNum"),del=document.getElementById("addDataDelete"),save=document.getElementById("addDataSave"),msg=document.getElementById("addDataMessage");msg.textContent="";if(item){const m=String(item.id||"").match(/^([A-Za-z]+)-(\d+)$/);p.value=m?m[1]:"L";n.value=m?m[2]:"";t.value=item.type||"";d.value=item.detail||"";b.value=String(item.bookNum||1);del.style.display=item._local?"":"none";save.textContent="更新";document.getElementById("addDataTitle").textContent="入力データ";}else{p.value="L";n.value="";t.value="";d.value="";b.value="1";del.style.display="none";save.textContent="このマスに追加";document.getElementById("addDataTitle").textContent="メダルデータを追加";}modal.dataset.simIndex=String(index);modal.dataset.editMode=editMode?"1":"0";modal.classList.add("show");}
-function closeAddDataModal(){const m=document.getElementById("addDataModal");m.classList.remove("show");m.style.display="none";addTargetIndex=-1;}
-async function addSimulatorData(){const modal=document.getElementById("addDataModal"),index=Number(modal.dataset.simIndex),edit=modal.dataset.editMode==="1";const prefix=document.getElementById("addIdPrefix").value,raw=document.getElementById("addIdNumber").value.normalize("NFKC").replace(/\D/g,"");const type=document.getElementById("addType").value.trim(),detail=document.getElementById("addDetail").value.trim(),bookNum=Number(document.getElementById("addBookNum").value||1),msg=document.getElementById("addDataMessage");if(!raw){msg.textContent="管理番号の数字を入力してください。";return;}if(!type){msg.textContent="種類を選択してください。";return;}const id=`${prefix}-${raw.padStart(4,"0")}`,num=getNumberOnly(id),old=edit?simState.items[index]:null;if(masterData.some(x=>getNumberOnly(x.id)===num)||addedData.some(x=>getNumberOnly(x.id)===num&&(!old||x.id!==old.id))){msg.textContent=`番号 ${num.padStart(4,"0")} はすでに登録されています。`;return;}const item={id,name:old?.name||"",location:old?.location||"",date:old?.date||"",type,detail,bookNum,_local:true};try{if(old&&old.id!==id){const db=await openAddedDB();await new Promise((res,rej)=>{const tx=db.transaction(ADD_STORE_NAME,"readwrite");tx.objectStore(ADD_STORE_NAME).delete(old.id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});db.close();}await saveAddedData(item);addedData=addedData.filter(x=>!old||x.id!==old.id).filter(x=>x.id!==id);addedData.push(item);data=mergeData(masterData,addedData);setupFilter();createLocationSelect();applyFilter();if(index>=0)simState.items[index]=item;setupSimulatorRoman();renderSimulator();closeAddDataModal();}catch(e){console.error(e);msg.textContent="保存できませんでした。";}}
-async function deleteCurrentAddedData(){const modal=document.getElementById("addDataModal"),index=Number(modal.dataset.simIndex),item=simState.items[index];if(!item||!item._local)return;if(!confirm(`「${item.id}」を削除しますか？`))return;try{const db=await openAddedDB();await new Promise((res,rej)=>{const tx=db.transaction(ADD_STORE_NAME,"readwrite");tx.objectStore(ADD_STORE_NAME).delete(item.id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});db.close();addedData=addedData.filter(x=>x.id!==item.id);data=mergeData(masterData,addedData);simState.items[index]=null;setupFilter();createLocationSelect();applyFilter();setupSimulatorRoman();renderSimulator();closeAddDataModal();}catch(e){console.error(e);alert("削除できませんでした。");}}
-document.getElementById("addDataClose").addEventListener("click",closeAddDataModal);document.getElementById("addDataCancel").addEventListener("click",closeAddDataModal);document.getElementById("addDataSave").addEventListener("click",addSimulatorData);document.getElementById("addDataDelete").addEventListener("click",deleteCurrentAddedData);document.getElementById("addDataModal").addEventListener("pointerdown",e=>{if(e.target.id==="addDataModal")closeAddDataModal();});
+
+function setupAddTypeSelect() {
+  const select = document.getElementById("addType");
+  if (!select) return;
+
+  const types = [...new Set(
+    (Array.isArray(data) ? data : [])
+      .map(item => String(item.type || "").trim())
+      .filter(Boolean)
+  )];
+
+  if (!types.length) types.push("ﾚｷﾞｭﾗｰ");
+
+  select.innerHTML = "";
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = "種類を選択";
+  select.appendChild(first);
+
+  types.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    select.appendChild(option);
+  });
+}
+
+function setupAddBookNumSelect() {
+  const select = document.getElementById("addBookNum");
+  if (!select) return;
+
+  const nums = (Array.isArray(data) ? data : [])
+    .map(item => Number(item.bookNum))
+    .filter(n => Number.isFinite(n) && n > 0);
+
+  const max = Math.max(20, ...(nums.length ? nums : [1]));
+
+  select.innerHTML = "";
+  for (let n = 1; n <= max; n++) {
+    const option = document.createElement("option");
+    option.value = String(n);
+    option.textContent = toRoman(n);
+    select.appendChild(option);
+  }
+}
+
+function openAddDataModal(index, editMode = false) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
+
+  const item = editMode ? simState.items[index] : null;
+
+  setupAddTypeSelect();
+  setupAddBookNumSelect();
+
+  const prefix = document.getElementById("addIdPrefix");
+  const number = document.getElementById("addIdNumber");
+  const type = document.getElementById("addType");
+  const detail = document.getElementById("addDetail");
+  const bookNum = document.getElementById("addBookNum");
+  const deleteButton = document.getElementById("addDataDelete");
+  const saveButton = document.getElementById("addDataSave");
+  const message = document.getElementById("addDataMessage");
+  const title = document.getElementById("addDataTitle");
+
+  if (message) message.textContent = "";
+
+  if (item) {
+    const m = String(item.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+
+    prefix.value = m?.[1] || "L";
+    number.value = m?.[2] || "";
+    type.value = item.type || "";
+    detail.value = item.detail || "";
+    bookNum.value = String(item.bookNum || "1");
+
+    // GitHubの元データには削除ボタンを出さない
+    deleteButton.style.display = item._local ? "block" : "none";
+    saveButton.textContent = "更新";
+    title.textContent = "入力データ";
+  } else {
+    prefix.value = "L";
+    number.value = "";
+    type.value = "";
+    detail.value = "";
+    bookNum.value = "1";
+
+    deleteButton.style.display = "none";
+    saveButton.textContent = "このマスに追加";
+    title.textContent = "メダルデータを追加";
+  }
+
+  modal.dataset.simIndex = String(index);
+  modal.dataset.editMode = editMode ? "1" : "0";
+  modal.style.display = "block";
+
+  // iPadで数字入力欄をすぐ操作できるようにする
+  if (!editMode) {
+    setTimeout(() => number.focus(), 50);
+  }
+}
+
+function closeAddDataModal() {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
+
+  modal.style.display = "none";
+  modal.dataset.simIndex = "-1";
+  modal.dataset.editMode = "0";
+}
+
+async function addSimulatorData() {
+  const modal = document.getElementById("addDataModal");
+  const index = Number(modal.dataset.simIndex);
+  const editMode = modal.dataset.editMode === "1";
+
+  const prefix = document.getElementById("addIdPrefix").value;
+  const rawNumber = document.getElementById("addIdNumber").value
+    .normalize("NFKC")
+    .replace(/\D/g, "");
+
+  const type = document.getElementById("addType").value.trim();
+  const detail = document.getElementById("addDetail").value.trim();
+  const bookNum = Number(document.getElementById("addBookNum").value || 1);
+  const message = document.getElementById("addDataMessage");
+
+  if (!rawNumber) {
+    message.textContent = "管理番号の数字を入力してください。";
+    return;
+  }
+
+  if (!type) {
+    message.textContent = "種類を選択してください。";
+    return;
+  }
+
+  const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
+  const numberOnly = getNumberOnly(id);
+  const oldItem = editMode ? simState.items[index] : null;
+
+  const masterDuplicate = masterData.some(
+    item => getNumberOnly(item.id) === numberOnly
+  );
+
+  const addedDuplicate = addedData.some(item =>
+    getNumberOnly(item.id) === numberOnly &&
+    (!oldItem || item.id !== oldItem.id)
+  );
+
+  if (masterDuplicate || addedDuplicate) {
+    message.textContent = `番号 ${numberOnly.padStart(4, "0")} はすでに登録されています。`;
+    return;
+  }
+
+  const item = {
+    id,
+    name: oldItem?.name || "",
+    location: oldItem?.location || "",
+    date: oldItem?.date || "",
+    type,
+    detail,
+    bookNum,
+    _local: true
+  };
+
+  try {
+    await saveAddedData(item);
+
+    if (oldItem) {
+      addedData = addedData.filter(x => x.id !== oldItem.id);
+    }
+    addedData = addedData.filter(x => x.id !== item.id);
+    addedData.push(item);
+
+    data = mergeData(masterData, addedData);
+
+    setupFilter();
+    createLocationSelect();
+    filteredData = data;
+    currentPage = 1;
+    renderPage();
+
+    simState.items[index] = item;
+
+    setupSimulatorRoman();
+    renderSimulator();
+    closeAddDataModal();
+
+  } catch (error) {
+    console.error("iPadデータ保存エラー:", error);
+    message.textContent = "保存できませんでした。";
+  }
+}
+
+async function deleteCurrentAddedData() {
+  const modal = document.getElementById("addDataModal");
+  const index = Number(modal.dataset.simIndex);
+  const item = simState.items[index];
+
+  if (!item || !item._local) return;
+
+  if (!confirm(`「${item.id}」を削除しますか？`)) return;
+
+  try {
+    const db = await openAddedDB();
+
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+      tx.objectStore(ADD_STORE_NAME).delete(item.id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+
+    db.close();
+
+    addedData = addedData.filter(x => x.id !== item.id);
+    data = mergeData(masterData, addedData);
+
+    simState.items[index] = null;
+
+    setupFilter();
+    createLocationSelect();
+    filteredData = data;
+    currentPage = 1;
+    renderPage();
+
+    setupSimulatorRoman();
+    renderSimulator();
+    closeAddDataModal();
+
+  } catch (error) {
+    console.error("iPadデータ削除エラー:", error);
+    alert("削除できませんでした。");
+  }
+}
+
+document.getElementById("addDataClose").onclick = closeAddDataModal;
+document.getElementById("addDataCancel").onclick = closeAddDataModal;
+document.getElementById("addDataSave").onclick = addSimulatorData;
+document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
+
+document.getElementById("addDataModal").onclick = e => {
+  if (e.target.id === "addDataModal") {
+    closeAddDataModal();
+  }
+};
 
 async function cacheImages(data) {
 
