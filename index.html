@@ -1219,6 +1219,7 @@ const simState = {
   faces: 3,
   books: 1,
   items: [],
+  bookItems: [],
   drag: null
 };
 
@@ -1291,6 +1292,22 @@ function simItemText(item) {
   ].filter(Boolean).join("\n");
 }
 
+function buildSimulatorBooks() {
+  const base = makeSimulatorList();
+
+  // 1book：選択した既存データを配置候補にする
+  // 2book：最初は完全に空。ここへシミュレーター上だけで追加する。
+  simState.bookItems = [];
+  simState.bookItems.push(base.slice());
+
+  for (let book = 1; book < simState.books; book++) {
+    simState.bookItems.push([]);
+  }
+
+  // 旧コードとの互換用
+  simState.items = simState.bookItems[0];
+}
+
 function renderSimulator() {
   const area = document.getElementById("simFacesArea");
   if (!area) return;
@@ -1298,10 +1315,8 @@ function renderSimulator() {
   area.innerHTML = "";
 
   const slotsPerFace = 15;
-  const slotsPerBook = simState.faces * slotsPerFace;
+  const bookItems = Array.isArray(simState.bookItems) ? simState.bookItems : [];
 
-  // bookを増やしても元データは複製しません。
-  // 同じメダルデータを各bookのシミュレーションに参照します。
   for (let book = 0; book < simState.books; book++) {
     const bookBox = document.createElement("div");
     bookBox.className = "sim-book";
@@ -1310,6 +1325,8 @@ function renderSimulator() {
     bookTitle.className = "sim-book-title";
     bookTitle.textContent = `${book + 1}book`;
     bookBox.appendChild(bookTitle);
+
+    const currentBook = bookItems[book] || [];
 
     for (let face = 0; face < simState.faces; face++) {
       const faceBox = document.createElement("div");
@@ -1324,87 +1341,81 @@ function renderSimulator() {
       grid.className = "sim-grid";
 
       for (let slot = 0; slot < slotsPerFace; slot++) {
-        const index = book * slotsPerBook + face * slotsPerFace + slot;
-        const sourceIndex = face * slotsPerFace + slot;
-        const item = simState.items[index] ?? simState.items[sourceIndex];
+        const index = face * slotsPerFace + slot;
+        const item = currentBook[index] || null;
 
-      const cell = document.createElement("div");
-      cell.className = "sim-slot" + (item ? "" : " empty");
-      if (item?._local) cell.classList.add("local-data");
+        const cell = document.createElement("div");
+        cell.className = "sim-slot" + (item ? "" : " empty");
+        if (item?._local) cell.classList.add("local-data");
 
         cell.dataset.book = String(book);
         cell.dataset.face = String(face);
         cell.dataset.slot = String(slot);
-      cell.textContent = item ? simItemText(item) : "";
+        cell.textContent = item ? simItemText(item) : "";
 
-      if (!item) {
-        // 空きマスは単純なタップで入力画面
-        cell.addEventListener("click", () => {
-          openAddDataModal(index, false);
-        });
-      } else {
-        cell.addEventListener("pointerdown", e => {
-          if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (!item) {
+          cell.addEventListener("click", () => {
+            // 空きマスへのiPad追加は、このbookのこの位置に入れる
+            openAddDataModal(index, false, book);
+          });
+        } else {
+          cell.addEventListener("pointerdown", e => {
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+            simState.drag = {
+              book,
+              index,
+              pointerId: e.pointerId,
+              startX: e.clientX,
+              startY: e.clientY
+            };
+            cell.setPointerCapture?.(e.pointerId);
+            cell.style.opacity = "0.55";
+          });
 
-          simState.drag = {
-            index,
-            pointerId: e.pointerId,
-            startX: e.clientX,
-            startY: e.clientY
-          };
+          cell.addEventListener("pointerup", e => {
+            const drag = simState.drag;
+            if (!drag || drag.pointerId !== e.pointerId) return;
+            cell.style.opacity = "";
 
-          cell.setPointerCapture?.(e.pointerId);
-          cell.style.opacity = "0.55";
-        });
+            const dx = e.clientX - drag.startX;
+            const dy = e.clientY - drag.startY;
+            const moved = Math.sqrt(dx * dx + dy * dy) > 12;
 
-        cell.addEventListener("pointerup", e => {
-          const drag = simState.drag;
-          if (!drag || drag.pointerId !== e.pointerId) return;
-
-          cell.style.opacity = "";
-
-          const dx = e.clientX - drag.startX;
-          const dy = e.clientY - drag.startY;
-          const moved = Math.sqrt(dx * dx + dy * dy) > 12;
-
-          // 動かしていない = タップ
-          // iPadで追加したデータなら入力画面を開く
-          if (!moved) {
-            if (item._local) {
-              openAddDataModal(index, true);
+            if (!moved) {
+              if (item._local) {
+                openAddDataModal(index, true, book);
+              }
+              simState.drag = null;
+              return;
             }
+
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const targetCell = target?.closest?.(".sim-slot");
+
+            if (targetCell && targetCell !== cell) {
+              const targetBook = Number(targetCell.dataset.book || 0);
+              const targetIndex =
+                Number(targetCell.dataset.face) * slotsPerFace +
+                Number(targetCell.dataset.slot);
+
+              if (targetBook === book) {
+                [currentBook[index], currentBook[targetIndex]] =
+                  [currentBook[targetIndex], currentBook[index]];
+                renderSimulator();
+              }
+            }
+
             simState.drag = null;
-            return;
-          }
+          });
 
-          // 動かした場合だけ入れ替え処理
-          const target = document.elementFromPoint(e.clientX, e.clientY);
-          const targetCell = target?.closest?.(".sim-slot");
+          cell.addEventListener("pointercancel", () => {
+            cell.style.opacity = "";
+            simState.drag = null;
+          });
+        }
 
-          if (targetCell && targetCell !== cell) {
-            const targetBook = Number(targetCell.dataset.book || 0);
-            const targetIndex =
-              targetBook * slotsPerBook +
-              Number(targetCell.dataset.face) * slotsPerFace +
-              Number(targetCell.dataset.slot);
-
-            [simState.items[index], simState.items[targetIndex]] =
-              [simState.items[targetIndex], simState.items[index]];
-
-            renderSimulator();
-          }
-
-          simState.drag = null;
-        });
-
-        cell.addEventListener("pointercancel", () => {
-          cell.style.opacity = "";
-          simState.drag = null;
-        });
+        grid.appendChild(cell);
       }
-
-      grid.appendChild(cell);
-    }
 
       faceBox.appendChild(grid);
       bookBox.appendChild(faceBox);
@@ -1419,14 +1430,7 @@ function openSimulator() {
   setupSimulatorRoman();
   simState.faces = Number(document.getElementById("simFaces").value || 3);
   simState.books = Number(document.getElementById("simBooks")?.value || 1);
-  simState.items = makeSimulatorList();
-  // 2bookでも元データを複製せず、同じ配列要素を参照して配置します。
-  if (simState.books > 1) {
-    const base = simState.items.slice();
-    for (let b = 1; b < simState.books; b++) {
-      simState.items.push(...base);
-    }
-  }
+  buildSimulatorBooks();
   renderSimulator();
 }
 
@@ -1444,24 +1448,18 @@ document.getElementById("simFaces").addEventListener("change", () => {
 });
 
 document.getElementById("simRoman").addEventListener("change", () => {
-  simState.items = makeSimulatorList();
-  const base = simState.items.slice();
-  for (let b = 1; b < simState.books; b++) simState.items.push(...base);
+  buildSimulatorBooks();
   renderSimulator();
 });
 
 document.getElementById("simBooks").addEventListener("change", () => {
   simState.books = Number(document.getElementById("simBooks").value || 1);
-  simState.items = makeSimulatorList();
-  const base = simState.items.slice();
-  for (let b = 1; b < simState.books; b++) simState.items.push(...base);
+  buildSimulatorBooks();
   renderSimulator();
 });
 
 document.getElementById("simDisplay").addEventListener("click", () => {
-  simState.items = makeSimulatorList();
-  const base = simState.items.slice();
-  for (let b = 1; b < simState.books; b++) simState.items.push(...base);
+  buildSimulatorBooks();
   renderSimulator();
 });
 
@@ -1498,11 +1496,12 @@ function setupAddTypeSelect() {
 }
 
 
-function openAddDataModal(index, editMode = false) {
+function openAddDataModal(index, editMode = false, bookIndex = 0) {
   const modal = document.getElementById("addDataModal");
   if (!modal) return;
 
-  const item = editMode ? simState.items[index] : null;
+  const bookItems = simState.bookItems[bookIndex] || [];
+  const item = editMode ? (bookItems[index] || null) : null;
 
   setupAddTypeSelect();
 
@@ -1519,35 +1518,29 @@ function openAddDataModal(index, editMode = false) {
 
   if (item) {
     const m = String(item.id || "").match(/^([A-Za-z]+)-(\d+)$/);
-
     prefix.value = m?.[1] || "L";
     number.value = m?.[2] || "";
     type.value = item.type || "";
     detail.value = item.detail || "";
-
-    // GitHubの元データには削除ボタンを出さない
-    deleteButton.style.display = item._local ? "block" : "none";
+    deleteButton.style.display = "none";
     saveButton.textContent = "更新";
-    title.textContent = "入力データ";
+    title.textContent = `${bookIndex + 1}book データ`;
   } else {
     prefix.value = "L";
     number.value = "";
     type.value = "";
     detail.value = "";
-
     deleteButton.style.display = "none";
     saveButton.textContent = "このマスに追加";
-    title.textContent = "メダルデータを追加";
+    title.textContent = `${bookIndex + 1}book にメダルを追加`;
   }
 
   modal.dataset.simIndex = String(index);
+  modal.dataset.simBook = String(bookIndex);
   modal.dataset.editMode = editMode ? "1" : "0";
   modal.style.display = "block";
 
-  // iPadで数字入力欄をすぐ操作できるようにする
-  if (!editMode) {
-    setTimeout(() => number.focus(), 50);
-  }
+  if (!editMode) setTimeout(() => number.focus(), 50);
 }
 
 function closeAddDataModal() {
@@ -1562,131 +1555,70 @@ function closeAddDataModal() {
 async function addSimulatorData() {
   const modal = document.getElementById("addDataModal");
   const index = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
   const editMode = modal.dataset.editMode === "1";
+  const bookItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
 
   const prefix = document.getElementById("addIdPrefix").value;
   const rawNumber = document.getElementById("addIdNumber").value
     .normalize("NFKC")
     .replace(/\D/g, "");
-
   const type = document.getElementById("addType").value.trim();
   const detail = document.getElementById("addDetail").value.trim();
-  const bookNum = 1;
   const message = document.getElementById("addDataMessage");
 
   if (!rawNumber) {
     message.textContent = "管理番号の数字を入力してください。";
     return;
   }
-
   if (!type) {
     message.textContent = "種類を選択してください。";
     return;
   }
 
   const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
-  const numberOnly = getNumberOnly(id);
-  const oldItem = editMode ? simState.items[index] : null;
 
-  const masterDuplicate = masterData.some(
-    item => getNumberOnly(item.id) === numberOnly
-  );
-
-  const addedDuplicate = addedData.some(item =>
-    getNumberOnly(item.id) === numberOnly &&
-    (!oldItem || item.id !== oldItem.id)
-  );
-
-  if (masterDuplicate) {
-    message.textContent = `番号 ${numberOnly.padStart(4, "0")} はGitHubのdata.jsonに登録済みです。`;
-    return;
-  }
-
-  if (addedDuplicate) {
-    message.textContent = `番号 ${numberOnly.padStart(4, "0")} はiPad内に登録済みです。古いテストデータが残っている可能性があります。`;
-    return;
-  }
+  // シミュレーターでは、同じメダルを別bookに配置してもOK。
+  // これはデータの複製ではなく「配置先の記録」です。
+  // 既存データがあれば、その情報を参照して配置します。
+  const source = data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  const oldItem = editMode ? (bookItems[index] || null) : null;
 
   const item = {
+    ...(source || {}),
     id,
-    name: oldItem?.name || "",
-    location: oldItem?.location || "",
-    date: oldItem?.date || "",
-    type,
-    detail,
-    bookNum,
-    _local: true
+    type: type || source?.type || "",
+    detail: detail || source?.detail || "",
+    _simOnly: true
   };
 
-  try {
-    await saveAddedData(item);
-
-    if (oldItem) {
-      addedData = addedData.filter(x => x.id !== oldItem.id);
-    }
-    addedData = addedData.filter(x => x.id !== item.id);
-    addedData.push(item);
-
-    data = mergeData(masterData, addedData);
-
-    setupFilter();
-    createLocationSelect();
-    filteredData = data;
-    currentPage = 1;
-    renderPage();
-
-    simState.items[index] = item;
-
-    setupSimulatorRoman();
-    renderSimulator();
-    closeAddDataModal();
-
-  } catch (error) {
-    console.error("iPadデータ保存エラー:", error);
-    message.textContent = "保存できませんでした。";
+  if (oldItem) {
+    // 編集時はこのbookの配置だけ更新
+    bookItems[index] = item;
+  } else {
+    bookItems[index] = item;
   }
+
+  // 2bookへの追加はdata.jsonやIndexedDBへ保存しない
+  simState.items = simState.bookItems[0] || [];
+  renderSimulator();
+  closeAddDataModal();
 }
 
 async function deleteCurrentAddedData() {
   const modal = document.getElementById("addDataModal");
   const index = Number(modal.dataset.simIndex);
-  const item = simState.items[index];
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const bookItems = simState.bookItems[bookIndex] || [];
+  const item = bookItems[index];
 
-  if (!item || !item._local) return;
+  if (!item) return;
+  if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
 
-  if (!confirm(`「${item.id}」を削除しますか？`)) return;
-
-  try {
-    const db = await openAddedDB();
-
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
-      tx.objectStore(ADD_STORE_NAME).delete(item.id);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
-
-    db.close();
-
-    addedData = addedData.filter(x => x.id !== item.id);
-    data = mergeData(masterData, addedData);
-
-    simState.items[index] = null;
-
-    setupFilter();
-    createLocationSelect();
-    filteredData = data;
-    currentPage = 1;
-    renderPage();
-
-    setupSimulatorRoman();
-    renderSimulator();
-    closeAddDataModal();
-
-  } catch (error) {
-    console.error("iPadデータ削除エラー:", error);
-    alert("削除できませんでした。");
-  }
+  bookItems[index] = null;
+  simState.items = simState.bookItems[0] || [];
+  renderSimulator();
+  closeAddDataModal();
 }
 
 async function clearAllAddedData() {
@@ -1703,7 +1635,10 @@ async function clearAllAddedData() {
     db.close();
     addedData = [];
     data = mergeData(masterData, addedData);
-    simState.items = simState.items.map(item => item?._local ? null : item);
+    simState.bookItems = (simState.bookItems || []).map((bookItems, bookIndex) =>
+      bookIndex === 0 ? bookItems.map(item => item?._local ? null : item) : bookItems
+    );
+    simState.items = simState.bookItems[0] || [];
     setupFilter();
     createLocationSelect();
     filteredData = data;
