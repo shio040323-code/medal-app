@@ -552,7 +552,7 @@ style="
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">iPad追加データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
     </div>
   </div>
 </div>
@@ -1234,12 +1234,72 @@ updateFolderPath()
    ========================= */
 const simState = {
   faces: 3,
-  books: 1,
+  books: 2,
   currentBook: 0,
   items: [],
   bookItems: [],
   drag: null
 };
+
+/* =========================
+   配置シミュレーター自動保存
+   ・アプリを終了しても配置を保持
+   ・「シミュレーションデータ全消去」まで残す
+========================= */
+const SIM_STORAGE_KEY = "souvenirMedalSimulatorState_v1";
+
+function saveSimulatorState() {
+  try {
+    const state = {
+      faces: Number(simState.faces) || 3,
+      books: 2,
+      currentBook: Number(simState.currentBook) || 0,
+      bookItems: Array.isArray(simState.bookItems)
+        ? simState.bookItems
+        : []
+    };
+    localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error("シミュレーター保存エラー:", error);
+  }
+}
+
+function loadSimulatorState() {
+  try {
+    const raw = localStorage.getItem(SIM_STORAGE_KEY);
+    if (!raw) return false;
+
+    const saved = JSON.parse(raw);
+    if (!saved || !Array.isArray(saved.bookItems)) return false;
+
+    simState.faces = Number(saved.faces) || 3;
+    simState.books = 2;
+    simState.currentBook = Math.min(
+      Math.max(Number(saved.currentBook) || 0, 0),
+      1
+    );
+
+    simState.bookItems = saved.bookItems.slice(0, 2);
+
+    while (simState.bookItems.length < 2) {
+      simState.bookItems.push([]);
+    }
+
+    simState.items = simState.bookItems[simState.currentBook] || [];
+    return true;
+  } catch (error) {
+    console.error("シミュレーター復元エラー:", error);
+    return false;
+  }
+}
+
+function clearSimulatorState() {
+  localStorage.removeItem(SIM_STORAGE_KEY);
+  simState.bookItems = [[], []];
+  simState.items = simState.bookItems[0];
+  simState.currentBook = 0;
+  simState.faces = Number(document.getElementById("simFaces")?.value || 3);
+}
 
 function romanToNumber(text) {
   const values = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
@@ -1318,12 +1378,8 @@ function simItemText(item) {
 function buildSimulatorBooks() {
   const base = makeSimulatorList();
 
-  // 1bookは選択した既存データを表示。
-  // 2bookは最初は空。すでに2bookへ追加した配置は維持する。
-  if (!Array.isArray(simState.bookItems) || simState.bookItems.length === 0) {
-    simState.bookItems = [base.slice()];
-  } else {
-    simState.bookItems[0] = base.slice();
+  if (!Array.isArray(simState.bookItems)) {
+    simState.bookItems = [];
   }
 
   while (simState.bookItems.length < simState.books) {
@@ -1334,7 +1390,27 @@ function buildSimulatorBooks() {
     simState.bookItems.length = simState.books;
   }
 
-  simState.currentBook = Math.min(simState.currentBook, simState.books - 1);
+  /*
+    1book:
+    ・保存済みの配置があれば、その配置をそのまま使用
+    ・まだ保存データがない場合だけ、選択条件の既存データを初期表示
+  */
+  const hasSavedBook1 = simState.bookItems[0].some(item => item);
+  if (!hasSavedBook1) {
+    simState.bookItems[0] = base.slice();
+  }
+
+  /*
+    2book:
+    ・保存済みの配置をそのまま使用
+    ・未保存なら空のまま
+  */
+
+  simState.currentBook = Math.min(
+    simState.currentBook,
+    simState.books - 1
+  );
+
   simState.items = simState.bookItems[simState.currentBook] || [];
 }
 
@@ -1357,6 +1433,7 @@ function switchSimulatorBook(bookIndex) {
 
   simState.currentBook = book;
   simState.items = simState.bookItems[book] || (simState.bookItems[book] = []);
+  saveSimulatorState();
   updateBookTabs();
   renderSimulator();
 }
@@ -1451,6 +1528,7 @@ function renderSimulator() {
             if (targetBook === bookIndex) {
               [currentBook[index], currentBook[targetIndex]] =
                 [currentBook[targetIndex], currentBook[index]];
+              saveSimulatorState();
               renderSimulator();
             }
           }
@@ -1478,11 +1556,21 @@ function renderSimulator() {
 function openSimulator() {
   document.getElementById("simulator").style.display = "block";
   setupSimulatorRoman();
-  simState.faces = Number(document.getElementById("simFaces").value || 3);
-  // book数プルダウンは廃止。常に1book/2bookをタブで切り替える。
+
+  const restored = loadSimulatorState();
+
+  if (restored) {
+    document.getElementById("simFaces").value = String(simState.faces);
+  } else {
+    simState.faces = Number(document.getElementById("simFaces").value || 3);
+    simState.books = 2;
+    simState.currentBook = 0;
+    simState.bookItems = [];
+    buildSimulatorBooks();
+    saveSimulatorState();
+  }
+
   simState.books = 2;
-  simState.currentBook = 0;
-  simState.bookItems = [];
   buildSimulatorBooks();
   renderSimulator();
 }
@@ -1497,6 +1585,7 @@ document.getElementById("simClose").addEventListener("click", closeSimulator);
 
 document.getElementById("simFaces").addEventListener("change", () => {
   simState.faces = Number(document.getElementById("simFaces").value);
+  saveSimulatorState();
   renderSimulator();
 });
 
@@ -1513,6 +1602,7 @@ document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button 
 
 document.getElementById("simDisplay").addEventListener("click", () => {
   buildSimulatorBooks();
+  saveSimulatorState();
   renderSimulator();
 });
 
@@ -1652,8 +1742,9 @@ async function addSimulatorData() {
     bookItems[index] = item;
   }
 
-  // 2bookへの追加はdata.jsonやIndexedDBへ保存しない
+  // シミュレーター配置データをPC/iPad内へ自動保存
   simState.items = simState.bookItems[0] || [];
+  saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
@@ -1670,12 +1761,13 @@ async function deleteCurrentAddedData() {
 
   bookItems[index] = null;
   simState.items = simState.bookItems[0] || [];
+  saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
 
 async function clearAllAddedData() {
-  if (!confirm("iPad内に保存されている追加データをすべて削除します。\nGitHubのdata.jsonは削除されません。\n実行しますか？")) return;
+  if (!confirm("保存されている追加データとシミュレーター配置をすべて削除します。\nGitHubのdata.jsonは削除されません。\nこの操作は元に戻せません。\n実行しますか？")) return;
   try {
     const db = await openAddedDB();
     await new Promise((resolve, reject) => {
@@ -1688,10 +1780,10 @@ async function clearAllAddedData() {
     db.close();
     addedData = [];
     data = mergeData(masterData, addedData);
-    simState.bookItems = (simState.bookItems || []).map((bookItems, bookIndex) =>
-      bookIndex === 0 ? bookItems.map(item => item?._local ? null : item) : bookItems
-    );
-    simState.items = simState.bookItems[0] || [];
+
+    // 「全削除」は追加データだけでなく、
+    // シミュレーターの保存配置も初期化する
+    clearSimulatorState();
     setupFilter();
     createLocationSelect();
     filteredData = data;
@@ -1700,7 +1792,7 @@ async function clearAllAddedData() {
     setupSimulatorRoman();
     renderSimulator();
     closeAddDataModal();
-    alert("iPad追加データをすべて削除しました。");
+    alert("保存データをすべて削除しました。");
   } catch (error) {
     console.error("iPad追加データ全削除エラー:", error);
     alert("削除できませんでした。");
