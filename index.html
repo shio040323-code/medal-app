@@ -695,7 +695,7 @@ function mergeData(master, additions) {
 // =========================
 const ADD_DB_NAME = "medalAppDB";
 const ADD_STORE_NAME = "addedData";
-const ADD_DB_VERSION = 1;
+const ADD_DB_VERSION = 2;
 
 function openAddedDB() {
   return new Promise((resolve, reject) => {
@@ -706,6 +706,9 @@ function openAddedDB() {
 
       if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
         db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(SIM_DB_STORE_NAME)) {
+        db.createObjectStore(SIM_DB_STORE_NAME, { keyPath: "id" });
       }
     };
 
@@ -1243,62 +1246,70 @@ const simState = {
 
 /* =========================
    配置シミュレーター自動保存
-   ・アプリを終了しても配置を保持
-   ・「シミュレーションデータ全消去」まで残す
+   IndexedDBへ保存するため、アプリ終了後も保持
 ========================= */
-const SIM_STORAGE_KEY = "souvenirMedalSimulatorState_v1";
+const SIM_DB_STORE_NAME = "simulatorState";
 
 function saveSimulatorState() {
-  try {
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
     const state = {
+      id: "current",
       faces: Number(simState.faces) || 3,
       books: 2,
       currentBook: Number(simState.currentBook) || 0,
-      bookItems: Array.isArray(simState.bookItems)
-        ? simState.bookItems
-        : []
+      bookItems: Array.isArray(simState.bookItems) ? simState.bookItems : []
     };
-    localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.error("シミュレーター保存エラー:", error);
-  }
+    const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+    tx.objectStore(SIM_DB_STORE_NAME).put(state);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  })).catch(error => console.error("シミュレーター保存エラー:", error));
 }
 
 function loadSimulatorState() {
-  try {
-    const raw = localStorage.getItem(SIM_STORAGE_KEY);
-    if (!raw) return false;
-
-    const saved = JSON.parse(raw);
-    if (!saved || !Array.isArray(saved.bookItems)) return false;
-
-    simState.faces = Number(saved.faces) || 3;
-    simState.books = 2;
-    simState.currentBook = Math.min(
-      Math.max(Number(saved.currentBook) || 0, 0),
-      1
-    );
-
-    simState.bookItems = saved.bookItems.slice(0, 2);
-
-    while (simState.bookItems.length < 2) {
-      simState.bookItems.push([]);
-    }
-
-    simState.items = simState.bookItems[simState.currentBook] || [];
-    return true;
-  } catch (error) {
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SIM_DB_STORE_NAME, "readonly");
+    const request = tx.objectStore(SIM_DB_STORE_NAME).get("current");
+    request.onsuccess = () => {
+      const saved = request.result;
+      if (!saved || !Array.isArray(saved.bookItems)) {
+        db.close();
+        resolve(false);
+        return;
+      }
+      simState.faces = Number(saved.faces) || 3;
+      simState.books = 2;
+      simState.currentBook = Math.min(Math.max(Number(saved.currentBook) || 0, 0), 1);
+      simState.bookItems = saved.bookItems.slice(0, 2);
+      while (simState.bookItems.length < 2) simState.bookItems.push([]);
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      db.close();
+      resolve(true);
+    };
+    request.onerror = () => { db.close(); reject(request.error); };
+  })).catch(error => {
     console.error("シミュレーター復元エラー:", error);
     return false;
-  }
+  });
 }
 
-function clearSimulatorState() {
-  localStorage.removeItem(SIM_STORAGE_KEY);
-  simState.bookItems = [[], []];
-  simState.items = simState.bookItems[0];
-  simState.currentBook = 0;
-  simState.faces = Number(document.getElementById("simFaces")?.value || 3);
+async function clearSimulatorState() {
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_DB_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+    simState.bookItems = [[], []];
+    simState.items = simState.bookItems[0];
+    simState.currentBook = 0;
+  } catch (error) {
+    console.error("シミュレーター全削除エラー:", error);
+  }
 }
 
 function romanToNumber(text) {
@@ -1553,11 +1564,11 @@ function renderSimulator() {
   updateBookTabs();
 }
 
-function openSimulator() {
+async function openSimulator() {
   document.getElementById("simulator").style.display = "block";
   setupSimulatorRoman();
 
-  const restored = loadSimulatorState();
+  const restored = await loadSimulatorState();
 
   if (restored) {
     document.getElementById("simFaces").value = String(simState.faces);
@@ -1567,7 +1578,7 @@ function openSimulator() {
     simState.currentBook = 0;
     simState.bookItems = [];
     buildSimulatorBooks();
-    saveSimulatorState();
+    await saveSimulatorState();
   }
 
   simState.books = 2;
