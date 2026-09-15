@@ -456,6 +456,13 @@ img.noimage{
   font-weight: bold;
   border-width: 2px;
 }
+
+.sim-break {
+  flex-basis: 100%;
+  width: 100%;
+  height: 0;
+}
+
 </style>
 </head>
 
@@ -534,7 +541,7 @@ style="
       </label>
 
       <button id="simDisplay">表示</button>
-      <button id="simSort">番号順ソート</button>
+      
     </div>
 
     <div class="sim-help">
@@ -1614,8 +1621,8 @@ document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button 
 function applySimulatorSelection() {
   const base = makeSimulatorList().slice();
 
-  // 番号は降順（大きい番号 → 小さい番号）
-  base.sort((a, b) => extractNumber(b.id) - extractNumber(a.id));
+  // メダル番号は昇順（小さい番号 → 大きい番号）
+  base.sort((a, b) => extractNumber(a.id) - extractNumber(b.id));
 
   // 「表示」を押したときは、現在のbookを選択条件で作り直す
   // これで開始・終了番号、bookNo.を変更した結果が確実に反映される
@@ -1639,24 +1646,6 @@ document.getElementById("simEnd").addEventListener("change", () => {
 });
 
 // シミュレーター内の配置を管理番号順に並べ替える
-document.getElementById("simSort").addEventListener("click", () => {
-  const bookIndex = simState.currentBook;
-  const currentBook = simState.bookItems[bookIndex] || [];
-
-  const sortedItems = currentBook
-    .filter(item => item)
-    .sort((a, b) => {
-      const na = extractNumber(a.id);
-      const nb = extractNumber(b.id);
-      if (na !== nb) return na - nb;
-      return String(a.id || "").localeCompare(String(b.id || ""));
-    });
-
-  simState.bookItems[bookIndex] = sortedItems;
-  simState.items = simState.bookItems[bookIndex];
-  saveSimulatorState();
-  renderSimulator();
-});
 
 
 // =========================
