@@ -607,7 +607,7 @@ let filteredData = []
 // データ読み込み
 async function loadData() {
   try {
-    const response = await fetch("./data.json", {
+    const response = await fetch("./data.json?v=" + Date.now(), {
       cache: "no-store"
     });
 
@@ -621,7 +621,9 @@ async function loadData() {
     addedData = await loadAddedData();
 
     // GitHubのdata.jsonを優先して合体
-    data = mergeData(masterData, addedData);
+    data = sortByBookNoDesc(
+      mergeData(masterData, addedData)
+    );
 
     setupFilter();
     createLocationSelect();
@@ -646,7 +648,9 @@ async function loadData() {
     // オフライン時はiPad保存分だけでも表示
     try {
       addedData = await loadAddedData();
-      data = mergeData([], addedData);
+      data = sortByBookNoDesc(
+        mergeData([], addedData)
+      );
       setupFilter();
       createLocationSelect();
       filteredData = data;
@@ -657,6 +661,11 @@ async function loadData() {
       setupSimulatorRoman();
     } catch (e) {
       console.error("iPad保存データの読み込みにも失敗しました", e);
+      const grid = document.getElementById("grid");
+      if (grid) {
+        grid.innerHTML =
+          '<div style="padding:20px;color:#b00020;font-weight:bold;">data.jsonを読み込めませんでした。ページを再読み込みしてください。</div>';
+      }
     }
   }
 }
@@ -895,6 +904,38 @@ function createNameSelect() {
 
     nameSelect.appendChild(option)
   })
+}
+
+function getBookNoValue(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return -1;
+
+  const num = Number(text);
+  if (Number.isFinite(num)) return num;
+
+  return romanToNumber(text);
+}
+
+function sortByBookNoDesc(list) {
+  return [...list].sort((a, b) => {
+    const bookDiff =
+      getBookNoValue(b.bookNum) -
+      getBookNoValue(a.bookNum);
+
+    if (bookDiff !== 0) return bookDiff;
+
+    // 同じbookNoなら管理番号の数字順
+    const numDiff =
+      extractNumber(a.id) -
+      extractNumber(b.id);
+
+    if (numDiff !== 0) return numDiff;
+
+    return String(a.id || "").localeCompare(
+      String(b.id || ""),
+      "ja"
+    );
+  });
 }
 
 function applyFilter() {
@@ -1267,16 +1308,9 @@ function setupSimulatorRoman() {
   )];
 
   // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
-  romans.sort((a, b) => {
-    const na = Number(a);
-    const nb = Number(b);
-
-    if (Number.isFinite(na) && Number.isFinite(nb)) {
-      return nb - na;
-    }
-
-    return romanToNumber(b) - romanToNumber(a);
-  });
+  romans.sort((a, b) =>
+    getBookNoValue(b) - getBookNoValue(a)
+  );
 
   select.innerHTML = '<option value="">すべて</option>';
   romans.forEach(roman => {
@@ -1315,16 +1349,12 @@ function simItemText(item) {
   ].filter(Boolean).join("\n");
 }
 
-/* =========================
-   シミュレーター保存
-   GitHub Pages / PWA / iPad対応
-   ========================= */
 const SIMULATOR_STORAGE_KEY = "medalSimulatorState";
 
 function saveSimulatorState() {
   try {
     const state = {
-      version: 1,
+      version: 2,
       faces: Number(simState.faces) || 3,
       books: 2,
       currentBook: Number(simState.currentBook) || 0,
@@ -1349,10 +1379,9 @@ function saveSimulatorState() {
 
 function loadSimulatorState() {
   try {
-    const raw =
-      localStorage.getItem(
-        SIMULATOR_STORAGE_KEY
-      );
+    const raw = localStorage.getItem(
+      SIMULATOR_STORAGE_KEY
+    );
 
     if (!raw) return false;
 
@@ -1387,14 +1416,9 @@ function loadSimulatorState() {
         simState.currentBook
       ] || [];
 
-    console.log(
-      "シミュレーター保存データを復元しました"
-    );
-
     return true;
 
   } catch (error) {
-
     console.error(
       "シミュレーター読み込みエラー:",
       error
@@ -1409,13 +1433,7 @@ function clearSimulatorSavedState() {
     localStorage.removeItem(
       SIMULATOR_STORAGE_KEY
     );
-
-    console.log(
-      "シミュレーター保存データを削除しました"
-    );
-
   } catch (error) {
-
     console.error(
       "シミュレーター保存データ削除エラー:",
       error
@@ -1426,10 +1444,19 @@ function clearSimulatorSavedState() {
 function buildSimulatorBooks() {
   const base = makeSimulatorList();
 
-  // 初回だけ1bookを現在の一覧で作る。
-  // 2回目以降は保存した配置を壊さない。
-  if (!Array.isArray(simState.bookItems) || simState.bookItems.length === 0) {
+  // 初回、または保存データに1book自体がない/空配列の場合は
+  // 現在の一覧を1bookへ入れる。
+  // すでに配置済みの1bookは上書きしない。
+  if (
+    !Array.isArray(simState.bookItems) ||
+    simState.bookItems.length === 0
+  ) {
     simState.bookItems = [base.slice()];
+  } else if (
+    !Array.isArray(simState.bookItems[0]) ||
+    simState.bookItems[0].length === 0
+  ) {
+    simState.bookItems[0] = base.slice();
   }
 
   while (simState.bookItems.length < simState.books) {
@@ -1585,25 +1612,38 @@ function renderSimulator() {
 
 function openSimulator() {
   document.getElementById("simulator").style.display = "block";
+
+  simState.books = 2;
   setupSimulatorRoman();
 
-  // 保存済みデータを優先して復元する
+  // 保存済みデータを優先して復元
   const restored = loadSimulatorState();
 
   if (restored) {
-    document.getElementById("simFaces").value = String(simState.faces);
+    document.getElementById("simFaces").value =
+      String(simState.faces);
   } else {
-    simState.faces = Number(document.getElementById("simFaces").value || 3);
+    simState.faces =
+      Number(
+        document.getElementById("simFaces").value || 3
+      );
+
     simState.books = 2;
     simState.currentBook = 0;
     simState.bookItems = [];
+
     buildSimulatorBooks();
     saveSimulatorState();
   }
 
   simState.books = 2;
   buildSimulatorBooks();
-  simState.items = simState.bookItems[simState.currentBook] || [];
+
+  simState.items =
+    simState.bookItems[
+      simState.currentBook
+    ] || [];
+
   renderSimulator();
 }
 
@@ -1727,7 +1767,7 @@ function closeAddDataModal() {
   modal.dataset.editMode = "0";
 }
 
-async function addSimulatorData() {
+function addSimulatorData() {
   const modal = document.getElementById("addDataModal");
   const index = Number(modal.dataset.simIndex);
   const bookIndex = Number(modal.dataset.simBook || 0);
@@ -1781,7 +1821,7 @@ async function addSimulatorData() {
   closeAddDataModal();
 }
 
-async function deleteCurrentAddedData() {
+function deleteCurrentAddedData() {
   const modal = document.getElementById("addDataModal");
   const index = Number(modal.dataset.simIndex);
   const bookIndex = Number(modal.dataset.simBook || 0);
