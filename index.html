@@ -552,7 +552,7 @@ style="
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">iPad追加データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
     </div>
   </div>
 </div>
@@ -695,7 +695,7 @@ function mergeData(master, additions) {
 // =========================
 const ADD_DB_NAME = "medalAppDB";
 const ADD_STORE_NAME = "addedData";
-const ADD_DB_VERSION = 2;
+const ADD_DB_VERSION = 1;
 
 function openAddedDB() {
   return new Promise((resolve, reject) => {
@@ -706,9 +706,6 @@ function openAddedDB() {
 
       if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
         db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains(SIM_DB_STORE_NAME)) {
-        db.createObjectStore(SIM_DB_STORE_NAME, { keyPath: "id" });
       }
     };
 
@@ -1237,80 +1234,12 @@ updateFolderPath()
    ========================= */
 const simState = {
   faces: 3,
-  books: 2,
+  books: 1,
   currentBook: 0,
   items: [],
   bookItems: [],
   drag: null
 };
-
-/* =========================
-   配置シミュレーター自動保存
-   IndexedDBへ保存するため、アプリ終了後も保持
-========================= */
-const SIM_DB_STORE_NAME = "simulatorState";
-
-function saveSimulatorState() {
-  return openAddedDB().then(db => new Promise((resolve, reject) => {
-    const state = {
-      id: "current",
-      faces: Number(simState.faces) || 3,
-      books: 2,
-      currentBook: Number(simState.currentBook) || 0,
-      bookItems: Array.isArray(simState.bookItems) ? simState.bookItems : []
-    };
-    const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
-    tx.objectStore(SIM_DB_STORE_NAME).put(state);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  })).catch(error => console.error("シミュレーター保存エラー:", error));
-}
-
-function loadSimulatorState() {
-  return openAddedDB().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SIM_DB_STORE_NAME, "readonly");
-    const request = tx.objectStore(SIM_DB_STORE_NAME).get("current");
-    request.onsuccess = () => {
-      const saved = request.result;
-      if (!saved || !Array.isArray(saved.bookItems)) {
-        db.close();
-        resolve(false);
-        return;
-      }
-      simState.faces = Number(saved.faces) || 3;
-      simState.books = 2;
-      simState.currentBook = Math.min(Math.max(Number(saved.currentBook) || 0, 0), 1);
-      simState.bookItems = saved.bookItems.slice(0, 2);
-      while (simState.bookItems.length < 2) simState.bookItems.push([]);
-      simState.items = simState.bookItems[simState.currentBook] || [];
-      db.close();
-      resolve(true);
-    };
-    request.onerror = () => { db.close(); reject(request.error); };
-  })).catch(error => {
-    console.error("シミュレーター復元エラー:", error);
-    return false;
-  });
-}
-
-async function clearSimulatorState() {
-  try {
-    const db = await openAddedDB();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
-      tx.objectStore(SIM_DB_STORE_NAME).clear();
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
-    });
-    db.close();
-    simState.bookItems = [[], []];
-    simState.items = simState.bookItems[0];
-    simState.currentBook = 0;
-  } catch (error) {
-    console.error("シミュレーター全削除エラー:", error);
-  }
-}
 
 function romanToNumber(text) {
   const values = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
@@ -1386,11 +1315,121 @@ function simItemText(item) {
   ].filter(Boolean).join("\n");
 }
 
+/* =========================
+   シミュレーター保存
+   GitHub Pages / PWA / iPad対応
+   ========================= */
+const SIMULATOR_STORAGE_KEY = "medalSimulatorState";
+
+function saveSimulatorState() {
+  try {
+    const state = {
+      version: 1,
+      faces: Number(simState.faces) || 3,
+      books: 2,
+      currentBook: Number(simState.currentBook) || 0,
+      bookItems: Array.isArray(simState.bookItems)
+        ? simState.bookItems
+        : []
+    };
+
+    localStorage.setItem(
+      SIMULATOR_STORAGE_KEY,
+      JSON.stringify(state)
+    );
+
+    console.log("シミュレーター保存完了");
+  } catch (error) {
+    console.error(
+      "シミュレーター保存エラー:",
+      error
+    );
+  }
+}
+
+function loadSimulatorState() {
+  try {
+    const raw =
+      localStorage.getItem(
+        SIMULATOR_STORAGE_KEY
+      );
+
+    if (!raw) return false;
+
+    const saved = JSON.parse(raw);
+
+    if (
+      !saved ||
+      !Array.isArray(saved.bookItems)
+    ) {
+      return false;
+    }
+
+    simState.faces =
+      Number(saved.faces) || 3;
+
+    simState.books = 2;
+
+    simState.currentBook =
+      Math.min(
+        Math.max(
+          Number(saved.currentBook) || 0,
+          0
+        ),
+        1
+      );
+
+    simState.bookItems =
+      saved.bookItems;
+
+    simState.items =
+      simState.bookItems[
+        simState.currentBook
+      ] || [];
+
+    console.log(
+      "シミュレーター保存データを復元しました"
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "シミュレーター読み込みエラー:",
+      error
+    );
+
+    return false;
+  }
+}
+
+function clearSimulatorSavedState() {
+  try {
+    localStorage.removeItem(
+      SIMULATOR_STORAGE_KEY
+    );
+
+    console.log(
+      "シミュレーター保存データを削除しました"
+    );
+
+  } catch (error) {
+
+    console.error(
+      "シミュレーター保存データ削除エラー:",
+      error
+    );
+  }
+}
+
 function buildSimulatorBooks() {
   const base = makeSimulatorList();
 
-  if (!Array.isArray(simState.bookItems)) {
-    simState.bookItems = [];
+  // 初回だけ1bookを現在の一覧で作る。
+  // 2回目以降は保存した配置を壊さない。
+  if (!Array.isArray(simState.bookItems) || simState.bookItems.length === 0) {
+    simState.bookItems = [base.slice()];
   }
 
   while (simState.bookItems.length < simState.books) {
@@ -1401,27 +1440,7 @@ function buildSimulatorBooks() {
     simState.bookItems.length = simState.books;
   }
 
-  /*
-    1book:
-    ・保存済みの配置があれば、その配置をそのまま使用
-    ・まだ保存データがない場合だけ、選択条件の既存データを初期表示
-  */
-  const hasSavedBook1 = simState.bookItems[0].some(item => item);
-  if (!hasSavedBook1) {
-    simState.bookItems[0] = base.slice();
-  }
-
-  /*
-    2book:
-    ・保存済みの配置をそのまま使用
-    ・未保存なら空のまま
-  */
-
-  simState.currentBook = Math.min(
-    simState.currentBook,
-    simState.books - 1
-  );
-
+  simState.currentBook = Math.min(simState.currentBook, simState.books - 1);
   simState.items = simState.bookItems[simState.currentBook] || [];
 }
 
@@ -1564,11 +1583,12 @@ function renderSimulator() {
   updateBookTabs();
 }
 
-async function openSimulator() {
+function openSimulator() {
   document.getElementById("simulator").style.display = "block";
   setupSimulatorRoman();
 
-  const restored = await loadSimulatorState();
+  // 保存済みデータを優先して復元する
+  const restored = loadSimulatorState();
 
   if (restored) {
     document.getElementById("simFaces").value = String(simState.faces);
@@ -1578,15 +1598,17 @@ async function openSimulator() {
     simState.currentBook = 0;
     simState.bookItems = [];
     buildSimulatorBooks();
-    await saveSimulatorState();
+    saveSimulatorState();
   }
 
   simState.books = 2;
   buildSimulatorBooks();
+  simState.items = simState.bookItems[simState.currentBook] || [];
   renderSimulator();
 }
 
 function closeSimulator() {
+  saveSimulatorState();
   document.getElementById("simulator").style.display = "none";
   simState.drag = null;
 }
@@ -1613,7 +1635,6 @@ document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button 
 
 document.getElementById("simDisplay").addEventListener("click", () => {
   buildSimulatorBooks();
-  saveSimulatorState();
   renderSimulator();
 });
 
@@ -1753,8 +1774,8 @@ async function addSimulatorData() {
     bookItems[index] = item;
   }
 
-  // シミュレーター配置データをPC/iPad内へ自動保存
-  simState.items = simState.bookItems[0] || [];
+  // 2bookへの追加はdata.jsonやIndexedDBへ保存しない
+  simState.items = simState.bookItems[bookIndex] || [];
   saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
@@ -1771,14 +1792,14 @@ async function deleteCurrentAddedData() {
   if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
 
   bookItems[index] = null;
-  simState.items = simState.bookItems[0] || [];
+  simState.items = simState.bookItems[bookIndex] || [];
   saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
 
 async function clearAllAddedData() {
-  if (!confirm("保存されている追加データとシミュレーター配置をすべて削除します。\nGitHubのdata.jsonは削除されません。\nこの操作は元に戻せません。\n実行しますか？")) return;
+  if (!confirm("iPad内に保存されている追加データをすべて削除します。\nGitHubのdata.jsonは削除されません。\n実行しますか？")) return;
   try {
     const db = await openAddedDB();
     await new Promise((resolve, reject) => {
@@ -1791,10 +1812,10 @@ async function clearAllAddedData() {
     db.close();
     addedData = [];
     data = mergeData(masterData, addedData);
-
-    // 「全削除」は追加データだけでなく、
-    // シミュレーターの保存配置も初期化する
-    clearSimulatorState();
+    clearSimulatorSavedState();
+    simState.bookItems = [];
+    simState.currentBook = 0;
+    simState.items = [];
     setupFilter();
     createLocationSelect();
     filteredData = data;
@@ -1803,7 +1824,7 @@ async function clearAllAddedData() {
     setupSimulatorRoman();
     renderSimulator();
     closeAddDataModal();
-    alert("保存データをすべて削除しました。");
+    alert("iPad追加データをすべて削除しました。");
   } catch (error) {
     console.error("iPad追加データ全削除エラー:", error);
     alert("削除できませんでした。");
