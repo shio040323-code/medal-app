@@ -623,14 +623,16 @@ async function loadData() {
     // GitHubのdata.jsonを優先して合体
     data = mergeData(masterData, addedData);
 
-    // bookNo.降順 → 同じbookNo.なら管理番号順
+    // bookNo.の大きい順 → 同じbookNo.なら管理番号順
     data.sort((a, b) => {
-      const bookA = Number(a.bookNum) || romanToNumber(a.bookNum);
-      const bookB = Number(b.bookNum) || romanToNumber(b.bookNum);
+      const aBook = Number.isFinite(Number(a.bookNum))
+        ? Number(a.bookNum)
+        : romanToNumber(a.bookNum);
+      const bBook = Number.isFinite(Number(b.bookNum))
+        ? Number(b.bookNum)
+        : romanToNumber(b.bookNum);
 
-      if (bookA !== bookB) {
-        return bookB - bookA;
-      }
+      if (aBook !== bBook) return bBook - aBook;
 
       return extractNumber(a.id) - extractNumber(b.id);
     });
@@ -659,18 +661,6 @@ async function loadData() {
     try {
       addedData = await loadAddedData();
       data = mergeData([], addedData);
-
-      data.sort((a, b) => {
-        const bookA = Number(a.bookNum) || romanToNumber(a.bookNum);
-        const bookB = Number(b.bookNum) || romanToNumber(b.bookNum);
-
-        if (bookA !== bookB) {
-          return bookB - bookA;
-        }
-
-        return extractNumber(a.id) - extractNumber(b.id);
-      });
-
       setupFilter();
       createLocationSelect();
       filteredData = data;
@@ -719,7 +709,8 @@ function mergeData(master, additions) {
 // =========================
 const ADD_DB_NAME = "medalAppDB";
 const ADD_STORE_NAME = "addedData";
-const ADD_DB_VERSION = 1;
+const ADD_DB_VERSION = 2;
+const SIM_STORE_NAME = "simulatorState";
 
 function openAddedDB() {
   return new Promise((resolve, reject) => {
@@ -730,6 +721,10 @@ function openAddedDB() {
 
       if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
         db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
+      }
+
+      if (!db.objectStoreNames.contains(SIM_STORE_NAME)) {
+        db.createObjectStore(SIM_STORE_NAME, { keyPath: "id" });
       }
     };
 
@@ -1295,10 +1290,11 @@ function setupSimulatorRoman() {
     const na = Number(a);
     const nb = Number(b);
 
-    const va = Number.isFinite(na) ? na : romanToNumber(a);
-    const vb = Number.isFinite(nb) ? nb : romanToNumber(b);
+    if (Number.isFinite(na) && Number.isFinite(nb)) {
+      return nb - na;
+    }
 
-    return vb - va;
+    return romanToNumber(b) - romanToNumber(a);
   });
 
   select.innerHTML = '<option value="">すべて</option>';
@@ -1338,74 +1334,111 @@ function simItemText(item) {
   ].filter(Boolean).join("\n");
 }
 
-const SIMULATOR_STORAGE_KEY = "medalSimulatorState";
-
+/* =========================
+   配置シミュレーター自動保存
+   ========================= */
 function saveSimulatorState() {
-  try {
-    localStorage.setItem(
-      SIMULATOR_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const state = {
+        id: "current",
         faces: Number(simState.faces) || 3,
         books: 2,
         currentBook: Number(simState.currentBook) || 0,
         bookItems: Array.isArray(simState.bookItems)
           ? simState.bookItems
           : []
-      })
-    );
-  } catch (error) {
+      };
+
+      const tx = db.transaction(SIM_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_STORE_NAME).put(state);
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  }).catch(error => {
     console.error("シミュレーター保存エラー:", error);
-  }
+  });
 }
 
 function loadSimulatorState() {
-  try {
-    const raw = localStorage.getItem(SIMULATOR_STORAGE_KEY);
-    if (!raw) return false;
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_STORE_NAME, "readonly");
+      const request = tx.objectStore(SIM_STORE_NAME).get("current");
 
-    const saved = JSON.parse(raw);
+      request.onsuccess = () => {
+        const saved = request.result;
 
-    if (!saved || !Array.isArray(saved.bookItems)) {
-      return false;
-    }
+        if (!saved || !Array.isArray(saved.bookItems)) {
+          db.close();
+          resolve(false);
+          return;
+        }
 
-    simState.faces = Number(saved.faces) || 3;
-    simState.books = 2;
-    simState.currentBook = Math.min(
-      Math.max(Number(saved.currentBook) || 0, 0),
-      1
-    );
-    simState.bookItems = saved.bookItems;
+        simState.faces = Number(saved.faces) || 3;
+        simState.books = 2;
+        simState.currentBook = Math.min(
+          Math.max(Number(saved.currentBook) || 0, 0),
+          1
+        );
+        simState.bookItems = saved.bookItems;
 
-    while (simState.bookItems.length < 2) {
-      simState.bookItems.push([]);
-    }
+        while (simState.bookItems.length < 2) {
+          simState.bookItems.push([]);
+        }
 
-    simState.items =
-      simState.bookItems[simState.currentBook] || [];
+        simState.items =
+          simState.bookItems[simState.currentBook] || [];
 
-    return true;
+        db.close();
+        resolve(true);
+      };
 
-  } catch (error) {
+      request.onerror = () => {
+        db.close();
+        reject(request.error);
+      };
+    });
+  }).catch(error => {
     console.error("シミュレーター読み込みエラー:", error);
     return false;
-  }
+  });
 }
 
 function clearSimulatorSavedState() {
-  try {
-    localStorage.removeItem(SIMULATOR_STORAGE_KEY);
-  } catch (error) {
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_STORE_NAME).clear();
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  }).catch(error => {
     console.error("シミュレーター保存データ削除エラー:", error);
-  }
+  });
 }
 
 function buildSimulatorBooks() {
   const base = makeSimulatorList();
 
-  // 初回だけ1bookを現在の一覧で作る。
-  // 2回目以降は保存した配置を壊さない。
+  // 1bookは選択した既存データを表示。
+  // 2bookは最初は空。すでに2bookへ追加した配置は維持する。
   if (!Array.isArray(simState.bookItems) || simState.bookItems.length === 0) {
     simState.bookItems = [base.slice()];
   }
@@ -1561,27 +1594,31 @@ function renderSimulator() {
   updateBookTabs();
 }
 
-function openSimulator() {
+async function openSimulator() {
   document.getElementById("simulator").style.display = "block";
   setupSimulatorRoman();
 
-  // 保存済みデータを優先して復元する
-  const restored = loadSimulatorState();
+  const restored = await loadSimulatorState();
 
   if (restored) {
-    document.getElementById("simFaces").value = String(simState.faces);
+    document.getElementById("simFaces").value =
+      String(simState.faces);
   } else {
-    simState.faces = Number(document.getElementById("simFaces").value || 3);
+    simState.faces =
+      Number(document.getElementById("simFaces").value || 3);
     simState.books = 2;
     simState.currentBook = 0;
     simState.bookItems = [];
+
     buildSimulatorBooks();
-    saveSimulatorState();
+    await saveSimulatorState();
   }
 
   simState.books = 2;
   buildSimulatorBooks();
-  simState.items = simState.bookItems[simState.currentBook] || [];
+  simState.items =
+    simState.bookItems[simState.currentBook] || [];
+
   renderSimulator();
 }
 
@@ -1632,7 +1669,7 @@ function setupAddTypeSelect() {
       .filter(Boolean)
   )];
 
-  // data.jsonが読み込めている場合は、ここに実データの種類が入ります。
+  if (!types.length) types.push("ﾚｷﾞｭﾗｰ");
 
   select.innerHTML = "";
   const first = document.createElement("option");
@@ -1752,9 +1789,9 @@ async function addSimulatorData() {
     bookItems[index] = item;
   }
 
-  // 2bookへの追加はdata.jsonやIndexedDBへ保存しない
+  // 2bookへの配置もシミュレーター専用データとして保存する
   simState.items = simState.bookItems[bookIndex] || [];
-  saveSimulatorState();
+  await saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
@@ -1770,8 +1807,7 @@ async function deleteCurrentAddedData() {
   if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
 
   bookItems[index] = null;
-  simState.items = simState.bookItems[bookIndex] || [];
-  saveSimulatorState();
+  simState.items = simState.bookItems[0] || [];
   renderSimulator();
   closeAddDataModal();
 }
@@ -1788,12 +1824,19 @@ async function clearAllAddedData() {
       tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
     });
     db.close();
-    addedData = [];
-    data = mergeData(masterData, addedData);
-    clearSimulatorSavedState();
+
+    await clearSimulatorSavedState();
+
     simState.bookItems = [];
     simState.currentBook = 0;
     simState.items = [];
+
+    addedData = [];
+    data = mergeData(masterData, addedData);
+    simState.bookItems = (simState.bookItems || []).map((bookItems, bookIndex) =>
+      bookIndex === 0 ? bookItems.map(item => item?._local ? null : item) : bookItems
+    );
+    simState.items = simState.bookItems[0] || [];
     setupFilter();
     createLocationSelect();
     filteredData = data;
