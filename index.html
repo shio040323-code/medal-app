@@ -464,6 +464,8 @@ img.noimage{
   width: 100%;
 }
 
+/* シミュレーター操作欄：開始番号の前で確実に改行 */
+.sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
 </style>
 </head>
 
@@ -532,6 +534,8 @@ style="
         <button type="button" data-book-view="0" class="active">1book</button>
         <button type="button" data-book-view="1">2book</button>
       </div>
+
+      <div class="sim-force-break"></div>
 
       <label>開始
         <input id="simStart" type="number" value="1" min="1">
