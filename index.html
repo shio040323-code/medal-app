@@ -650,7 +650,6 @@ async function loadData() {
 
     renderPage();
     setupSimulatorRoman();
-    cacheImages(data);
 
     console.log("GitHubのdata.json + iPad追加データを読み込みました");
   } catch (error) {
@@ -1007,16 +1006,17 @@ function render(list){
      const finalImg =
      `${imageFolder}/${imgId}.webp`
       
+    const priority = list.indexOf(item) < 6;
+
     div.innerHTML = `
-     
      <img
-      loading="lazy"
+      ${priority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" fetchpriority="low"'}
+      decoding="async"
+      width="180"
+      height="120"
       src="${finalImg}"
-      onerror="
-      this.onerror=null;
-      this.src='./noimage.png';
-      this.classList.add('noimage');
-      "
+      alt=""
+      onerror="this.onerror=null;this.src='./noimage.png';this.classList.add('noimage');"
       >
       <div>
         <span class="id">${item.id}</span> /
@@ -1857,58 +1857,15 @@ document.getElementById("addDataModal").onclick = e => {
   }
 };
 
+// =========================
+// 画像高速化
+// =========================
+// 起動時の全画像先読みは廃止。必要な画像だけブラウザが読み込みます。
+// これにより大量の画像があっても起動時に100枚単位のfetchを行いません。
 async function cacheImages(data) {
-
-  if (!("caches" in window)) return;
-
-  const cache = await caches.open("medal-app-v5");
-
-  const batchSize = 100;
-
-  for (let i = 0; i < data.length; i += batchSize) {
-
-    const batch = data.slice(i, i + batchSize);
-
-    await Promise.all(
-
-      batch.map(async item => {
-
-        const imgId = item.id.split("-").pop();
-
-        const url = `./images/${imgId}.webp`;
-
-        try {
-
-          const cached = await cache.match(url);
-
-          if (!cached) {
-
-            const response = await fetch(url);
-
-            if (response.ok) {
-              await cache.put(url, response.clone());
-            }
-
-          }
-
-        } catch (e) {}
-
-      })
-
-    );
-
-    console.log(
-      `画像キャッシュ ${Math.min(i + batchSize, data.length)} / ${data.length}`
-    );
-
-    // iPadを休ませる
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-  }
-
-  console.log("全画像キャッシュ完了");
-
+  return;
 }
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./service-worker.js");  
 }
