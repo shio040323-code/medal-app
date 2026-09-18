@@ -59,6 +59,14 @@ button {
   aspect-ratio: 3 / 2;
 }
 
+/* 画像がない場合は背景の四角を表示しない */
+.card img.medal-image.noimage {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  object-fit: contain;
+}
+
 @media screen and (min-width: 700px) and (max-width: 800px) {
   .card {
     contain-intrinsic-size: 1px 180px;
