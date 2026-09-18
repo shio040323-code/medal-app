@@ -38,6 +38,36 @@ button {
   padding: 2px;
 }
 
+
+/* =========================
+   画像表示 高速化
+   ========================= */
+.card {
+  content-visibility: auto;
+  contain-intrinsic-size: 180px 180px;
+}
+
+.card img.medal-image {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 1px;
+  box-sizing: border-box;
+  aspect-ratio: 3 / 2;
+}
+
+@media screen and (min-width: 700px) and (max-width: 800px) {
+  .card {
+    contain-intrinsic-size: 1px 180px;
+  }
+  .card img.medal-image {
+    height: 120px;
+  }
+}
+
 img {
   width: 100%;
   height: 120px;
@@ -650,6 +680,7 @@ async function loadData() {
 
     renderPage();
     setupSimulatorRoman();
+    // 全画像の先読みは行わない。必要な画像だけ表示時に読み込む。
 
     console.log("GitHubのdata.json + iPad追加データを読み込みました");
   } catch (error) {
@@ -983,68 +1014,119 @@ renderPage();
 }
 
 function render(list){
+  const grid = document.getElementById("grid");
+  if (!grid) return;
 
-  const grid =
-    document.getElementById("grid")
+  // 前回の監視を解除
+  if (window._medalImageObserver) {
+    window._medalImageObserver.disconnect();
+  }
 
-  grid.innerHTML = ""
+  grid.innerHTML = "";
 
-  list.forEach(item => {
+  const BATCH_SIZE = 15;
+  let rendered = 0;
 
-    const imgId =
-      item.id.split("-").pop()
+  // 画像監視を1つだけ作る
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
 
-    const div =
-      document.createElement("div")
+      const img = entry.target;
+      const src = img.dataset.src;
+      if (src && !img.src) {
+        img.src = src;
+      }
+      observer.unobserve(img);
+    });
+  }, {
+    root: null,
+    rootMargin: "500px 0px",
+    threshold: 0.01
+  });
 
-    div.className = "card"
+  window._medalImageObserver = observer;
 
-   
-    const imgPath =
-  `./images/${imgId}.webp`
+  function appendBatch() {
+    const fragment = document.createDocumentFragment();
+    const end = Math.min(rendered + BATCH_SIZE, list.length);
 
-     const finalImg =
-     `${imageFolder}/${imgId}.webp`
-      
-    const priority = list.indexOf(item) < 6;
+    for (let i = rendered; i < end; i++) {
+      const item = list[i];
+      const imgId = String(item.id || "").split("-").pop();
+      const finalImg = `${imageFolder}/${imgId}.webp`;
 
-    div.innerHTML = `
-     <img
-      ${priority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" fetchpriority="low"'}
-      decoding="async"
-      width="180"
-      height="120"
-      src="${finalImg}"
-      alt=""
-      onerror="this.onerror=null;this.src='./noimage.png';this.classList.add('noimage');"
-      >
-      <div>
-        <span class="id">${item.id}</span> /
-        <span class="type">${item.type}</span>
-        <span class="book">
-          ${toRoman(item.bookNum)}
-        </span>
-      </div>
+      const div = document.createElement("div");
+      div.className = "card";
 
-      <div class="detail">
-        ${item.detail || ""}
-      </div>
+      div.innerHTML = `
+        <img
+          class="medal-image"
+          data-src="${finalImg}"
+          loading="${i < 6 ? "eager" : "lazy"}"
+          decoding="async"
+          width="180"
+          height="120"
+          alt=""
+        >
+        <div>
+          <span class="id">${item.id || ""}</span> /
+          <span class="type">${item.type || ""}</span>
+          <span class="book">${toRoman(item.bookNum)}</span>
+        </div>
+        <div class="detail">${item.detail || ""}</div>
+        <div class="date">${item.date || ""}</div>
+        <div class="location">${item.location || ""}</div>
+        <div class="name">${item.name || ""}</div>
+      `;
 
-      <div class="date">
-        ${item.date}
-      </div>
+      const img = div.querySelector(".medal-image");
 
-      <div class="location">
-        ${item.location}
-      </div>
+      img.onerror = function() {
+        if (this.dataset.fallback === "1") return;
+        this.dataset.fallback = "1";
+        this.removeAttribute("data-src");
+        this.src = "./noimage.png";
+        this.classList.add("noimage");
+      };
 
-      <div class="name">
-        ${item.name}
-      </div>
-    `
+      fragment.appendChild(div);
+    }
 
-    grid.appendChild(div)
-  })
+    grid.appendChild(fragment);
+
+    // 最初の6枚は即読み込み、それ以外はObserverに任せる
+    const imgs = grid.querySelectorAll(".medal-image");
+    imgs.forEach(img => {
+      if (img.dataset.src && !img.src) {
+        if (img.loading === "eager") {
+          img.src = img.dataset.src;
+        } else {
+          observer.observe(img);
+        }
+      }
+    });
+
+    rendered = end;
+
+    if (rendered < list.length) {
+      const sentinel = document.createElement("div");
+      sentinel.className = "medal-load-sentinel";
+      sentinel.style.cssText = "height:1px;width:100%;";
+      grid.appendChild(sentinel);
+
+      const sentinelObserver = new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting) return;
+        sentinelObserver.disconnect();
+        sentinel.remove();
+        appendBatch();
+      }, { rootMargin: "700px 0px" });
+
+      sentinelObserver.observe(sentinel);
+    }
+  }
+
+  appendBatch();
 }
 
 
@@ -1857,17 +1939,57 @@ document.getElementById("addDataModal").onclick = e => {
   }
 };
 
-// =========================
-// 画像高速化
-// =========================
-// 起動時の全画像先読みは廃止。必要な画像だけブラウザが読み込みます。
-// これにより大量の画像があっても起動時に100枚単位のfetchを行いません。
 async function cacheImages(data) {
-  return;
-}
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./service-worker.js");  
+  if (!("caches" in window)) return;
+
+  const cache = await caches.open("medal-app-v5");
+
+  const batchSize = 100;
+
+  for (let i = 0; i < data.length; i += batchSize) {
+
+    const batch = data.slice(i, i + batchSize);
+
+    await Promise.all(
+
+      batch.map(async item => {
+
+        const imgId = item.id.split("-").pop();
+
+        const url = `./images/${imgId}.webp`;
+
+        try {
+
+          const cached = await cache.match(url);
+
+          if (!cached) {
+
+            const response = await fetch(url);
+
+            if (response.ok) {
+              await cache.put(url, response.clone());
+            }
+
+          }
+
+        } catch (e) {}
+
+      })
+
+    );
+
+    console.log(
+      `画像キャッシュ ${Math.min(i + batchSize, data.length)} / ${data.length}`
+    );
+
+    // iPadを休ませる
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+  }
+
+  console.log("全画像キャッシュ完了");
+
 }
 </script>
 </body>
