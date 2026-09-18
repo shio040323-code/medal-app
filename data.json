@@ -6868,11 +6868,20 @@
   },
   {
     "id": "S-0764",
-    "name": "",
-    "location": "",
+    "name": "ｱｰﾝﾄ･ﾍﾟｸﾞｽ･ｳﾞｨﾚｯｼﾞｽﾄｱ",
+    "location": "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
     "date": "",
-    "type": "",
-    "detail": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "Cookie-Ann's Halloween Sweet Surprise(ｸｯｷｰ･ｱﾝのﾊﾛｳｨｰﾝ･ｽｳｨｰﾄｻﾌﾟﾗｲｽﾞ)",
     "bookNum": 17
+  },
+  {
+    "id": "A-0765",
+    "name": "特別付録",
+    "location": "特別付録",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
   }
 ]
