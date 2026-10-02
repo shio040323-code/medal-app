@@ -1,4 +1,4 @@
-const CACHE_NAME = "medal-app-v7";
+const CACHE_NAME = "medal-app-v8";
 
 const urlsToCache = [
   "./",
@@ -72,84 +72,34 @@ self.addEventListener("fetch", event => {
   ) {
 
     event.respondWith(
-
       caches.open(CACHE_NAME).then(async cache => {
 
-        const cached =
-          await cache.match(event.request);
+        // ★ iPad高速化：まずキャッシュを確認
+        const cached = await cache.match(event.request);
 
-
-        // --------------------------------
-        // キャッシュがある場合
-        // --------------------------------
-
-if (cached) {
-
-  try {
-
-    const response =
-      await fetch(event.request, {
-        cache: "no-store"
-      });
-
-    // GitHubに画像が存在する
-    if (response.ok) {
-
-      await cache.put(
-        event.request,
-        response.clone()
-      );
-
-      return response;
-    }
-
-    // 画像が削除されている
-    await cache.delete(event.request);
-
-    return caches.match("./noimage.png");
-
-  } catch (error) {
-
-    // オフラインなら古いキャッシュを使用
-    return cached;
-
-  }
-
-}
-
-
-        // --------------------------------
-        // キャッシュがない場合
-        // --------------------------------
-        try {
-
-          const response =
-            await fetch(event.request);
-
-          if (response.ok) {
-
-            cache.put(
-              event.request,
-              response.clone()
-            );
-
-          }
-
-          return response;
-
-        } catch (error) {
-
-          return caches.match("./noimage.png");
-
+        if (cached) {
+          // キャッシュ済みならネットワークへ行かず即表示
+          return cached;
         }
 
-      })
+        // 初回だけネットワークから取得して保存
+        try {
+          const response = await fetch(event.request);
 
+          if (response.ok) {
+            await cache.put(event.request, response.clone());
+            return response;
+          }
+
+          return caches.match("./noimage.png");
+        } catch (error) {
+          return caches.match("./noimage.png");
+        }
+      })
     );
 
     return;
   }
-
 
   // ==========================
   // HTML・JSONなど

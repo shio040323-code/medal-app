@@ -44,7 +44,7 @@ button {
    ========================= */
 .card {
   content-visibility: auto;
-  contain-intrinsic-size: 180px 180px;
+  contain-intrinsic-size: 180px 145px;
 }
 
 .card img.medal-image {
@@ -1049,7 +1049,7 @@ function render(list){
     });
   }, {
     root: null,
-    rootMargin: "500px 0px",
+    rootMargin: "300px 0px",
     threshold: 0.01
   });
 
@@ -1101,17 +1101,17 @@ function render(list){
       fragment.appendChild(div);
     }
 
+    // 今回追加した画像だけ処理する
+    const imgs = fragment.querySelectorAll(".medal-image");
     grid.appendChild(fragment);
 
-    // 最初の6枚は即読み込み、それ以外はObserverに任せる
-    const imgs = grid.querySelectorAll(".medal-image");
     imgs.forEach(img => {
-      if (img.dataset.src && !img.src) {
-        if (img.loading === "eager") {
-          img.src = img.dataset.src;
-        } else {
-          observer.observe(img);
-        }
+      if (!img.dataset.src || img.src) return;
+
+      if (img.loading === "eager") {
+        img.src = img.dataset.src;
+      } else {
+        observer.observe(img);
       }
     });
 
@@ -1128,7 +1128,7 @@ function render(list){
         sentinelObserver.disconnect();
         sentinel.remove();
         appendBatch();
-      }, { rootMargin: "700px 0px" });
+      }, { rootMargin: "500px 0px" });
 
       sentinelObserver.observe(sentinel);
     }
