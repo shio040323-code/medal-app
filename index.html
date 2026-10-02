@@ -1032,7 +1032,7 @@ function render(list){
 
   grid.innerHTML = "";
 
-  const BATCH_SIZE = 15;
+  const BATCH_SIZE = 12;
   let rendered = 0;
 
   // 画像監視を1つだけ作る
@@ -1049,7 +1049,7 @@ function render(list){
     });
   }, {
     root: null,
-    rootMargin: "300px 0px",
+    rootMargin: "180px 0px",
     threshold: 0.01
   });
 
@@ -1071,8 +1071,9 @@ function render(list){
         <img
           class="medal-image"
           data-src="${finalImg}"
-          loading="${i < 6 ? "eager" : "lazy"}"
+          loading="${i < 3 ? "eager" : "lazy"}"
           decoding="async"
+          fetchpriority="${i < 3 ? "high" : "low"}"
           width="180"
           height="120"
           alt=""
@@ -1128,7 +1129,7 @@ function render(list){
         sentinelObserver.disconnect();
         sentinel.remove();
         appendBatch();
-      }, { rootMargin: "500px 0px" });
+      }, { rootMargin: "350px 0px" });
 
       sentinelObserver.observe(sentinel);
     }
