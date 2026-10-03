@@ -960,21 +960,30 @@ async function loadCloudSimulatorState(){
 
 async function mergeCloudMedalsIntoLocal(){
   if (!cloudUser) return;
+
+  // IndexedDBから必ず最新の端末追加データを読み直す
+  // （iPadで追加した直後でも取りこぼさない）
+  const freshLocal = await loadAddedData();
+  if (freshLocal.length) addedData = freshLocal;
+
   const cloudItems = await fetchCloudMedals();
   const cloudIds = new Set(cloudItems.map(item => String(item.id).toUpperCase()));
   const localItems = (addedData || []).map(item => ({...item, _local:true}));
 
-  // クラウドに存在するIDはクラウド側を優先。端末にしかない追加データはクラウドへ送る。
+  // 端末にしかない追加データは先にクラウドへ送る
   const localOnly = localItems.filter(item => !cloudIds.has(String(item.id).toUpperCase()));
   for (const item of localOnly) {
     try { await upsertCloudMedal(item); }
-    catch (error) { console.error("端末追加データの初回クラウド送信エラー", error); }
+    catch (error) { console.error("端末追加データのクラウド送信エラー", error); }
   }
 
+  // クラウドと端末をIDで統合。既存のクラウドデータを基本とし、
+  // 端末にしかないものは追加する。
   const merged = [...cloudItems, ...localOnly];
   const unique = new Map(merged.map(item => [String(item.id).toUpperCase(), item]));
   addedData = [...unique.values()].map(item => ({...item, _local:true, _cloud:true}));
   for (const item of addedData) await saveAddedData(item);
+
   data = mergeData(masterData, addedData);
   setupFilter();
   createLocationSelect();
@@ -992,7 +1001,7 @@ async function syncCloudNow(){
   try {
     await mergeCloudMedalsIntoLocal();
     await syncSimulator2BookOnLogin();
-    setCloudStatus(`同期済み：${cloudUser.email}`, true);
+    setCloudStatus(`同期済み：${cloudUser.email} / 追加${addedData.length}件`, true);
   } catch (error) {
     console.error("クラウド同期エラー", error);
     setCloudStatus("同期エラー（端末保存は継続）");
@@ -1004,18 +1013,43 @@ async function syncCloudNow(){
 
 async function syncSimulator2BookOnLogin(){
   if (!cloudUser) return;
+
+  // iPad/PCのIndexedDBに保存されているシミュレーター状態を必ず先に読み込む
+  await loadSimulatorState();
+
   const cloudState = await loadCloudSimulatorState();
   const localBook2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [];
-  if (cloudState) {
-    simState.faces = Number(cloudState.faces) || simState.faces || 3;
-    simState.bookItems[1] = Array.isArray(cloudState.book2) ? cloudState.book2 : [];
-    simState.bookItems[1] = simState.bookItems[1].map(item => item ? {...item, _simOnly:true} : item);
-    document.getElementById("simFaces").value = String(simState.faces);
-    simState.items = simState.bookItems[simState.currentBook] || [];
-    await saveSimulatorState();
+  const localHasBook2 = localBook2.some(item => !!item);
+  const cloudBook2 = Array.isArray(cloudState?.book2) ? cloudState.book2 : [];
+  const cloudHasBook2 = cloudBook2.some(item => !!item);
+
+  if (cloudState && cloudHasBook2 && localHasBook2) {
+    // 両方にデータがある場合は、空きスロットを残しつつ
+    // 端末側の配置を優先してスロット単位で統合する
+    const max = Math.max(localBook2.length, cloudBook2.length);
+    const merged = new Array(max).fill(null);
+    for (let i = 0; i < max; i++) {
+      merged[i] = localBook2[i] || cloudBook2[i] || null;
+    }
+    simState.bookItems[1] = merged.map(item => item ? {...item, _simOnly:true} : item);
+    simState.faces = Number(cloudState.faces) || Number(simState.faces) || 3;
+    await saveCloudSimulatorState();
+  } else if (localHasBook2) {
+    // iPadにだけ2BOOKがある場合は、それをクラウドへ取り込む
+    simState.bookItems[1] = localBook2.map(item => item ? {...item, _simOnly:true} : item);
+    await saveCloudSimulatorState();
+  } else if (cloudState) {
+    // 端末に2BOOKがない場合だけクラウドから取得
+    simState.faces = Number(cloudState.faces) || Number(simState.faces) || 3;
+    simState.bookItems[1] = cloudBook2.map(item => item ? {...item, _simOnly:true} : item);
   } else {
+    // まだクラウドに何もない場合は端末状態を保存
     await saveCloudSimulatorState();
   }
+
+  document.getElementById("simFaces").value = String(simState.faces);
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  await saveSimulatorState();
   renderSimulator();
 }
 
@@ -2675,6 +2709,9 @@ async function cacheImages(data) {
 // =========================
 async function startApp() {
   await loadData();
+  // クラウド同期より前に端末の1/2BOOK状態をIndexedDBから復元
+  // これでiPadにしかない2BOOK配置もクラウドへ取り込める
+  await loadSimulatorState();
   await initCloudAuth();
 }
 startApp();
