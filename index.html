@@ -620,6 +620,7 @@ img.noimage{
   margin:5px 0 10px;
 }
 .cloud-auth-buttons{display:flex;gap:8px;flex-wrap:wrap;}
+#cloudForceUploadBtn{display:none;}
 .cloud-auth-buttons button{flex:1;min-height:42px;}
 #cloudAuthMessage{min-height:20px;color:#b00020;font-size:13px;margin:6px 0;white-space:pre-wrap;}
 .cloud-user-email{font-size:12px;color:#666;}
@@ -632,7 +633,8 @@ img.noimage{
   <span id="cloudStatus">☁ クラウド：未ログイン</span>
   <span id="cloudUserEmail" class="cloud-user-email"></span>
   <button type="button" id="cloudLoginBtn">クラウドログイン</button>
-  <button type="button" id="cloudSyncNowBtn">今すぐ同期</button><button type="button" id="diagnosticBtn" style="padding:5px 10px;border:1px solid #777;border-radius:7px;background:#fff;cursor:pointer;">端末データ確認</button>
+  <button type="button" id="cloudSyncNowBtn">今すぐ同期</button>
+  <button type="button" id="cloudForceUploadBtn">端末データをクラウドへ送る</button>
   <button type="button" id="cloudLogoutBtn">ログアウト</button>
 </div>
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
@@ -676,14 +678,6 @@ style="
 </select>
 </div>
 
-
-<div id="diagnosticModal" style="display:none;position:fixed;inset:0;z-index:6000;background:rgba(0,0,0,.5);padding:20px;box-sizing:border-box;">
-  <div style="max-width:760px;margin:30px auto;background:#fff;border-radius:12px;padding:18px;max-height:85vh;overflow:auto;">
-    <h3 style="margin-top:0;">端末データ確認</h3>
-    <div id="diagnosticResult" style="white-space:pre-wrap;font-family:monospace;font-size:13px;line-height:1.5;"></div>
-    <button type="button" id="diagnosticCloseBtn" style="margin-top:14px;padding:8px 16px;">閉じる</button>
-  </div>
-</div>
 <div id="cloudAuthModal">
   <div id="cloudAuthPanel">
     <h3>クラウドログイン</h3>
@@ -860,6 +854,8 @@ function setCloudButtons(loggedIn){
   if (login) login.style.display = loggedIn ? "none" : "inline-block";
   if (logout) logout.style.display = loggedIn ? "inline-block" : "none";
   if (sync) sync.style.display = loggedIn ? "inline-block" : "none";
+  const forceUpload = document.getElementById("cloudForceUploadBtn");
+  if (forceUpload) forceUpload.style.display = loggedIn ? "inline-block" : "none";
 }
 
 function showCloudAuthModal(){
@@ -1002,6 +998,51 @@ async function mergeCloudMedalsIntoLocal(){
   renderPage();
 }
 
+async function forceUploadDeviceData(){
+  if (!cloudUser || cloudSyncBusy) return;
+  cloudSyncBusy = true;
+  setCloudStatus("端末データをクラウドへ送信中…");
+  try {
+    // IndexedDBから最新状態を直接読み直す
+    const localAdded = await loadAddedData();
+    const restored = await loadSimulatorState();
+    const localBook2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [];
+
+    let medalCount = 0;
+    for (const item of localAdded) {
+      await upsertCloudMedal(item);
+      medalCount++;
+    }
+
+    // 2BOOKだけを強制的にクラウドへ保存。1BOOKは送信しない。
+    const row = {
+      user_id: cloudUser.id,
+      faces: Number(simState.faces) || 3,
+      book2: localBook2.map(item => item ? normalizeCloudBookItem(item) : null),
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabaseClient
+      .from("medal_simulator_state")
+      .upsert(row, { onConflict:"user_id" });
+    if (error) throw error;
+
+    addedData = localAdded.map(item => ({...item, _local:true, _cloud:true}));
+    data = mergeData(masterData, addedData);
+    simState.bookItems[1] = localBook2;
+    simState.items = simState.bookItems[simState.currentBook] || [];
+    await saveSimulatorState();
+    renderSimulator();
+    setCloudStatus(`端末→クラウド完了：追加${medalCount}件 / 2BOOK${localBook2.filter(Boolean).length}件`, true);
+    alert(`端末データをクラウドへ送信しました。\n追加メダル：${medalCount}件\n2BOOK：${localBook2.filter(Boolean).length}件`);
+  } catch (error) {
+    console.error("端末データ強制送信エラー", error);
+    setCloudStatus("端末→クラウド送信エラー");
+    alert("端末データの送信に失敗しました。\n" + (error?.message || error));
+  } finally {
+    cloudSyncBusy = false;
+  }
+}
+
 async function syncCloudNow(){
   if (!cloudUser || cloudSyncBusy) return;
   cloudSyncBusy = true;
@@ -1075,85 +1116,6 @@ function closeRecoveryPasswordModal(){
   if (msg) msg.textContent = "";
 }
 
-
-async function inspectLocalDeviceData(){
-  const lines = [];
-  lines.push("【端末データ確認】");
-  lines.push("");
-
-  // IndexedDB database list
-  try {
-    if (indexedDB.databases) {
-      const dbs = await indexedDB.databases();
-      lines.push("IndexedDB:");
-      if (!dbs.length) lines.push("  データベースなし");
-      for (const info of dbs) {
-        lines.push(`  DB: ${info.name || "(名称なし)"} / version=${info.version || "?"}`);
-        try {
-          const db = await new Promise((resolve, reject) => {
-            const req = indexedDB.open(info.name);
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-          });
-          const stores = Array.from(db.objectStoreNames);
-          lines.push(`    stores: ${stores.join(", ") || "(なし)"}`);
-          for (const storeName of stores) {
-            try {
-              const count = await new Promise((resolve, reject) => {
-                const tx = db.transaction(storeName, "readonly");
-                const req = tx.objectStore(storeName).count();
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
-              });
-              lines.push(`      ${storeName}: ${count}件`);
-            } catch(e) {
-              lines.push(`      ${storeName}: 読み取り失敗`);
-            }
-          }
-          db.close();
-        } catch(e) {
-          lines.push(`    DBを開けません: ${e?.message || e}`);
-        }
-      }
-    } else {
-      lines.push("IndexedDB: databases() 非対応");
-    }
-  } catch(e) {
-    lines.push("IndexedDB確認エラー: " + (e?.message || e));
-  }
-
-  // Current app's stores
-  try {
-    const added = await loadAddedData();
-    lines.push("");
-    lines.push(`現在アプリが読める追加メダル: ${added.length}件`);
-  } catch(e) {
-    lines.push("");
-    lines.push("現在アプリの追加メダル読み込み: エラー");
-  }
-
-  try {
-    const restored = await loadSimulatorState();
-    const b1 = Array.isArray(simState.bookItems?.[0]) ? simState.bookItems[0].filter(Boolean).length : 0;
-    const b2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1].filter(Boolean).length : 0;
-    lines.push(`シミュレーター復元: ${restored ? "あり" : "なし"}`);
-    lines.push(`  1BOOK: ${b1}件`);
-    lines.push(`  2BOOK: ${b2}件`);
-  } catch(e) {
-    lines.push("シミュレーター読み込み: エラー");
-  }
-
-  lines.push("");
-  lines.push("【お願い】");
-  lines.push("この画面のスクリーンショットを送ってください。");
-  lines.push("ここではデータを削除・変更していません。");
-
-  const result = document.getElementById("diagnosticResult");
-  const modal = document.getElementById("diagnosticModal");
-  if (result) result.textContent = lines.join("\n");
-  if (modal) modal.style.display = "block";
-}
-
 async function initCloudAuth(){
   setCloudButtons(false);
   if (!supabaseClient) {
@@ -1203,14 +1165,7 @@ async function initCloudAuth(){
     await supabaseClient.auth.signOut();
   });
   document.getElementById("cloudSyncNowBtn")?.addEventListener("click", syncCloudNow);
-  document.getElementById("diagnosticBtn")?.addEventListener("click", inspectLocalDeviceData);
-  document.getElementById("diagnosticCloseBtn")?.addEventListener("click", () => {
-    const m = document.getElementById("diagnosticModal");
-    if (m) m.style.display = "none";
-  });
-  document.getElementById("diagnosticModal")?.addEventListener("click", e => {
-    if (e.target.id === "diagnosticModal") e.currentTarget.style.display = "none";
-  });
+  document.getElementById("cloudForceUploadBtn")?.addEventListener("click", forceUploadDeviceData);
   document.getElementById("cloudRecoveryModal")?.addEventListener("click", e => {
     if (e.target.id === "cloudRecoveryModal") closeRecoveryPasswordModal();
   });
