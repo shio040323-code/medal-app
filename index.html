@@ -881,7 +881,6 @@ function saveAddedData(item) {
 }
 
 
-loadData()
 
 
 
@@ -2222,6 +2221,13 @@ async function cacheImages(data) {
   console.log("全画像キャッシュ完了");
 
 }
+
+// =========================
+// アプリ起動
+// すべての変数・関数の初期化後に実行する
+// =========================
+loadData();
+
 </script>
 </body>
 </html>
