@@ -505,64 +505,16 @@ img.noimage{
 /* シミュレーター操作欄：開始番号の前で確実に改行 */
 .sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
 
-/* シミュレーター：開始・終了番号の大きな▲▼ボタン */
-.sim-number-control{
-  display:flex;
-  align-items:stretch;
-  gap:5px;
-}
-.sim-number-control input{
-  width:72px;
-  box-sizing:border-box;
-}
-.sim-step-buttons{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-.sim-step-buttons button{
-  width:46px;
-  min-width:46px;
-  height:28px;
-  padding:0;
-  margin:0;
-  font-size:18px;
-  line-height:1;
-  font-weight:700;
-  touch-action:manipulation;
-}
-.sim-step-buttons button:active{
-  transform:scale(.96);
-}
-
 /* NEW表示 */
-.new-badge{
-  display:inline-block;
-  margin-left:5px;
-  padding:1px 6px;
-  border-radius:5px;
-  background:#e53935;
-  color:#fff;
-  font-size:11px;
-  font-weight:800;
-  line-height:1.4;
-  vertical-align:middle;
-}
-
-/* NEWフィルター */
-#newFilterBtn{
-  margin-left:6px;
-  border:1px solid #e53935;
-  border-radius:7px;
-  background:#fff;
-  color:#d32f2f;
-  font-weight:700;
-  cursor:pointer;
-}
-#newFilterBtn.active{
-  background:#e53935;
-  color:#fff;
-}
+.new-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:5px;background:#e53935;color:#fff;font-size:11px;font-weight:800;line-height:1.4;vertical-align:middle;}
+#newFilterBtn{margin-left:6px;border:1px solid #e53935;border-radius:7px;background:#fff;color:#d32f2f;font-weight:700;cursor:pointer;min-height:32px;}
+#newFilterBtn.active{background:#e53935;color:#fff;}
+/* シミュレーター開始・終了 ▲▼ */
+.sim-number-control{display:flex;align-items:stretch;gap:5px;}
+.sim-number-control input{width:72px;box-sizing:border-box;}
+.sim-step-buttons{display:flex;flex-direction:column;gap:3px;}
+.sim-step-buttons button{width:46px;min-width:46px;height:28px;padding:0;margin:0;font-size:18px;line-height:1;font-weight:700;touch-action:manipulation;}
+.sim-step-buttons button:active{transform:scale(.96);}
 </style>
 </head>
 
@@ -639,8 +591,8 @@ style="
         <div class="sim-number-control">
           <input id="simStart" type="number" value="1" min="1">
           <div class="sim-step-buttons">
-            <button type="button" data-sim-step="simStart" data-step="1" aria-label="開始番号を1増やす">▲</button>
-            <button type="button" data-sim-step="simStart" data-step="-1" aria-label="開始番号を1減らす">▼</button>
+            <button type="button" data-sim-step="simStart" data-step="1">▲</button>
+            <button type="button" data-sim-step="simStart" data-step="-1">▼</button>
           </div>
         </div>
       </label>
@@ -649,8 +601,8 @@ style="
         <div class="sim-number-control">
           <input id="simEnd" type="number" value="45" min="1">
           <div class="sim-step-buttons">
-            <button type="button" data-sim-step="simEnd" data-step="1" aria-label="終了番号を1増やす">▲</button>
-            <button type="button" data-sim-step="simEnd" data-step="-1" aria-label="終了番号を1減らす">▼</button>
+            <button type="button" data-sim-step="simEnd" data-step="1">▲</button>
+            <button type="button" data-sim-step="simEnd" data-step="-1">▼</button>
           </div>
         </div>
       </label>
@@ -740,8 +692,8 @@ async function loadData() {
 
     masterData = await response.json();
 
-    // 前回のdata.jsonと比較して、新しく追加されたIDを自動検出
-    updateMasterNewStatus(masterData);
+    loadNewState();
+    detectNewMasterData(masterData);
 
     // iPad内に保存した追加データを読み込む
     addedData = await loadAddedData();
@@ -890,35 +842,31 @@ loadData()
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
 
+// NEWフィルター
+document.getElementById("newFilterBtn").addEventListener("click", () => {
+  if (!newOnly) {
+    newOnly = true;
+  } else {
+    // NEW一覧を確認して閉じた時点で既読にする
+    markCurrentNewAsSeen();
+    newOnly = false;
+  }
+  updateNewFilterButton();
+  applyFilter();
+});
+
 // シミュレーター開始・終了番号 ▲▼
 document.querySelectorAll("[data-sim-step]").forEach(button => {
   button.addEventListener("click", () => {
     const input = document.getElementById(button.dataset.simStep);
     if (!input) return;
-
     const current = Number(input.value || 1);
     const step = Number(button.dataset.step || 1);
     const min = Number(input.min || 1);
     const next = Math.max(min, current + step);
-
     input.value = String(next);
-
-    // キーボード入力と同じように変更を反映
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-});
-
-// NEWフィルター
-document.getElementById("newFilterBtn").addEventListener("click", () => {
-  // NEW一覧を閉じるときに、今回確認したNEWを既読にする。
-  // 表示中はNEWバッジを残すので、確認しながら見ることができる。
-  if (newOnly) {
-    markCurrentNewItemsAsSeen();
-  }
-
-  newOnly = !newOnly;
-  updateNewFilterButton();
-  applyFilter();
 });
 
 updateNewFilterButton();
@@ -1060,105 +1008,90 @@ function createNameSelect() {
 }
 
 let newOnly = false;
+const NEW_BASELINE_KEY = "medalApp_master_ids_v1";
+const NEW_SEEN_KEY = "medalApp_new_seen_ids_v1";
+let autoNewIds = new Set();
+let seenNewIds = new Set();
 
-// =========================
-// GitHub data.json の新規追加を自動検出
-// =========================
-const NEW_MASTER_IDS_KEY = "medalMasterKnownIds_v1";
-const NEW_UNSEEN_IDS_KEY = "medalMasterUnseenIds_v1";
-
-function getMasterIdSet(list) {
-  return new Set(
-    (Array.isArray(list) ? list : [])
-      .map(item => String(item?.id || "").trim())
-      .filter(Boolean)
-  );
+function getItemId(item) {
+  return String(item?.id || "").trim();
 }
 
-function loadStoredIdSet(key) {
+function loadNewState() {
   try {
-    const raw = JSON.parse(localStorage.getItem(key) || "[]");
-    return new Set(Array.isArray(raw) ? raw.map(String) : []);
+    const seen = JSON.parse(localStorage.getItem(NEW_SEEN_KEY) || "[]");
+    seenNewIds = new Set(Array.isArray(seen) ? seen : []);
   } catch (e) {
-    console.warn("NEW判定用データの読み込みに失敗しました", e);
-    return new Set();
+    seenNewIds = new Set();
   }
 }
 
-function saveStoredIdSet(key, set) {
-  localStorage.setItem(key, JSON.stringify([...set]));
+function saveNewState() {
+  localStorage.setItem(NEW_SEEN_KEY, JSON.stringify([...seenNewIds]));
 }
 
-function updateMasterNewStatus(masterList) {
-  const currentIds = getMasterIdSet(masterList);
-  const knownIds = loadStoredIdSet(NEW_MASTER_IDS_KEY);
-  const unseenIds = loadStoredIdSet(NEW_UNSEEN_IDS_KEY);
+function detectNewMasterData(master) {
+  const currentIds = new Set(
+    (Array.isArray(master) ? master : []).map(getItemId).filter(Boolean)
+  );
 
-  // 初回起動では現在のdata.jsonを基準として登録する。
-  // そのため、既存のメダル全部がNEWになることはない。
-  if (knownIds.size === 0) {
-    saveStoredIdSet(NEW_MASTER_IDS_KEY, currentIds);
+  let previousIds = null;
+  try {
+    const raw = localStorage.getItem(NEW_BASELINE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) previousIds = new Set(parsed);
+    }
+  } catch (e) {}
+
+  // 初回起動では既存データをNEWにしない。
+  if (!previousIds) {
+    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...currentIds]));
+    autoNewIds = new Set();
     return;
   }
 
-  // 前回なかったIDだけをNEWとして追加。
-  currentIds.forEach(id => {
-    if (!knownIds.has(id)) {
-      unseenIds.add(id);
-    }
-  });
+  // 前回には無かったIDだけをNEW候補にする。
+  autoNewIds = new Set(
+    [...currentIds].filter(id => !previousIds.has(id) && !seenNewIds.has(id))
+  );
 
-  // 今回確認したdata.jsonを次回比較用の基準として保存。
-  saveStoredIdSet(NEW_MASTER_IDS_KEY, currentIds);
-  saveStoredIdSet(NEW_UNSEEN_IDS_KEY, unseenIds);
-}
-
-function getAutomaticNewIds() {
-  return loadStoredIdSet(NEW_UNSEEN_IDS_KEY);
-}
-
-function markCurrentNewItemsAsSeen() {
-  const unseenIds = getAutomaticNewIds();
-  if (unseenIds.size === 0) return;
-
-  filteredData.forEach(item => {
-    const id = String(item?.id || "").trim();
-    if (id && unseenIds.has(id)) {
-      unseenIds.delete(id);
-    }
-  });
-
-  saveStoredIdSet(NEW_UNSEEN_IDS_KEY, unseenIds);
+  // 次回比較用に現在のID一覧を保存。
+  localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...currentIds]));
 }
 
 function isNewItem(item) {
   if (!item) return false;
 
-  // GitHubのdata.jsonに前回なかったIDを自動的にNEW扱い。
-  const id = String(item.id || "").trim();
-  if (id && getAutomaticNewIds().has(id)) return true;
+  // GitHub data.json の自動判定
+  const id = getItemId(item);
+  if (id && autoNewIds.has(id) && !seenNewIds.has(id)) return true;
 
-  // iPadから新規追加したデータは従来どおりNEW扱い。
-  if (item._local === true) return true;
-
-  // 手動でnew:true等を設定したデータにも互換対応。
+  // 既存の明示指定も互換維持
   if (typeof item.new === "boolean") return item.new;
   if (typeof item.isNew === "boolean") return item.isNew;
   if (typeof item.NEW === "boolean") return item.NEW;
 
-  const value = String(item.new ?? item.isNew ?? item.NEW ?? "")
-    .trim()
-    .toLowerCase();
+  const value = String(item.new ?? item.isNew ?? item.NEW ?? "").trim().toLowerCase();
+  if (value === "new" || value === "true" || value === "1") return true;
 
-  return value === "new" || value === "true" || value === "1";
+  // iPadから新規追加したデータはNEWとして扱う。
+  return item._local === true;
 }
 
 function updateNewFilterButton() {
   const button = document.getElementById("newFilterBtn");
   if (!button) return;
-
   button.classList.toggle("active", newOnly);
   button.setAttribute("aria-pressed", newOnly ? "true" : "false");
+}
+
+function markCurrentNewAsSeen() {
+  const currentNewIds = data.filter(isNewItem).map(getItemId).filter(Boolean);
+  currentNewIds.forEach(id => seenNewIds.add(id));
+  // 自動判定分から既読IDを除外
+  currentNewIds.forEach(id => autoNewIds.delete(id));
+  saveNewState();
 }
 
 function applyFilter() {
@@ -1205,10 +1138,7 @@ function applyFilter() {
     ? true
     : item.name === selectedName
 
-    const matchNew =
-      newOnly
-        ? isNewItem(item)
-        : true
+    const matchNew = newOnly ? isNewItem(item) : true
 
     return (
   matchKeyword &&
@@ -1294,10 +1224,9 @@ function render(list){
           alt=""
         >
         <div>
-          <span class="id">${item.id || ""}</span> /
+          <span class="id">${item.id || ""} ${isNewItem(item) ? '<span class="new-badge">NEW</span>' : ''}</span> /
           <span class="type">${item.type || ""}</span>
           <span class="book">${toRoman(item.bookNum)}</span>
-          ${isNewItem(item) ? '<span class="new-badge">NEW</span>' : ''}
         </div>
         <div class="detail">${item.detail || ""}</div>
         <div class="date">${item.date || ""}</div>
@@ -1396,6 +1325,7 @@ function toRoman(num) {
   return result
 }
 function clearFilters() {
+
   newOnly = false;
   updateNewFilterButton();
 
@@ -2087,7 +2017,6 @@ async function addSimulatorData() {
     id,
     type: type || source?.type || "",
     detail: detail || source?.detail || "",
-    new: true,
     _simOnly: true
   };
 
