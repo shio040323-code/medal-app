@@ -505,16 +505,62 @@ img.noimage{
 /* シミュレーター操作欄：開始番号の前で確実に改行 */
 .sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
 
-/* NEW表示 */
-.new-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:5px;background:#e53935;color:#fff;font-size:11px;font-weight:800;line-height:1.4;vertical-align:middle;}
-#newFilterBtn{margin-left:6px;border:1px solid #e53935;border-radius:7px;background:#fff;color:#d32f2f;font-weight:700;cursor:pointer;min-height:32px;}
-#newFilterBtn.active{background:#e53935;color:#fff;}
+/* NEW */
+#newFilterBtn{
+  margin-left:6px;
+  border:1px solid #e53935;
+  border-radius:7px;
+  background:#fff;
+  color:#d32f2f;
+  font-weight:700;
+  cursor:pointer;
+  min-height:32px;
+  padding:4px 10px;
+}
+#newFilterBtn.active{
+  background:#e53935;
+  color:#fff;
+}
+.new-badge{
+  display:inline-block;
+  margin-left:5px;
+  padding:1px 6px;
+  border-radius:5px;
+  background:#e53935;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.4;
+  vertical-align:middle;
+}
+
 /* シミュレーター開始・終了 ▲▼ */
-.sim-number-control{display:flex;align-items:stretch;gap:5px;}
-.sim-number-control input{width:72px;box-sizing:border-box;}
-.sim-step-buttons{display:flex;flex-direction:column;gap:3px;}
-.sim-step-buttons button{width:46px;min-width:46px;height:28px;padding:0;margin:0;font-size:18px;line-height:1;font-weight:700;touch-action:manipulation;}
-.sim-step-buttons button:active{transform:scale(.96);}
+.sim-number-control{
+  display:flex;
+  align-items:stretch;
+  gap:5px;
+}
+.sim-number-control input{
+  width:72px;
+  box-sizing:border-box;
+}
+.sim-step-buttons{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.sim-step-buttons button{
+  width:46px;
+  min-width:46px;
+  height:28px;
+  padding:0;
+  margin:0;
+  font-size:18px;
+  line-height:1;
+  font-weight:700;
+  touch-action:manipulation;
+}
+
 </style>
 </head>
 
@@ -692,6 +738,7 @@ async function loadData() {
 
     masterData = await response.json();
 
+    // NEW状態を読み込み、新しく増えたIDを自動判定
     loadNewState();
     detectNewMasterData(masterData);
 
@@ -842,34 +889,39 @@ loadData()
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
 
-// NEWフィルター
 document.getElementById("newFilterBtn").addEventListener("click", () => {
-  if (!newOnly) {
+  // NEWを開く：新着だけ表示
+  if(!newOnly){
     newOnly = true;
-  } else {
-    // NEW一覧を確認して閉じた時点で既読にする
-    markCurrentNewAsSeen();
-    newOnly = false;
+    updateNewFilterButton();
+    applyFilter();
+    return;
   }
+
+  // NEWを閉じる：表示して確認した新着を既読にする
+  markDisplayedNewAsSeen();
+  newOnly = false;
   updateNewFilterButton();
   applyFilter();
 });
+updateNewFilterButton();
 
-// シミュレーター開始・終了番号 ▲▼
+// シミュレーター開始・終了 ▲▼
 document.querySelectorAll("[data-sim-step]").forEach(button => {
   button.addEventListener("click", () => {
     const input = document.getElementById(button.dataset.simStep);
-    if (!input) return;
+    if(!input) return;
+
     const current = Number(input.value || 1);
     const step = Number(button.dataset.step || 1);
     const min = Number(input.min || 1);
     const next = Math.max(min, current + step);
+
     input.value = String(next);
-    input.dispatchEvent(new Event("change", { bubbles: true }));
+    input.dispatchEvent(new Event("change", {bubbles:true}));
   });
 });
 
-updateNewFilterButton();
 
 
 // チェックボックス生成
@@ -1007,91 +1059,111 @@ function createNameSelect() {
   })
 }
 
+
+// =========================
+// NEW自動判定
+// =========================
 let newOnly = false;
-const NEW_BASELINE_KEY = "medalApp_master_ids_v1";
-const NEW_SEEN_KEY = "medalApp_new_seen_ids_v1";
+const NEW_BASELINE_KEY = "medalApp_master_ids_v2";
+const NEW_SEEN_KEY = "medalApp_new_seen_ids_v2";
 let autoNewIds = new Set();
 let seenNewIds = new Set();
 
-function getItemId(item) {
+function itemId(item){
   return String(item?.id || "").trim();
 }
 
-function loadNewState() {
-  try {
+function loadNewState(){
+  try{
     const seen = JSON.parse(localStorage.getItem(NEW_SEEN_KEY) || "[]");
     seenNewIds = new Set(Array.isArray(seen) ? seen : []);
-  } catch (e) {
+  }catch(e){
     seenNewIds = new Set();
   }
 }
 
-function saveNewState() {
+function saveNewState(){
   localStorage.setItem(NEW_SEEN_KEY, JSON.stringify([...seenNewIds]));
 }
 
-function detectNewMasterData(master) {
+function detectNewMasterData(master){
   const currentIds = new Set(
-    (Array.isArray(master) ? master : []).map(getItemId).filter(Boolean)
+    (Array.isArray(master) ? master : [])
+      .map(itemId)
+      .filter(Boolean)
   );
 
   let previousIds = null;
-  try {
-    const raw = localStorage.getItem(NEW_BASELINE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) previousIds = new Set(parsed);
-    }
-  } catch (e) {}
 
-  // 初回起動では既存データをNEWにしない。
-  if (!previousIds) {
-    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...currentIds]));
+  try{
+    const raw = localStorage.getItem(NEW_BASELINE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)){
+        previousIds = new Set(parsed);
+      }
+    }
+  }catch(e){}
+
+  // 初回起動：現在あるデータを基準として登録。NEWにはしない。
+  if(!previousIds){
+    localStorage.setItem(
+      NEW_BASELINE_KEY,
+      JSON.stringify([...currentIds])
+    );
     autoNewIds = new Set();
     return;
   }
 
-  // 前回には無かったIDだけをNEW候補にする。
+  // 今回追加されたIDだけNEW候補にする。
   autoNewIds = new Set(
-    [...currentIds].filter(id => !previousIds.has(id) && !seenNewIds.has(id))
+    [...currentIds].filter(id => !previousIds.has(id))
   );
 
-  // 次回比較用に現在のID一覧を保存。
-  localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...currentIds]));
+  // 今回の一覧を次回比較用の基準に更新。
+  localStorage.setItem(
+    NEW_BASELINE_KEY,
+    JSON.stringify([...currentIds])
+  );
+
+  // 既に確認済みのものはNEWから除外。
+  autoNewIds = new Set(
+    [...autoNewIds].filter(id => !seenNewIds.has(id))
+  );
 }
 
-function isNewItem(item) {
-  if (!item) return false;
+function isNewItem(item){
+  if(!item) return false;
 
-  // GitHub data.json の自動判定
-  const id = getItemId(item);
-  if (id && autoNewIds.has(id) && !seenNewIds.has(id)) return true;
+  // シミュレーター/iPad追加データは従来どおりNEW扱い
+  if(item._local === true || item._simOnly === true) return true;
 
-  // 既存の明示指定も互換維持
-  if (typeof item.new === "boolean") return item.new;
-  if (typeof item.isNew === "boolean") return item.isNew;
-  if (typeof item.NEW === "boolean") return item.NEW;
-
-  const value = String(item.new ?? item.isNew ?? item.NEW ?? "").trim().toLowerCase();
-  if (value === "new" || value === "true" || value === "1") return true;
-
-  // iPadから新規追加したデータはNEWとして扱う。
-  return item._local === true;
+  const id = itemId(item);
+  return !!id && autoNewIds.has(id) && !seenNewIds.has(id);
 }
 
-function updateNewFilterButton() {
+function updateNewFilterButton(){
   const button = document.getElementById("newFilterBtn");
-  if (!button) return;
+  if(!button) return;
+
   button.classList.toggle("active", newOnly);
   button.setAttribute("aria-pressed", newOnly ? "true" : "false");
 }
 
-function markCurrentNewAsSeen() {
-  const currentNewIds = data.filter(isNewItem).map(getItemId).filter(Boolean);
-  currentNewIds.forEach(id => seenNewIds.add(id));
-  // 自動判定分から既読IDを除外
-  currentNewIds.forEach(id => autoNewIds.delete(id));
-  saveNewState();
+function markDisplayedNewAsSeen(){
+  if(!newOnly) return;
+
+  const ids = filteredData
+    .filter(item => isNewItem(item))
+    .map(itemId)
+    .filter(Boolean);
+
+  ids.forEach(id => {
+    seenNewIds.add(id);
+    autoNewIds.delete(id);
+  });
+
+  if(ids.length) saveNewState();
 }
 
 function applyFilter() {
@@ -1138,7 +1210,8 @@ function applyFilter() {
     ? true
     : item.name === selectedName
 
-    const matchNew = newOnly ? isNewItem(item) : true
+    const matchNew =
+      newOnly ? isNewItem(item) : true
 
     return (
   matchKeyword &&
@@ -1224,7 +1297,8 @@ function render(list){
           alt=""
         >
         <div>
-          <span class="id">${item.id || ""} ${isNewItem(item) ? '<span class="new-badge">NEW</span>' : ''}</span> /
+          <span class="id">${item.id || ""}</span> /
+        ${isNewItem(item) ? '<span class="new-badge">NEW</span>' : ''}
           <span class="type">${item.type || ""}</span>
           <span class="book">${toRoman(item.bookNum)}</span>
         </div>
