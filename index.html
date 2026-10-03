@@ -592,7 +592,7 @@ img.noimage{
 }
 #cloudLoginBtn{border-color:#1976d2;color:#1565c0;font-weight:700;}
 #cloudLogoutBtn{display:none;}
-#cloudSyncNowBtn{display:none;padding:5px 10px;border:1px solid #777;border-radius:7px;background:#fff;cursor:pointer;}
+#cloudSyncNowBtn{display:none;}
 #cloudAuthModal{
   display:none;
   position:fixed;
@@ -824,6 +824,7 @@ const locationGroups = {
 let data = []
 let masterData = []
 let addedData = []
+let simData = []
 let imageFolder = "images"
 let currentPage = 1
 const pageSize = 50
@@ -841,6 +842,40 @@ const supabaseClient = window.supabase
   : null;
 let cloudUser = null;
 let cloudSyncBusy = false;
+let cloudSyncApplying = false;
+let cloudAutoTimer = null;
+let lastLocalBook2Signature = "";
+
+function getBook2Signature() {
+  try {
+    return JSON.stringify({
+      faces: Number(simState.faces) || 3,
+      book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : []
+    });
+  } catch (_) {
+    return "";
+  }
+}
+
+function scheduleCloudAutoSync() {
+  if (!cloudUser || cloudSyncApplying) return;
+  clearTimeout(cloudAutoTimer);
+  cloudAutoTimer = setTimeout(async () => {
+    if (!cloudUser || cloudSyncApplying || cloudSyncBusy) return;
+    try {
+      cloudSyncApplying = true;
+      // 追加メダルは通常の追加処理で即時保存済み。ここでは2BOOKだけ自動保存。
+      await saveCloudSimulatorState();
+      lastLocalBook2Signature = getBook2Signature();
+      setCloudStatus(`自動同期済み：${cloudUser.email} / 2BOOK`, true);
+    } catch (error) {
+      console.error("2BOOK自動同期エラー", error);
+      setCloudStatus("自動同期エラー（端末保存は継続）");
+    } finally {
+      cloudSyncApplying = false;
+    }
+  }, 400);
+}
 
 function setCloudStatus(text, ok=false){
   const el = document.getElementById("cloudStatus");
@@ -853,9 +888,9 @@ function setCloudButtons(loggedIn){
   const sync = document.getElementById("cloudSyncNowBtn");
   if (login) login.style.display = loggedIn ? "none" : "inline-block";
   if (logout) logout.style.display = loggedIn ? "inline-block" : "none";
-  if (sync) sync.style.display = loggedIn ? "inline-block" : "none";
+  if (sync) sync.style.display = "none";
   const forceUpload = document.getElementById("cloudForceUploadBtn");
-  if (forceUpload) forceUpload.style.display = loggedIn ? "inline-block" : "none";
+  if (forceUpload) forceUpload.style.display = "none";
 }
 
 function showCloudAuthModal(){
@@ -988,7 +1023,8 @@ async function mergeCloudMedalsIntoLocal(){
   addedData = [...unique.values()].map(item => ({...item, _local:true, _cloud:true}));
   for (const item of addedData) await saveAddedData(item);
 
-  data = mergeData(masterData, addedData);
+  data = masterData;
+  simData = mergeData(masterData, addedData);
   setupFilter();
   createLocationSelect();
   setupSimulatorRoman();
@@ -1027,7 +1063,8 @@ async function forceUploadDeviceData(){
     if (error) throw error;
 
     addedData = localAdded.map(item => ({...item, _local:true, _cloud:true}));
-    data = mergeData(masterData, addedData);
+    data = masterData;
+    simData = mergeData(masterData, addedData);
     simState.bookItems[1] = localBook2;
     simState.items = simState.bookItems[simState.currentBook] || [];
     await saveSimulatorState();
@@ -1063,44 +1100,47 @@ async function syncCloudNow(){
 async function syncSimulator2BookOnLogin(){
   if (!cloudUser) return;
 
-  // iPad/PCのIndexedDBに保存されているシミュレーター状態を必ず先に読み込む
-  await loadSimulatorState();
+  cloudSyncApplying = true;
+  try {
+    // 端末側の保存状態を先に読み込む
+    await loadSimulatorState();
 
-  const cloudState = await loadCloudSimulatorState();
-  const localBook2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [];
-  const localHasBook2 = localBook2.some(item => !!item);
-  const cloudBook2 = Array.isArray(cloudState?.book2) ? cloudState.book2 : [];
-  const cloudHasBook2 = cloudBook2.some(item => !!item);
+    const cloudState = await loadCloudSimulatorState();
+    const localBook2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [];
+    const localHasBook2 = localBook2.some(item => !!item);
+    const cloudBook2 = Array.isArray(cloudState?.book2) ? cloudState.book2 : [];
+    const cloudHasBook2 = cloudBook2.some(item => !!item);
 
-  if (cloudState && cloudHasBook2 && localHasBook2) {
-    // 両方にデータがある場合は、空きスロットを残しつつ
-    // 端末側の配置を優先してスロット単位で統合する
-    const max = Math.max(localBook2.length, cloudBook2.length);
-    const merged = new Array(max).fill(null);
-    for (let i = 0; i < max; i++) {
-      merged[i] = localBook2[i] || cloudBook2[i] || null;
+    // 初回の自動同期は、端末側に保存データがあれば端末を優先。
+    // これにより、iPadで入れ直した2BOOKがクラウドの古い状態で上書きされない。
+    if (localHasBook2) {
+      if (!cloudState || !cloudHasBook2) {
+        await saveCloudSimulatorState();
+      } else {
+        // 両方にデータがある場合は、端末状態をそのままクラウドへ反映。
+        // 今後の通常運用では更新時刻でクラウド保存される。
+        await saveCloudSimulatorState();
+      }
+    } else if (cloudState) {
+      // 端末側に2BOOKがない場合だけクラウドから復元
+      simState.faces = Number(cloudState.faces) || Number(simState.faces) || 3;
+      simState.bookItems[1] = cloudBook2.map(item => item ? {...item, _simOnly:true} : item);
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      await saveSimulatorState();
+    } else {
+      await saveCloudSimulatorState();
     }
-    simState.bookItems[1] = merged.map(item => item ? {...item, _simOnly:true} : item);
-    simState.faces = Number(cloudState.faces) || Number(simState.faces) || 3;
-    await saveCloudSimulatorState();
-  } else if (localHasBook2) {
-    // iPadにだけ2BOOKがある場合は、それをクラウドへ取り込む
-    simState.bookItems[1] = localBook2.map(item => item ? {...item, _simOnly:true} : item);
-    await saveCloudSimulatorState();
-  } else if (cloudState) {
-    // 端末に2BOOKがない場合だけクラウドから取得
-    simState.faces = Number(cloudState.faces) || Number(simState.faces) || 3;
-    simState.bookItems[1] = cloudBook2.map(item => item ? {...item, _simOnly:true} : item);
-  } else {
-    // まだクラウドに何もない場合は端末状態を保存
-    await saveCloudSimulatorState();
-  }
 
-  document.getElementById("simFaces").value = String(simState.faces);
-  simState.items = simState.bookItems[simState.currentBook] || [];
-  await saveSimulatorState();
-  renderSimulator();
+    document.getElementById("simFaces").value = String(simState.faces);
+    simState.items = simState.bookItems[simState.currentBook] || [];
+    await saveSimulatorState();
+    lastLocalBook2Signature = getBook2Signature();
+    renderSimulator();
+  } finally {
+    cloudSyncApplying = false;
+  }
 }
+
 
 
 async function showRecoveryPasswordModal(){
@@ -1218,6 +1258,7 @@ async function loadData() {
     }
 
     masterData = await response.json();
+    simData = masterData.slice();
 
     // NEW状態を読み込み、新しく増えたIDを自動判定
     loadNewState();
@@ -1227,7 +1268,8 @@ async function loadData() {
     addedData = await loadAddedData();
 
     // GitHubのdata.jsonを優先して合体
-    data = mergeData(masterData, addedData);
+    data = masterData;
+    simData = mergeData(masterData, addedData);
 
     setupFilter();
     createLocationSelect();
@@ -1252,7 +1294,8 @@ async function loadData() {
     // オフライン時はiPad保存分だけでも表示
     try {
       addedData = await loadAddedData();
-      data = mergeData([], addedData);
+      data = [];
+      simData = mergeData([], addedData);
       setupFilter();
       createLocationSelect();
       filteredData = data;
@@ -1594,11 +1637,8 @@ function detectNewMasterData(master){
     [...currentIds].filter(id => !previousIds.has(id))
   );
 
-  // 今回の一覧を次回比較用の基準に更新。
-  localStorage.setItem(
-    NEW_BASELINE_KEY,
-    JSON.stringify([...currentIds])
-  );
+  // NEWは「確認するまで」保持する。
+  // 基準IDは、NEWを確認したときだけ更新する。
 
   // 既に確認済みのものはNEWから除外。
   autoNewIds = new Set(
@@ -1637,7 +1677,19 @@ function markDisplayedNewAsSeen(){
     autoNewIds.delete(id);
   });
 
-  if(ids.length) saveNewState();
+  if(ids.length){
+    saveNewState();
+
+    // 確認済みになったIDだけを次回比較用の基準へ追加。
+    let baseline = new Set();
+    try{
+      const raw = localStorage.getItem(NEW_BASELINE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if(Array.isArray(parsed)) baseline = new Set(parsed);
+    }catch(e){}
+    ids.forEach(id => baseline.add(id));
+    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...baseline]));
+  }
 }
 
 document.getElementById("newFilterBtn").addEventListener("click", () => {
@@ -2100,6 +2152,7 @@ function loadSimulatorState() {
       simState.bookItems = saved.bookItems.slice(0, 2);
       while (simState.bookItems.length < 2) simState.bookItems.push([]);
       simState.items = simState.bookItems[simState.currentBook] || [];
+      lastLocalBook2Signature = getBook2Signature();
       db.close();
       resolve(true);
     };
@@ -2148,10 +2201,10 @@ function extractNumber(text) {
 
 function setupSimulatorRoman() {
   const select = document.getElementById("simRoman");
-  if (!select || !Array.isArray(data)) return;
+  if (!select || !Array.isArray(simData)) return;
 
   const romans = [...new Set(
-    data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
+    simData.map(item => String(item.bookNum || "").trim()).filter(Boolean)
   )];
 
   // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
@@ -2185,7 +2238,7 @@ function makeSimulatorList() {
     return [];
   }
 
-  return data.filter(item => {
+  return simData.filter(item => {
     const num = extractNumber(item.id);
     if (roman === "") {
       return num >= start && num <= end;
@@ -2418,6 +2471,9 @@ document.getElementById("simFaces").addEventListener("change", () => {
 });
 
 document.getElementById("simRoman").addEventListener("change", () => {
+  // 2bookはクラウド保存された配置を固定して使用する。
+  // bookNo.を変更しても2bookの内容は切り替えない。
+  if (simState.currentBook === 1) return;
   applySimulatorSelection();
 });
 
@@ -2428,6 +2484,14 @@ document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button 
 });
 
 function applySimulatorSelection() {
+  // 2bookはbookNo.・開始番号・終了番号の指定対象外。
+  // 保存済みの2book配置をそのまま維持する。
+  if (simState.currentBook === 1) {
+    simState.items = simState.bookItems[1] || (simState.bookItems[1] = []);
+    renderSimulator();
+    return;
+  }
+
   const base = makeSimulatorList().slice();
 
   // メダル番号は昇順（小さい番号 → 大きい番号）
@@ -2445,12 +2509,14 @@ document.getElementById("simDisplay").addEventListener("click", () => {
   applySimulatorSelection();
 });
 
-// 開始・終了番号を変更したときも表示を更新
+// 開始・終了番号を変更したときも1bookだけ表示を更新
 document.getElementById("simStart").addEventListener("change", () => {
+  if (simState.currentBook === 1) return;
   applySimulatorSelection();
 });
 
 document.getElementById("simEnd").addEventListener("change", () => {
+  if (simState.currentBook === 1) return;
   applySimulatorSelection();
 });
 
@@ -2467,7 +2533,7 @@ function setupAddTypeSelect() {
   if (!select) return;
 
   const types = [...new Set(
-    (Array.isArray(data) ? data : [])
+    (Array.isArray(simData) ? simData : [])
       .map(item => String(item.type || "").trim())
       .filter(Boolean)
   )];
@@ -2574,7 +2640,7 @@ async function addSimulatorData() {
   // シミュレーターでは、同じメダルを別bookに配置してもOK。
   // これはデータの複製ではなく「配置先の記録」です。
   // 既存データがあれば、その情報を参照して配置します。
-  const source = data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  const source = simData.find(item => String(item.id).toUpperCase() === id.toUpperCase());
   const oldItem = editMode ? (bookItems[index] || null) : null;
 
   const item = {
@@ -2607,7 +2673,8 @@ async function addSimulatorData() {
         message.textContent = "端末には保存しましたが、クラウド保存に失敗しました。";
       }
     }
-    data = mergeData(masterData, addedData);
+    data = masterData;
+    simData = mergeData(masterData, addedData);
     setupFilter();
     createLocationSelect();
     setupSimulatorRoman();
@@ -2662,7 +2729,8 @@ async function clearAllAddedData() {
       if (cloudDeleteError) console.error("クラウド追加データ全削除エラー", cloudDeleteError);
     }
     addedData = [];
-    data = mergeData(masterData, addedData);
+    data = masterData;
+    simData = mergeData(masterData, addedData);
 
     // 「全削除」は追加データだけでなく、
     // シミュレーターの保存配置も初期化する
