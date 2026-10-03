@@ -1,4 +1,4 @@
-const CACHE_NAME = "medal-app-v9";
+const CACHE_NAME = "medal-app-v10";
 
 const urlsToCache = [
   "./",
@@ -7,165 +7,95 @@ const urlsToCache = [
   "./noimage.png"
 ];
 
-
-// ==============================
-// インストール
-// ==============================
 self.addEventListener("install", event => {
-
   event.waitUntil(
-
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
       .then(() => self.skipWaiting())
-
   );
-
 });
 
-
-// ==============================
-// 有効化
-// ==============================
 self.addEventListener("activate", event => {
-
   event.waitUntil(
-
     caches.keys().then(keys =>
-
       Promise.all(
-
-        keys.map(key => {
-
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-
-        })
-
+        keys.map(key => key !== CACHE_NAME ? caches.delete(key) : undefined)
       )
-
     ).then(() => self.clients.claim())
-
   );
-
 });
 
-
-// ==============================
-// 通信
-// ==============================
 self.addEventListener("fetch", event => {
+  const request = event.request;
 
-  // GET以外は処理しない
-  if (event.request.method !== "GET") {
-    return;
-  }
+  if (request.method !== "GET") return;
 
+  // chrome-extension:// など外部originのリクエストはService Workerで処理しない
+  if (new URL(request.url).origin !== self.location.origin) return;
 
-  // ==========================
-  // 画像
-  // ==========================
   if (
-    event.request.destination === "image" &&
-    event.request.url.includes("/images/")
+    request.destination === "image" &&
+    request.url.includes("/images/")
   ) {
-
     event.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
-
-        // ★ iPad高速化：まずキャッシュを確認
-        const cached = await cache.match(event.request);
+        const cached = await cache.match(request);
 
         if (cached) {
-          // キャッシュ済みならネットワークへ行かず即表示
-          return cached;
+          try {
+            const response = await fetch(request, { cache: "no-store" });
+
+            if (response.ok) {
+              await cache.put(request, response.clone());
+              return response;
+            }
+
+            await cache.delete(request);
+            return caches.match("./noimage.png");
+          } catch (error) {
+            return cached;
+          }
         }
 
-        // 初回だけネットワークから取得して保存
         try {
-          const response = await fetch(event.request);
+          const response = await fetch(request);
 
           if (response.ok) {
-            await cache.put(event.request, response.clone());
-            return response;
+            await cache.put(request, response.clone());
           }
 
-          return caches.match("./noimage.png");
+          return response;
         } catch (error) {
           return caches.match("./noimage.png");
         }
       })
     );
-
     return;
   }
 
-  // ==========================
-  // HTML・JSONなど
-  // ==========================
   event.respondWith(
-
-    caches.match(event.request)
-      .then(async cached => {
-
-        if (cached) {
-
-          // キャッシュを即表示
-          // 裏で最新版を取得
-          fetch(event.request)
-            .then(response => {
-
-              if (response.ok) {
-
-                caches.open(CACHE_NAME)
-                  .then(cache => {
-
-                    cache.put(
-                      event.request,
-                      response.clone()
-                    );
-
-                  });
-
-              }
-
-            })
-            .catch(() => {});
-
-
-          return cached;
-        }
-
-
-        // キャッシュがない場合
-        try {
-
-          const response =
-            await fetch(event.request);
-
-          if (response.ok) {
-
-            const cache =
-              await caches.open(CACHE_NAME);
-
-            cache.put(
-              event.request,
-              response.clone()
+    caches.match(request).then(async cached => {
+      if (cached) {
+        fetch(request)
+          .then(response => {
+            if (!response.ok) return;
+            return caches.open(CACHE_NAME).then(cache =>
+              cache.put(request, response.clone())
             );
+          })
+          .catch(() => {});
 
-          }
+        return cached;
+      }
 
-          return response;
+      const response = await fetch(request);
 
-        } catch (error) {
+      if (response.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, response.clone());
+      }
 
-          throw error;
-
-        }
-
-      })
-
+      return response;
+    })
   );
-
 });
