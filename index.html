@@ -888,22 +888,6 @@ function saveAddedData(item) {
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
 
-document.getElementById("newFilterBtn").addEventListener("click", () => {
-  // NEWを開く：新着だけ表示
-  if(!newOnly){
-    newOnly = true;
-    updateNewFilterButton();
-    applyFilter();
-    return;
-  }
-
-  // NEWを閉じる：表示して確認した新着を既読にする
-  markDisplayedNewAsSeen();
-  newOnly = false;
-  updateNewFilterButton();
-  applyFilter();
-});
-updateNewFilterButton();
 
 // シミュレーター開始・終了 ▲▼
 document.querySelectorAll("[data-sim-step]").forEach(button => {
@@ -1164,6 +1148,23 @@ function markDisplayedNewAsSeen(){
 
   if(ids.length) saveNewState();
 }
+
+document.getElementById("newFilterBtn").addEventListener("click", () => {
+  // NEWを開く：新着だけ表示
+  if(!newOnly){
+    newOnly = true;
+    updateNewFilterButton();
+    applyFilter();
+    return;
+  }
+
+  // NEWを閉じる：表示して確認した新着を既読にする
+  markDisplayedNewAsSeen();
+  newOnly = false;
+  updateNewFilterButton();
+  applyFilter();
+});
+updateNewFilterButton();
 
 function applyFilter() {
 
