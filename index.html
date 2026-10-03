@@ -521,6 +521,14 @@ img.noimage{
   background:#e53935;
   color:#fff;
 }
+
+/* データ入力画面：管理番号のキーボード入力＋▲▼ */
+.add-number-control{display:flex;align-items:stretch;gap:6px;width:100%;}
+.add-number-control input{min-width:0;}
+.add-number-step-buttons{display:flex;flex-direction:column;gap:3px;}
+.add-number-step-buttons button{width:48px;min-width:48px;height:21px;min-height:21px;margin:0;padding:0;font-size:16px;line-height:1;font-weight:700;touch-action:manipulation;}
+.add-number-step-buttons button:active{transform:scale(.96);}
+
 .new-badge{
   display:inline-block;
   margin-left:5px;
@@ -669,7 +677,13 @@ style="
   <div class="add-data-panel">
     <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
     <div class="add-data-form">
-      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
+      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><div class="add-number-control">
+  <input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;">
+  <div class="add-number-step-buttons">
+    <button type="button" data-add-number-step="1" aria-label="管理番号を1増やす">▲</button>
+    <button type="button" data-add-number-step="-1" aria-label="管理番号を1減らす">▼</button>
+  </div>
+</div></div></label>
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
@@ -884,6 +898,24 @@ function saveAddedData(item) {
 
 
 
+
+
+// データ入力画面：管理番号の▲▼
+document.querySelectorAll("[data-add-number-step]").forEach(button => {
+  button.addEventListener("click", () => {
+    const input = document.getElementById("addIdNumber");
+    if (!input) return;
+
+    const raw = String(input.value || "").replace(/\D/g, "");
+    const current = raw === "" ? 0 : Number(raw);
+    const step = Number(button.dataset.addNumberStep || 1);
+    const next = Math.max(0, current + step);
+
+    input.value = String(next).padStart(4, "0");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+  });
+});
 
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
