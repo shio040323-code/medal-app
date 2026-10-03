@@ -2666,9 +2666,18 @@ async function cacheImages(data) {
 // =========================
 // アプリ起動
 // すべての変数・関数の初期化後に実行する
+//
+// 重要：先にIndexedDBの追加データを読み込んでから
+// Supabase同期を開始する。
+// これにより、iPadにだけ保存されていた追加データも
+// ログイン直後のクラウド同期で正しく読み込まれ、
+// 必要ならSupabaseへ送信される。
 // =========================
-loadData();
-initCloudAuth();
+async function startApp() {
+  await loadData();
+  await initCloudAuth();
+}
+startApp();
 
 </script>
 </body>
