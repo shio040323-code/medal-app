@@ -44,7 +44,7 @@ button {
    ========================= */
 .card {
   content-visibility: auto;
-  contain-intrinsic-size: 180px 145px;
+  contain-intrinsic-size: 180px 180px;
 }
 
 .card img.medal-image {
@@ -504,6 +504,65 @@ img.noimage{
 
 /* シミュレーター操作欄：開始番号の前で確実に改行 */
 .sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
+
+/* シミュレーター：開始・終了番号の大きな▲▼ボタン */
+.sim-number-control{
+  display:flex;
+  align-items:stretch;
+  gap:5px;
+}
+.sim-number-control input{
+  width:72px;
+  box-sizing:border-box;
+}
+.sim-step-buttons{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.sim-step-buttons button{
+  width:46px;
+  min-width:46px;
+  height:28px;
+  padding:0;
+  margin:0;
+  font-size:18px;
+  line-height:1;
+  font-weight:700;
+  touch-action:manipulation;
+}
+.sim-step-buttons button:active{
+  transform:scale(.96);
+}
+
+/* NEW表示 */
+.new-badge{
+  display:inline-block;
+  margin-left:5px;
+  padding:1px 6px;
+  border-radius:5px;
+  background:#e53935;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.4;
+  vertical-align:middle;
+}
+
+/* NEWフィルター */
+#newFilterBtn{
+  margin-left:6px;
+  border:1px solid #e53935;
+  border-radius:7px;
+  background:#fff;
+  color:#d32f2f;
+  font-weight:700;
+  cursor:pointer;
+}
+#newFilterBtn.active{
+  background:#e53935;
+  color:#fff;
+}
 </style>
 </head>
 
@@ -540,6 +599,7 @@ style="
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
 </div>
 <div id="typeFilters" class="filters"></div>
+<button type="button" id="newFilterBtn" aria-pressed="false">NEW</button>
 <select id="locationSelect">
   <option value="">すべて</option>
 </select>
@@ -576,11 +636,23 @@ style="
       <div class="sim-force-break"></div>
 
       <label>開始
-        <input id="simStart" type="number" value="1" min="1">
+        <div class="sim-number-control">
+          <input id="simStart" type="number" value="1" min="1">
+          <div class="sim-step-buttons">
+            <button type="button" data-sim-step="simStart" data-step="1" aria-label="開始番号を1増やす">▲</button>
+            <button type="button" data-sim-step="simStart" data-step="-1" aria-label="開始番号を1減らす">▼</button>
+          </div>
+        </div>
       </label>
 
       <label>終了
-        <input id="simEnd" type="number" value="45" min="1">
+        <div class="sim-number-control">
+          <input id="simEnd" type="number" value="45" min="1">
+          <div class="sim-step-buttons">
+            <button type="button" data-sim-step="simEnd" data-step="1" aria-label="終了番号を1増やす">▲</button>
+            <button type="button" data-sim-step="simEnd" data-step="-1" aria-label="終了番号を1減らす">▼</button>
+          </div>
+        </div>
       </label>
 
       <button id="simDisplay">表示</button>
@@ -667,6 +739,9 @@ async function loadData() {
     }
 
     masterData = await response.json();
+
+    // 前回のdata.jsonと比較して、新しく追加されたIDを自動検出
+    updateMasterNewStatus(masterData);
 
     // iPad内に保存した追加データを読み込む
     addedData = await loadAddedData();
@@ -815,6 +890,39 @@ loadData()
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
 
+// シミュレーター開始・終了番号 ▲▼
+document.querySelectorAll("[data-sim-step]").forEach(button => {
+  button.addEventListener("click", () => {
+    const input = document.getElementById(button.dataset.simStep);
+    if (!input) return;
+
+    const current = Number(input.value || 1);
+    const step = Number(button.dataset.step || 1);
+    const min = Number(input.min || 1);
+    const next = Math.max(min, current + step);
+
+    input.value = String(next);
+
+    // キーボード入力と同じように変更を反映
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+});
+
+// NEWフィルター
+document.getElementById("newFilterBtn").addEventListener("click", () => {
+  // NEW一覧を閉じるときに、今回確認したNEWを既読にする。
+  // 表示中はNEWバッジを残すので、確認しながら見ることができる。
+  if (newOnly) {
+    markCurrentNewItemsAsSeen();
+  }
+
+  newOnly = !newOnly;
+  updateNewFilterButton();
+  applyFilter();
+});
+
+updateNewFilterButton();
+
 
 // チェックボックス生成
 function setupFilter() {
@@ -951,6 +1059,108 @@ function createNameSelect() {
   })
 }
 
+let newOnly = false;
+
+// =========================
+// GitHub data.json の新規追加を自動検出
+// =========================
+const NEW_MASTER_IDS_KEY = "medalMasterKnownIds_v1";
+const NEW_UNSEEN_IDS_KEY = "medalMasterUnseenIds_v1";
+
+function getMasterIdSet(list) {
+  return new Set(
+    (Array.isArray(list) ? list : [])
+      .map(item => String(item?.id || "").trim())
+      .filter(Boolean)
+  );
+}
+
+function loadStoredIdSet(key) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || "[]");
+    return new Set(Array.isArray(raw) ? raw.map(String) : []);
+  } catch (e) {
+    console.warn("NEW判定用データの読み込みに失敗しました", e);
+    return new Set();
+  }
+}
+
+function saveStoredIdSet(key, set) {
+  localStorage.setItem(key, JSON.stringify([...set]));
+}
+
+function updateMasterNewStatus(masterList) {
+  const currentIds = getMasterIdSet(masterList);
+  const knownIds = loadStoredIdSet(NEW_MASTER_IDS_KEY);
+  const unseenIds = loadStoredIdSet(NEW_UNSEEN_IDS_KEY);
+
+  // 初回起動では現在のdata.jsonを基準として登録する。
+  // そのため、既存のメダル全部がNEWになることはない。
+  if (knownIds.size === 0) {
+    saveStoredIdSet(NEW_MASTER_IDS_KEY, currentIds);
+    return;
+  }
+
+  // 前回なかったIDだけをNEWとして追加。
+  currentIds.forEach(id => {
+    if (!knownIds.has(id)) {
+      unseenIds.add(id);
+    }
+  });
+
+  // 今回確認したdata.jsonを次回比較用の基準として保存。
+  saveStoredIdSet(NEW_MASTER_IDS_KEY, currentIds);
+  saveStoredIdSet(NEW_UNSEEN_IDS_KEY, unseenIds);
+}
+
+function getAutomaticNewIds() {
+  return loadStoredIdSet(NEW_UNSEEN_IDS_KEY);
+}
+
+function markCurrentNewItemsAsSeen() {
+  const unseenIds = getAutomaticNewIds();
+  if (unseenIds.size === 0) return;
+
+  filteredData.forEach(item => {
+    const id = String(item?.id || "").trim();
+    if (id && unseenIds.has(id)) {
+      unseenIds.delete(id);
+    }
+  });
+
+  saveStoredIdSet(NEW_UNSEEN_IDS_KEY, unseenIds);
+}
+
+function isNewItem(item) {
+  if (!item) return false;
+
+  // GitHubのdata.jsonに前回なかったIDを自動的にNEW扱い。
+  const id = String(item.id || "").trim();
+  if (id && getAutomaticNewIds().has(id)) return true;
+
+  // iPadから新規追加したデータは従来どおりNEW扱い。
+  if (item._local === true) return true;
+
+  // 手動でnew:true等を設定したデータにも互換対応。
+  if (typeof item.new === "boolean") return item.new;
+  if (typeof item.isNew === "boolean") return item.isNew;
+  if (typeof item.NEW === "boolean") return item.NEW;
+
+  const value = String(item.new ?? item.isNew ?? item.NEW ?? "")
+    .trim()
+    .toLowerCase();
+
+  return value === "new" || value === "true" || value === "1";
+}
+
+function updateNewFilterButton() {
+  const button = document.getElementById("newFilterBtn");
+  if (!button) return;
+
+  button.classList.toggle("active", newOnly);
+  button.setAttribute("aria-pressed", newOnly ? "true" : "false");
+}
+
 function applyFilter() {
 
   const keyword = normalize(
@@ -995,11 +1205,17 @@ function applyFilter() {
     ? true
     : item.name === selectedName
 
+    const matchNew =
+      newOnly
+        ? isNewItem(item)
+        : true
+
     return (
   matchKeyword &&
   matchType &&
   matchLocation &&
-  matchName
+  matchName &&
+  matchNew
 )
   })
 
@@ -1032,7 +1248,7 @@ function render(list){
 
   grid.innerHTML = "";
 
-  const BATCH_SIZE = 12;
+  const BATCH_SIZE = 15;
   let rendered = 0;
 
   // 画像監視を1つだけ作る
@@ -1049,7 +1265,7 @@ function render(list){
     });
   }, {
     root: null,
-    rootMargin: "180px 0px",
+    rootMargin: "500px 0px",
     threshold: 0.01
   });
 
@@ -1071,9 +1287,8 @@ function render(list){
         <img
           class="medal-image"
           data-src="${finalImg}"
-          loading="${i < 3 ? "eager" : "lazy"}"
+          loading="${i < 6 ? "eager" : "lazy"}"
           decoding="async"
-          fetchpriority="${i < 3 ? "high" : "low"}"
           width="180"
           height="120"
           alt=""
@@ -1082,6 +1297,7 @@ function render(list){
           <span class="id">${item.id || ""}</span> /
           <span class="type">${item.type || ""}</span>
           <span class="book">${toRoman(item.bookNum)}</span>
+          ${isNewItem(item) ? '<span class="new-badge">NEW</span>' : ''}
         </div>
         <div class="detail">${item.detail || ""}</div>
         <div class="date">${item.date || ""}</div>
@@ -1102,17 +1318,17 @@ function render(list){
       fragment.appendChild(div);
     }
 
-    // 今回追加した画像だけ処理する
-    const imgs = fragment.querySelectorAll(".medal-image");
     grid.appendChild(fragment);
 
+    // 最初の6枚は即読み込み、それ以外はObserverに任せる
+    const imgs = grid.querySelectorAll(".medal-image");
     imgs.forEach(img => {
-      if (!img.dataset.src || img.src) return;
-
-      if (img.loading === "eager") {
-        img.src = img.dataset.src;
-      } else {
-        observer.observe(img);
+      if (img.dataset.src && !img.src) {
+        if (img.loading === "eager") {
+          img.src = img.dataset.src;
+        } else {
+          observer.observe(img);
+        }
       }
     });
 
@@ -1129,7 +1345,7 @@ function render(list){
         sentinelObserver.disconnect();
         sentinel.remove();
         appendBatch();
-      }, { rootMargin: "350px 0px" });
+      }, { rootMargin: "700px 0px" });
 
       sentinelObserver.observe(sentinel);
     }
@@ -1180,6 +1396,8 @@ function toRoman(num) {
   return result
 }
 function clearFilters() {
+  newOnly = false;
+  updateNewFilterButton();
 
   // type全部OFF
   document
@@ -1869,6 +2087,7 @@ async function addSimulatorData() {
     id,
     type: type || source?.type || "",
     detail: detail || source?.detail || "",
+    new: true,
     _simOnly: true
   };
 
