@@ -765,6 +765,7 @@ style="
 </div>
 
 <!-- iPad用 データ入力画面 -->
+<style>.add-nav-button{min-height:42px;}</style>
 <div id="addDataModal">
   <div class="add-data-panel">
     <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
@@ -779,7 +780,7 @@ style="
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataPrev" class="add-nav-button">保存して前へ</button><button type="button" id="addDataSave">このマスに追加</button><button type="button" id="addDataNext" class="add-nav-button">保存して次へ</button></div>
     </div>
   </div>
 </div>
@@ -2609,6 +2610,20 @@ function setupAddTypeSelect() {
 }
 
 
+function getSequentialItemFromPrevious(bookItems, index) {
+  if (index <= 0) return null;
+  const prev = bookItems[index - 1];
+  if (!prev || !prev.id) return null;
+  const m = String(prev.id).match(/^([A-Za-z]+)-(\d+)$/);
+  if (!m) return null;
+  return {
+    prefix: m[1],
+    number: String(Number(m[2]) + 1).padStart(m[2].length, "0"),
+    type: prev.type || "",
+    detail: prev.detail || ""
+  };
+}
+
 function openAddDataModal(index, editMode = false, bookIndex = 0) {
   const modal = document.getElementById("addDataModal");
   if (!modal) return;
@@ -2639,10 +2654,18 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
     saveButton.textContent = "更新";
     title.textContent = `${bookIndex + 1}book データ`;
   } else {
-    prefix.value = "L";
-    number.value = "";
-    type.value = "";
-    detail.value = "";
+    const sequential = getSequentialItemFromPrevious(bookItems, index);
+    if (sequential) {
+      prefix.value = sequential.prefix;
+      number.value = sequential.number;
+      type.value = sequential.type;
+      detail.value = sequential.detail;
+    } else {
+      prefix.value = "L";
+      number.value = "";
+      type.value = "";
+      detail.value = "";
+    }
     deleteButton.style.display = "none";
     saveButton.textContent = "このマスに追加";
     title.textContent = `${bookIndex + 1}book にメダルを追加`;
@@ -2663,6 +2686,35 @@ function closeAddDataModal() {
   modal.style.display = "none";
   modal.dataset.simIndex = "-1";
   modal.dataset.editMode = "0";
+}
+
+async function saveCurrentAndMove(direction) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal || modal.style.display === "none") return;
+  const currentIndex = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const bookItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
+  const prefix = document.getElementById("addIdPrefix").value;
+  const rawNumber = document.getElementById("addIdNumber").value.normalize("NFKC").replace(/\D/g, "");
+  const type = document.getElementById("addType").value.trim();
+  const detail = document.getElementById("addDetail").value.trim();
+  const message = document.getElementById("addDataMessage");
+  if (!rawNumber) { message.textContent = "管理番号の数字を入力してください。"; return; }
+  if (!type) { message.textContent = "種類を選択してください。"; return; }
+  const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
+  const source = data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  bookItems[currentIndex] = { ...(source || {}), id, type, detail, _simOnly: true };
+  simState.items = bookItems;
+  await saveSimulatorState();
+  const targetIndex = currentIndex + direction;
+  const maxIndex = simState.faces * 15 - 1;
+  if (targetIndex < 0 || targetIndex > maxIndex) {
+    closeAddDataModal();
+    renderSimulator();
+    return;
+  }
+  renderSimulator();
+  openAddDataModal(targetIndex, false, bookIndex);
 }
 
 async function addSimulatorData() {
@@ -2807,6 +2859,8 @@ async function clearAllAddedData() {
 document.getElementById("addDataClose").onclick = closeAddDataModal;
 document.getElementById("addDataCancel").onclick = closeAddDataModal;
 document.getElementById("addDataSave").onclick = addSimulatorData;
+document.getElementById("addDataNext").onclick = () => saveCurrentAndMove(1);
+document.getElementById("addDataPrev").onclick = () => saveCurrentAndMove(-1);
 document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
 document.getElementById("addDataClearAll").onclick = clearAllAddedData;
 
