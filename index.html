@@ -7,10 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="メダル管理">
 <style>
+#cloudPanel{position:fixed;right:10px;top:10px;z-index:9999;background:#fff;border:1px solid #bbb;border-radius:10px;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:13px;max-width:320px;}#cloudPanel input{width:150px;max-width:150px;padding:6px;margin:2px;}#cloudPanel button{padding:5px 8px;}#cloudStatus{margin:3px 0;font-weight:bold;}
 body {
   font-family: sans-serif;
   margin: 10px;
@@ -505,138 +505,11 @@ img.noimage{
 
 /* シミュレーター操作欄：開始番号の前で確実に改行 */
 .sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
-
-/* NEW */
-#newFilterBtn{
-  margin-left:6px;
-  border:1px solid #e53935;
-  border-radius:7px;
-  background:#fff;
-  color:#d32f2f;
-  font-weight:700;
-  cursor:pointer;
-  min-height:32px;
-  padding:4px 10px;
-}
-#newFilterBtn.active{
-  background:#e53935;
-  color:#fff;
-}
-
-/* データ入力画面：管理番号のキーボード入力＋▲▼ */
-.add-number-control{display:flex;align-items:stretch;gap:6px;width:100%;}
-.add-number-control input{min-width:0;}
-.add-number-step-buttons{display:flex;flex-direction:column;gap:3px;}
-.add-number-step-buttons button{width:48px;min-width:48px;height:21px;min-height:21px;margin:0;padding:0;font-size:16px;line-height:1;font-weight:700;touch-action:manipulation;}
-.add-number-step-buttons button:active{transform:scale(.96);}
-
-.new-badge{
-  display:inline-block;
-  margin-left:5px;
-  padding:1px 6px;
-  border-radius:5px;
-  background:#e53935;
-  color:#fff;
-  font-size:11px;
-  font-weight:800;
-  line-height:1.4;
-  vertical-align:middle;
-}
-
-/* シミュレーター開始・終了 ▲▼ */
-.sim-number-control{
-  display:flex;
-  align-items:stretch;
-  gap:5px;
-}
-.sim-number-control input{
-  width:72px;
-  box-sizing:border-box;
-}
-.sim-step-buttons{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-.sim-step-buttons button{
-  width:46px;
-  min-width:46px;
-  height:28px;
-  padding:0;
-  margin:0;
-  font-size:18px;
-  line-height:1;
-  font-weight:700;
-  touch-action:manipulation;
-}
-
-
-/* =========================
-   Supabase クラウド同期
-========================= */
-#cloudBar{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-  padding:6px 0;
-  font-size:13px;
-}
-#cloudStatus{font-weight:700;}
-#cloudLoginBtn,#cloudLogoutBtn{
-  padding:5px 10px;
-  border:1px solid #aaa;
-  border-radius:7px;
-  background:#fff;
-  cursor:pointer;
-}
-#cloudLoginBtn{border-color:#1976d2;color:#1565c0;font-weight:700;}
-#cloudLogoutBtn{display:none;}
-#cloudSyncNowBtn{display:none;}
-#cloudAuthModal{
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:5000;
-  background:rgba(0,0,0,.45);
-  padding:20px;
-  box-sizing:border-box;
-}
-#cloudAuthPanel{
-  width:min(420px,100%);
-  margin:8vh auto 0;
-  background:#fff;
-  border-radius:12px;
-  padding:18px;
-  box-sizing:border-box;
-  box-shadow:0 10px 30px rgba(0,0,0,.25);
-}
-#cloudRecoveryModal{display:none;position:fixed;inset:0;z-index:5001;background:rgba(0,0,0,.45);padding:20px;box-sizing:border-box;}
-#cloudAuthPanel h3{margin:0 0 12px;}
-#cloudAuthPanel input{
-  width:100%;
-  max-width:none;
-  box-sizing:border-box;
-  margin:5px 0 10px;
-}
-.cloud-auth-buttons{display:flex;gap:8px;flex-wrap:wrap;}
-#cloudForceUploadBtn{display:none;}
-.cloud-auth-buttons button{flex:1;min-height:42px;}
-#cloudAuthMessage{min-height:20px;color:#b00020;font-size:13px;margin:6px 0;white-space:pre-wrap;}
-.cloud-user-email{font-size:12px;color:#666;}
 </style>
 </head>
 
 <body>
 <div class="topbar">
-<div id="cloudBar">
-  <span id="cloudStatus">☁ クラウド：未ログイン</span>
-  <span id="cloudUserEmail" class="cloud-user-email"></span>
-  <button type="button" id="cloudLoginBtn">クラウドログイン</button>
-  <button type="button" id="cloudSyncNowBtn">今すぐ同期</button>
-  <button type="button" id="cloudForceUploadBtn">端末データをクラウドへ送る</button>
-  <button type="button" id="cloudLogoutBtn">ログアウト</button>
-</div>
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
 style="
   width:250px;
@@ -668,7 +541,6 @@ style="
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
 </div>
 <div id="typeFilters" class="filters"></div>
-<button type="button" id="newFilterBtn" aria-pressed="false">NEW</button>
 <select id="locationSelect">
   <option value="">すべて</option>
 </select>
@@ -676,34 +548,6 @@ style="
 <select id="nameSelect">
   <option value="">すべて</option>
 </select>
-</div>
-
-<div id="cloudAuthModal">
-  <div id="cloudAuthPanel">
-    <h3>クラウドログイン</h3>
-    <div style="font-size:13px;color:#666;margin-bottom:8px;">Supabaseで作成したメールアドレスとパスワードを入力してください。</div>
-    <label>メールアドレス<input id="cloudEmail" type="email" autocomplete="username" placeholder="メールアドレス"></label>
-    <label>パスワード<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="パスワード"></label>
-    <div id="cloudAuthMessage"></div>
-    <div class="cloud-auth-buttons">
-      <button type="button" id="cloudSignInBtn">ログイン</button>
-      <button type="button" id="cloudResetBtn">パスワード再設定メール</button>
-      <button type="button" id="cloudAuthCloseBtn">閉じる</button>
-    </div>
-  </div>
-</div>
-
-<div id="cloudRecoveryModal">
-  <div id="cloudAuthPanel">
-    <h3>パスワード設定</h3>
-    <div style="font-size:13px;color:#666;margin-bottom:8px;">新しいパスワードを入力してください。</div>
-    <label>新しいパスワード<input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="6文字以上"></label>
-    <label>確認<input id="cloudNewPassword2" type="password" autocomplete="new-password" placeholder="もう一度入力"></label>
-    <div id="cloudRecoveryMessage" style="min-height:20px;color:#b00020;font-size:13px;margin:6px 0;white-space:pre-wrap;"></div>
-    <div class="cloud-auth-buttons">
-      <button type="button" id="cloudSetPasswordBtn">パスワードを設定</button>
-    </div>
-  </div>
 </div>
 
 <div id="simulator">
@@ -733,27 +577,14 @@ style="
       <div class="sim-force-break"></div>
 
       <label>開始
-        <div class="sim-number-control">
-          <input id="simStart" type="number" value="1" min="1">
-          <div class="sim-step-buttons">
-            <button type="button" data-sim-step="simStart" data-step="1">▲</button>
-            <button type="button" data-sim-step="simStart" data-step="-1">▼</button>
-          </div>
-        </div>
+        <input id="simStart" type="number" value="1" min="1">
       </label>
 
       <label>終了
-        <div class="sim-number-control">
-          <input id="simEnd" type="number" value="45" min="1">
-          <div class="sim-step-buttons">
-            <button type="button" data-sim-step="simEnd" data-step="1">▲</button>
-            <button type="button" data-sim-step="simEnd" data-step="-1">▼</button>
-          </div>
-        </div>
+        <input id="simEnd" type="number" value="45" min="1">
       </label>
 
       <button id="simDisplay">表示</button>
-      <button id="simExportCsv" type="button">2BOOK CSV出力</button>
       
     </div>
 
@@ -765,27 +596,30 @@ style="
 </div>
 
 <!-- iPad用 データ入力画面 -->
-<style>.add-nav-button{min-height:42px;}</style>
 <div id="addDataModal">
   <div class="add-data-panel">
     <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
     <div class="add-data-form">
-      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><div class="add-number-control">
-  <input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;">
-  <div class="add-number-step-buttons">
-    <button type="button" data-add-number-step="1" aria-label="管理番号を1増やす">▲</button>
-    <button type="button" data-add-number-step="-1" aria-label="管理番号を1減らす">▼</button>
-  </div>
-</div></div></label>
+      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataPrev" class="add-nav-button">保存して前へ</button><button type="button" id="addDataSave">このマスに追加</button><button type="button" id="addDataNext" class="add-nav-button">保存して次へ</button></div>
+      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
     </div>
   </div>
 </div>
 
 <div class="grid" id="grid"></div>
+<div id="cloudPanel">
+  <div id="cloudStatus">☁ 未ログイン</div>
+  <div id="cloudLoginArea">
+    <input id="cloudEmail" type="email" placeholder="メールアドレス">
+    <input id="cloudPassword" type="password" placeholder="パスワード">
+    <button id="cloudLogin">ログイン</button>
+  </div>
+  <button id="cloudLogout" style="display:none;">ログアウト</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const locationGroups = {
 
@@ -826,490 +660,60 @@ const locationGroups = {
 let data = []
 let masterData = []
 let addedData = []
-let simData = []
 let imageFolder = "images"
 let currentPage = 1
 const pageSize = 50
-
 let filteredData = []
 
-/* =========================
-   Supabase クラウド同期設定
-========================= */
+
+// Supabase
 const SUPABASE_URL = "https://tdlhidndalgctmpqggxu.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2eJD9STd9kUIti6zHRmmAg_2zTVk4bJ";
-const SUPABASE_SITE_URL = "https://shio040323-code.github.io/medal-app/";
-const supabaseClient = window.supabase
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
-  : null;
+const SUPABASE_ANON_KEY = "sb_publishable_2eJD9STd9kUIti6zHRmmAg_2zTVk4bJ";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let cloudUser = null;
-let cloudSyncBusy = false;
-let cloudSyncApplying = false;
-let cloudAutoTimer = null;
-let lastLocalBook2Signature = "";
-
-function getBook2Signature() {
-  try {
-    return JSON.stringify({
-      faces: Number(simState.faces) || 3,
-      book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : []
-    });
-  } catch (_) {
-    return "";
-  }
-}
-
-function scheduleCloudAutoSync() {
-  if (!cloudUser || cloudSyncApplying) return;
-  clearTimeout(cloudAutoTimer);
-  cloudAutoTimer = setTimeout(async () => {
-    if (!cloudUser || cloudSyncApplying || cloudSyncBusy) return;
-    try {
-      cloudSyncApplying = true;
-      // 追加メダルは通常の追加処理で即時保存済み。ここでは2BOOKだけ自動保存。
-      await saveCloudSimulatorState();
-      lastLocalBook2Signature = getBook2Signature();
-      setCloudStatus(`自動同期済み：${cloudUser.email} / 2BOOK`, true);
-    } catch (error) {
-      console.error("2BOOK自動同期エラー", error);
-      setCloudStatus("自動同期エラー（端末保存は継続）");
-    } finally {
-      cloudSyncApplying = false;
-    }
-  }, 400);
-}
-
-function setCloudStatus(text, ok=false){
-  const el = document.getElementById("cloudStatus");
-  if (el) el.textContent = ok ? `☁ ${text}` : `☁ ${text}`;
-}
-
-function setCloudButtons(loggedIn){
-  const login = document.getElementById("cloudLoginBtn");
-  const logout = document.getElementById("cloudLogoutBtn");
-  const sync = document.getElementById("cloudSyncNowBtn");
-  if (login) login.style.display = loggedIn ? "none" : "inline-block";
-  if (logout) logout.style.display = loggedIn ? "inline-block" : "none";
-  if (sync) sync.style.display = "none";
-  const forceUpload = document.getElementById("cloudForceUploadBtn");
-  if (forceUpload) forceUpload.style.display = "none";
-}
-
-function showCloudAuthModal(){
-  const modal = document.getElementById("cloudAuthModal");
-  if (modal) modal.style.display = "block";
-  const email = document.getElementById("cloudEmail");
-  if (email && !email.value) email.value = localStorage.getItem("medalCloudEmail") || "";
-  document.getElementById("cloudPassword")?.focus();
-}
-function closeCloudAuthModal(){
-  const modal = document.getElementById("cloudAuthModal");
-  if (modal) modal.style.display = "none";
-  const msg = document.getElementById("cloudAuthMessage");
-  if (msg) msg.textContent = "";
-}
-function cloudAuthMessage(text){
-  const el = document.getElementById("cloudAuthMessage");
-  if (el) el.textContent = text || "";
-}
-
-function cloudItemToRow(item){
-  return {
-    medal_id: String(item?.id || "").trim(),
-    name: String(item?.name || ""),
-    location: String(item?.location || ""),
-    date: String(item?.date || ""),
-    type: String(item?.type || ""),
-    detail: String(item?.detail || ""),
-    book_no: String(item?.bookNum || "")
-  };
-}
-
-function cloudRowToItem(row){
-  return {
-    id: String(row.medal_id || ""),
-    name: String(row.name || ""),
-    location: String(row.location || ""),
-    date: String(row.date || ""),
-    type: String(row.type || ""),
-    detail: String(row.detail || ""),
-    bookNum: String(row.book_no || ""),
-    _local: true,
-    _cloud: true
-  };
-}
-
-async function fetchCloudMedals(){
-  if (!supabaseClient || !cloudUser) return [];
-  const { data: rows, error } = await supabaseClient
-    .from("medal_data")
-    .select("medal_id,name,location,date,type,detail,book_no")
-    .order("medal_id", { ascending:true });
-  if (error) throw error;
-  return (rows || []).filter(r => r.medal_id).map(cloudRowToItem);
-}
-
-async function upsertCloudMedal(item){
-  if (!supabaseClient || !cloudUser) return;
-  const row = cloudItemToRow(item);
-  if (!row.medal_id) return;
-  const { error } = await supabaseClient.from("medal_data").upsert(row, { onConflict:"medal_id" });
-  if (error) throw error;
-}
-
-async function deleteCloudMedal(medalId){
-  if (!supabaseClient || !cloudUser || !medalId) return;
-  const { error } = await supabaseClient.from("medal_data").delete().eq("medal_id", String(medalId));
-  if (error) throw error;
-}
-
-function normalizeCloudBookItem(item){
-  if (!item) return null;
-  const copy = {...item};
-  delete copy._local;
-  delete copy._cloud;
-  return copy;
-}
-
-async function saveCloudSimulatorState(){
-  if (!supabaseClient || !cloudUser) return;
-  const book2 = Array.isArray(simState.bookItems?.[1])
-    ? simState.bookItems[1].map(normalizeCloudBookItem)
-    : [];
-  const row = {
-    user_id: cloudUser.id,
-    faces: Number(simState.faces) || 3,
-    book2,
-    updated_at: new Date().toISOString()
-  };
-  const { error } = await supabaseClient
-    .from("medal_simulator_state")
-    .upsert(row, { onConflict:"user_id" });
-  if (error) throw error;
-}
-
-async function loadCloudSimulatorState(){
-  if (!supabaseClient || !cloudUser) return null;
-  const { data: row, error } = await supabaseClient
-    .from("medal_simulator_state")
-    .select("user_id,faces,book2,updated_at")
-    .eq("user_id", cloudUser.id)
-    .maybeSingle();
-  if (error) throw error;
-  return row || null;
-}
-
-async function mergeCloudMedalsIntoLocal(){
-  if (!cloudUser) return;
-
-  // IndexedDBから必ず最新の端末追加データを読み直す
-  // （iPadで追加した直後でも取りこぼさない）
-  const freshLocal = await loadAddedData();
-  if (freshLocal.length) addedData = freshLocal;
-
-  const cloudItems = await fetchCloudMedals();
-  const cloudIds = new Set(cloudItems.map(item => String(item.id).toUpperCase()));
-  const localItems = (addedData || []).map(item => ({...item, _local:true}));
-
-  // 端末にしかない追加データは先にクラウドへ送る
-  const localOnly = localItems.filter(item => !cloudIds.has(String(item.id).toUpperCase()));
-  for (const item of localOnly) {
-    try { await upsertCloudMedal(item); }
-    catch (error) { console.error("端末追加データのクラウド送信エラー", error); }
-  }
-
-  // クラウドと端末をIDで統合。既存のクラウドデータを基本とし、
-  // 端末にしかないものは追加する。
-  const merged = [...cloudItems, ...localOnly];
-  const unique = new Map(merged.map(item => [String(item.id).toUpperCase(), item]));
-  addedData = [...unique.values()].map(item => ({...item, _local:true, _cloud:true}));
-  for (const item of addedData) await saveAddedData(item);
-
-  data = masterData;
-  simData = mergeData(masterData, addedData);
-  setupFilter();
-  createLocationSelect();
-  setupSimulatorRoman();
-  filteredData = data;
-  currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
-  localStorage.setItem("currentPage", currentPage);
-  renderPage();
-}
-
-async function forceUploadDeviceData(){
-  if (!cloudUser || cloudSyncBusy) return;
-  cloudSyncBusy = true;
-  setCloudStatus("端末データをクラウドへ送信中…");
-  try {
-    // IndexedDBから最新状態を直接読み直す
-    const localAdded = await loadAddedData();
-    const restored = await loadSimulatorState();
-    const localBook2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [];
-
-    let medalCount = 0;
-    for (const item of localAdded) {
-      await upsertCloudMedal(item);
-      medalCount++;
-    }
-
-    // 2BOOKだけを強制的にクラウドへ保存。1BOOKは送信しない。
-    const row = {
-      user_id: cloudUser.id,
-      faces: Number(simState.faces) || 3,
-      book2: localBook2.map(item => item ? normalizeCloudBookItem(item) : null),
-      updated_at: new Date().toISOString()
-    };
-    const { error } = await supabaseClient
-      .from("medal_simulator_state")
-      .upsert(row, { onConflict:"user_id" });
-    if (error) throw error;
-
-    addedData = localAdded.map(item => ({...item, _local:true, _cloud:true}));
-    data = masterData;
-    simData = mergeData(masterData, addedData);
-    simState.bookItems[1] = localBook2;
-    simState.items = simState.bookItems[simState.currentBook] || [];
-    await saveSimulatorState();
-    renderSimulator();
-    setCloudStatus(`端末→クラウド完了：追加${medalCount}件 / 2BOOK${localBook2.filter(Boolean).length}件`, true);
-    alert(`端末データをクラウドへ送信しました。\n追加メダル：${medalCount}件\n2BOOK：${localBook2.filter(Boolean).length}件`);
-  } catch (error) {
-    console.error("端末データ強制送信エラー", error);
-    setCloudStatus("端末→クラウド送信エラー");
-    alert("端末データの送信に失敗しました。\n" + (error?.message || error));
-  } finally {
-    cloudSyncBusy = false;
-  }
-}
-
-async function syncCloudNow(){
-  if (!cloudUser || cloudSyncBusy) return;
-  cloudSyncBusy = true;
-  setCloudStatus("同期中…");
-  try {
-    await mergeCloudMedalsIntoLocal();
-    await syncSimulator2BookOnLogin();
-    setCloudStatus(`同期済み：${cloudUser.email} / 追加${addedData.length}件`, true);
-  } catch (error) {
-    console.error("クラウド同期エラー", error);
-    setCloudStatus("同期エラー（端末保存は継続）");
-    alert("クラウド同期に失敗しました。\n" + (error?.message || error));
-  } finally {
-    cloudSyncBusy = false;
-  }
-}
-
-async function syncSimulator2BookOnLogin(){
-  if (!cloudUser) return;
-
-  cloudSyncApplying = true;
-  try {
-    // 端末側の保存状態を先に読み込む
-    await loadSimulatorState();
-
-    const cloudState = await loadCloudSimulatorState();
-    const localBook2 = Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [];
-    const localHasBook2 = localBook2.some(item => !!item);
-    const cloudBook2 = Array.isArray(cloudState?.book2) ? cloudState.book2 : [];
-    const cloudHasBook2 = cloudBook2.some(item => !!item);
-
-    // 初回の自動同期は、端末側に保存データがあれば端末を優先。
-    // これにより、iPadで入れ直した2BOOKがクラウドの古い状態で上書きされない。
-    if (localHasBook2) {
-      if (!cloudState || !cloudHasBook2) {
-        await saveCloudSimulatorState();
-      } else {
-        // 両方にデータがある場合は、端末状態をそのままクラウドへ反映。
-        // 今後の通常運用では更新時刻でクラウド保存される。
-        await saveCloudSimulatorState();
-      }
-    } else if (cloudState) {
-      // 端末側に2BOOKがない場合だけクラウドから復元
-      simState.faces = Number(cloudState.faces) || Number(simState.faces) || 3;
-      simState.bookItems[1] = cloudBook2.map(item => item ? {...item, _simOnly:true} : item);
-      simState.items = simState.bookItems[simState.currentBook] || [];
-      await saveSimulatorState();
-    } else {
-      await saveCloudSimulatorState();
-    }
-
-    document.getElementById("simFaces").value = String(simState.faces);
-    simState.items = simState.bookItems[simState.currentBook] || [];
-    await saveSimulatorState();
-    lastLocalBook2Signature = getBook2Signature();
-    renderSimulator();
-  } finally {
-    cloudSyncApplying = false;
-  }
-}
-
-
-
-async function showRecoveryPasswordModal(){
-  const modal = document.getElementById("cloudRecoveryModal");
-  if (modal) modal.style.display = "block";
-  document.getElementById("cloudNewPassword")?.focus();
-}
-
-function closeRecoveryPasswordModal(){
-  const modal = document.getElementById("cloudRecoveryModal");
-  if (modal) modal.style.display = "none";
-  const msg = document.getElementById("cloudRecoveryMessage");
-  if (msg) msg.textContent = "";
-}
-
-async function initCloudAuth(){
-  setCloudButtons(false);
-  if (!supabaseClient) {
-    setCloudStatus("Supabase読込失敗");
-    return;
-  }
-
-  document.getElementById("cloudLoginBtn")?.addEventListener("click", showCloudAuthModal);
-  document.getElementById("cloudAuthCloseBtn")?.addEventListener("click", closeCloudAuthModal);
-  document.getElementById("cloudAuthModal")?.addEventListener("click", e => {
-    if (e.target.id === "cloudAuthModal") closeCloudAuthModal();
-  });
-
-  document.getElementById("cloudSignInBtn")?.addEventListener("click", async () => {
-    const email = String(document.getElementById("cloudEmail")?.value || "").trim();
-    const password = String(document.getElementById("cloudPassword")?.value || "");
-    if (!email || !password) {
-      cloudAuthMessage("メールアドレスとパスワードを入力してください。");
-      return;
-    }
-    cloudAuthMessage("ログイン中…");
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      cloudAuthMessage(error.message || "ログインできませんでした。");
-      return;
-    }
-    localStorage.setItem("medalCloudEmail", email);
-    closeCloudAuthModal();
-  });
-
-  document.getElementById("cloudResetBtn")?.addEventListener("click", async () => {
-    const email = String(document.getElementById("cloudEmail")?.value || "").trim();
-    if (!email) {
-      cloudAuthMessage("メールアドレスを入力してください。");
-      return;
-    }
-    cloudAuthMessage("再設定メールを送信中…");
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: SUPABASE_SITE_URL });
-    if (error) {
-      cloudAuthMessage(error.message || "送信できませんでした。");
-      return;
-    }
-    cloudAuthMessage("再設定メールを送信しました。メールのリンクから新しいパスワードを設定してください。");
-  });
-
-  document.getElementById("cloudLogoutBtn")?.addEventListener("click", async () => {
-    await supabaseClient.auth.signOut();
-  });
-  document.getElementById("cloudSyncNowBtn")?.addEventListener("click", syncCloudNow);
-  document.getElementById("cloudForceUploadBtn")?.addEventListener("click", forceUploadDeviceData);
-  document.getElementById("cloudRecoveryModal")?.addEventListener("click", e => {
-    if (e.target.id === "cloudRecoveryModal") closeRecoveryPasswordModal();
-  });
-  document.getElementById("cloudSetPasswordBtn")?.addEventListener("click", async () => {
-    const p1 = String(document.getElementById("cloudNewPassword")?.value || "");
-    const p2 = String(document.getElementById("cloudNewPassword2")?.value || "");
-    const msg = document.getElementById("cloudRecoveryMessage");
-    if (p1.length < 6) { msg.textContent = "パスワードは6文字以上にしてください。"; return; }
-    if (p1 !== p2) { msg.textContent = "2つのパスワードが一致していません。"; return; }
-    msg.textContent = "設定中…";
-    const { error } = await supabaseClient.auth.updateUser({ password:p1 });
-    if (error) { msg.textContent = error.message || "設定できませんでした。"; return; }
-    msg.style.color = "#2e7d32";
-    msg.textContent = "パスワードを設定しました。通常のログインができます。";
-    setTimeout(closeRecoveryPasswordModal, 1200);
-  });
-
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  await applyCloudSession(sessionData?.session || null);
-
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    setTimeout(async () => {
-      if (event === "PASSWORD_RECOVERY") await showRecoveryPasswordModal();
-      await applyCloudSession(session);
-    }, 0);
-  });
-}
-
-async function applyCloudSession(session){
-  cloudUser = session?.user || null;
-  setCloudButtons(!!cloudUser);
-  const emailEl = document.getElementById("cloudUserEmail");
-  if (emailEl) emailEl.textContent = cloudUser?.email ? `(${cloudUser.email})` : "";
-  if (!cloudUser) {
-    setCloudStatus("未ログイン");
-    return;
-  }
-  await syncCloudNow();
-}
+let cloudChannel = null;
 
 // データ読み込み
 async function loadData() {
   try {
-    const response = await fetch("./data.json", {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      throw new Error(`data.json読み込みエラー: ${response.status}`);
-    }
-
+    const response = await fetch("./data.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`data.json読み込みエラー: ${response.status}`);
     masterData = await response.json();
-    simData = masterData.slice();
-
-    // NEW状態を読み込み、新しく増えたIDを自動判定
-    loadNewState();
-    detectNewMasterData(masterData);
-
-    // iPad内に保存した追加データを読み込む
     addedData = await loadAddedData();
-
-    // GitHubのdata.jsonを優先して合体
-    data = masterData;
-    simData = mergeData(masterData, addedData);
-
+    // メイン画面はdata.jsonだけを表示する
+    data = Array.isArray(masterData) ? [...masterData] : [];
     setupFilter();
     createLocationSelect();
-
     filteredData = data;
-
-    // アプリ起動時は必ずメイン画面の最終ページを表示
-    currentPage = Math.max(
-      1,
-      Math.ceil(filteredData.length / pageSize)
-    );
+    currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
     localStorage.setItem("currentPage", currentPage);
-
     renderPage();
     setupSimulatorRoman();
-    // 全画像の先読みは行わない。必要な画像だけ表示時に読み込む。
-
-    console.log("GitHubのdata.json + iPad追加データを読み込みました");
   } catch (error) {
     console.error("data.jsonの読み込みに失敗しました", error);
-
-    // オフライン時はiPad保存分だけでも表示
     try {
       addedData = await loadAddedData();
       data = [];
-      simData = mergeData([], addedData);
       setupFilter();
       createLocationSelect();
       filteredData = data;
-      // オフライン起動時も最終ページを表示
-      currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
-      localStorage.setItem("currentPage", currentPage);
+      currentPage = 1;
       renderPage();
       setupSimulatorRoman();
     } catch (e) {
-      console.error("iPad保存データの読み込みにも失敗しました", e);
+      console.error("保存データの読み込みにも失敗しました", e);
     }
   }
+}
+
+function getSimulatorData() {
+  const result = Array.isArray(masterData) ? [...masterData] : [];
+  const seen = new Set(result.map(x => String(x?.id || '').toUpperCase()));
+  (Array.isArray(addedData) ? addedData : []).forEach(item => {
+    const key = String(item?.id || '').toUpperCase();
+    if (key && !seen.has(key)) { result.push(item); seen.add(key); }
+  });
+  return result;
 }
 
 // 管理番号の数字だけを取り出す
@@ -1322,14 +726,22 @@ function getNumberOnly(id) {
 // GitHub側を優先してデータを合体
 function mergeData(master, additions) {
   const result = Array.isArray(master) ? [...master] : [];
-  const masterIds = new Set(result.map(item => String(item?.id || "").trim().toUpperCase()).filter(Boolean));
+
+  const masterNumbers = new Set(
+    result
+      .map(item => getNumberOnly(item.id))
+      .filter(Boolean)
+  );
 
   (Array.isArray(additions) ? additions : []).forEach(item => {
-    const id = String(item?.id || "").trim().toUpperCase();
-    if (id && masterIds.has(id)) return;
-    if (id) masterIds.add(id);
+    const num = getNumberOnly(item.id);
+
+    // 同じ数字がGitHubにあればGitHub側を使用
+    if (num && masterNumbers.has(num)) return;
+
     result.push(item);
   });
+
   return result;
 }
 
@@ -1360,6 +772,129 @@ function openAddedDB() {
   });
 }
 
+function stableCloudId(id) {
+  const str = String(id || "");
+  let h = 2166136261n;
+  for (const ch of str) { h ^= BigInt(ch.codePointAt(0)); h = (h * 16777619n) & 0x1fffffffffffffn; }
+  const n = Number(h % 9000000000000000n);
+  return n || 1;
+}
+
+async function getCloudUser() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  cloudUser = user || null;
+  updateCloudUI();
+  return cloudUser;
+}
+
+function updateCloudUI() {
+  const status = document.getElementById("cloudStatus");
+  const login = document.getElementById("cloudLoginArea");
+  const logout = document.getElementById("cloudLogout");
+  if (!status) return;
+  if (cloudUser) {
+    status.textContent = "☁ クラウド接続中";
+    status.style.color = "green";
+    if (login) login.style.display = "none";
+    if (logout) logout.style.display = "inline-block";
+  } else {
+    status.textContent = "☁ 未ログイン";
+    status.style.color = "#b00";
+    if (login) login.style.display = "block";
+    if (logout) logout.style.display = "none";
+  }
+}
+
+async function cloudUpsertAddedItem(item) {
+  if (!cloudUser || !item?.id) return false;
+  const row = {
+    id: stableCloudId(item.id),
+    medal_id: String(item.id),
+    name: item.name || "", location: item.location || "", date: item.date || "",
+    type: item.type || "", detail: item.detail || "", book_no: item.book_no || ""
+  };
+  const { error } = await supabaseClient.from("medal_data").upsert(row, { onConflict: "medal_id" });
+  if (error) { console.error("medal_data同期エラー", error); return false; }
+  return true;
+}
+
+async function cloudDeleteAddedItem(id) {
+  if (!cloudUser || !id) return;
+  const { error } = await supabaseClient.from("medal_data").delete().eq("medal_id", String(id));
+  if (error) console.error("medal_data削除エラー", error);
+}
+
+async function loadCloudAddedData() {
+  if (!cloudUser) return [];
+  const { data: rows, error } = await supabaseClient.from("medal_data").select("medal_id,name,location,date,type,detail,book_no").order("medal_id", { ascending: true });
+  if (error) { console.error("クラウド追加データ取得エラー", error); return []; }
+  const rows2 = (rows || []).map(r => ({ id:r.medal_id, name:r.name||"", location:r.location||"", date:r.date||"", type:r.type||"", detail:r.detail||"", book_no:r.book_no||"", _local:true, _cloud:true }));
+  addedData = rows2;
+  await saveAddedDataBulk(rows2);
+  return rows2;
+}
+
+async function saveAddedDataBulk(items) {
+  const db = await openAddedDB();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(ADD_STORE_NAME,"readwrite");
+    const store=tx.objectStore(ADD_STORE_NAME);
+    (items||[]).forEach(x=>store.put(x));
+    tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+  });
+  db.close();
+}
+
+async function migrateLocalAddedDataToCloud() {
+  if (!cloudUser) return;
+  const local = await loadAddedData();
+  for (const item of local) await cloudUpsertAddedItem(item);
+  await loadCloudAddedData();
+}
+
+async function saveCloudSimulatorState() {
+  if (!cloudUser) return;
+  const payload = {
+    user_id: cloudUser.id,
+    faces: Number(simState.faces) || 3,
+    book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [],
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await supabaseClient.from("medal_simulator_state").upsert(payload, { onConflict: "user_id" });
+  if (error) console.error("2BOOKクラウド同期エラー", error);
+}
+
+async function loadCloudSimulatorState() {
+  if (!cloudUser) return false;
+  const { data: row, error } = await supabaseClient.from("medal_simulator_state").select("faces,book2").eq("user_id", cloudUser.id).maybeSingle();
+  if (error) { console.error("2BOOKクラウド取得エラー", error); return false; }
+  if (!row) return false;
+  simState.faces = Number(row.faces) || simState.faces || 3;
+  simState.bookItems = Array.isArray(simState.bookItems) ? simState.bookItems : [[],[]];
+  simState.bookItems[1] = Array.isArray(row.book2) ? row.book2 : [];
+  while (simState.bookItems.length < 2) simState.bookItems.push([]);
+  return true;
+}
+
+function setupCloudRealtime() {
+  if (!cloudUser) return;
+  if (cloudChannel) { try { supabaseClient.removeChannel(cloudChannel); } catch(e){} }
+  cloudChannel = supabaseClient.channel("medal-cloud-sync-" + cloudUser.id)
+    .on("postgres_changes", {event:"*", schema:"public", table:"medal_data"}, async () => {
+      await loadCloudAddedData();
+      if (typeof renderSimulator === "function") renderSimulator();
+    })
+    .on("postgres_changes", {event:"*", schema:"public", table:"medal_simulator_state", filter:`user_id=eq.${cloudUser.id}`}, async () => {
+      const oldBook = simState.currentBook;
+      await loadCloudSimulatorState();
+      simState.currentBook = Math.min(oldBook, 1);
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      const faces = document.getElementById("simFaces"); if (faces) faces.value=String(simState.faces);
+      if (typeof renderSimulator === "function") renderSimulator();
+    })
+    .subscribe();
+}
+
 function loadAddedData() {
   return openAddedDB().then(db => {
     return new Promise((resolve, reject) => {
@@ -1380,67 +915,22 @@ function loadAddedData() {
 }
 
 function saveAddedData(item) {
-  return openAddedDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
-      tx.objectStore(ADD_STORE_NAME).put(item);
-
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  });
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+    tx.objectStore(ADD_STORE_NAME).put(item);
+    tx.oncomplete = async () => { db.close(); try { await cloudUpsertAddedItem(item); } catch(e){ console.error(e); } resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  }));
 }
 
 
+loadData()
 
 
 
-
-
-// データ入力画面：管理番号の▲▼
-document.querySelectorAll("[data-add-number-step]").forEach(button => {
-  button.addEventListener("click", () => {
-    const input = document.getElementById("addIdNumber");
-    if (!input) return;
-
-    const raw = String(input.value || "").replace(/\D/g, "");
-    const current = raw === "" ? 0 : Number(raw);
-    const step = Number(button.dataset.addNumberStep || 1);
-    const next = Math.max(0, current + step);
-
-    input.value = String(next).padStart(4, "0");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.focus();
-  });
-});
 
 // 検索イベント
 document.getElementById("search").addEventListener("input", applyFilter)
-
-
-// シミュレーター開始・終了 ▲▼
-document.querySelectorAll("[data-sim-step]").forEach(button => {
-  button.addEventListener("click", () => {
-    const input = document.getElementById(button.dataset.simStep);
-    if(!input) return;
-
-    const current = Number(input.value || 1);
-    const step = Number(button.dataset.step || 1);
-    const min = Number(input.min || 1);
-    const next = Math.max(min, current + step);
-
-    input.value = String(next);
-    input.dispatchEvent(new Event("change", {bubbles:true}));
-  });
-});
-
 
 
 // チェックボックス生成
@@ -1578,139 +1068,6 @@ function createNameSelect() {
   })
 }
 
-
-// =========================
-// NEW自動判定
-// =========================
-let newOnly = false;
-const NEW_BASELINE_KEY = "medalApp_master_ids_v2";
-const NEW_SEEN_KEY = "medalApp_new_seen_ids_v2";
-let autoNewIds = new Set();
-let seenNewIds = new Set();
-
-function itemId(item){
-  return String(item?.id || "").trim();
-}
-
-function loadNewState(){
-  try{
-    const seen = JSON.parse(localStorage.getItem(NEW_SEEN_KEY) || "[]");
-    seenNewIds = new Set(Array.isArray(seen) ? seen : []);
-  }catch(e){
-    seenNewIds = new Set();
-  }
-}
-
-function saveNewState(){
-  localStorage.setItem(NEW_SEEN_KEY, JSON.stringify([...seenNewIds]));
-}
-
-function detectNewMasterData(master){
-  const currentIds = new Set(
-    (Array.isArray(master) ? master : [])
-      .map(itemId)
-      .filter(Boolean)
-  );
-
-  let previousIds = null;
-
-  try{
-    const raw = localStorage.getItem(NEW_BASELINE_KEY);
-    if(raw){
-      const parsed = JSON.parse(raw);
-      if(Array.isArray(parsed)){
-        previousIds = new Set(parsed);
-      }
-    }
-  }catch(e){}
-
-  // 初回起動：現在あるデータを基準として登録。NEWにはしない。
-  if(!previousIds){
-    localStorage.setItem(
-      NEW_BASELINE_KEY,
-      JSON.stringify([...currentIds])
-    );
-    autoNewIds = new Set();
-    return;
-  }
-
-  // 今回追加されたIDだけNEW候補にする。
-  autoNewIds = new Set(
-    [...currentIds].filter(id => !previousIds.has(id))
-  );
-
-  // NEWは「確認するまで」保持する。
-  // 基準IDは、NEWを確認したときだけ更新する。
-
-  // 既に確認済みのものはNEWから除外。
-  autoNewIds = new Set(
-    [...autoNewIds].filter(id => !seenNewIds.has(id))
-  );
-}
-
-function isNewItem(item){
-  if(!item) return false;
-
-  // シミュレーター/iPad追加データは従来どおりNEW扱い
-  if(item._local === true || item._simOnly === true) return true;
-
-  const id = itemId(item);
-  return !!id && autoNewIds.has(id) && !seenNewIds.has(id);
-}
-
-function updateNewFilterButton(){
-  const button = document.getElementById("newFilterBtn");
-  if(!button) return;
-
-  button.classList.toggle("active", newOnly);
-  button.setAttribute("aria-pressed", newOnly ? "true" : "false");
-}
-
-function markDisplayedNewAsSeen(){
-  if(!newOnly) return;
-
-  const ids = filteredData
-    .filter(item => isNewItem(item))
-    .map(itemId)
-    .filter(Boolean);
-
-  ids.forEach(id => {
-    seenNewIds.add(id);
-    autoNewIds.delete(id);
-  });
-
-  if(ids.length){
-    saveNewState();
-
-    // 確認済みになったIDだけを次回比較用の基準へ追加。
-    let baseline = new Set();
-    try{
-      const raw = localStorage.getItem(NEW_BASELINE_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if(Array.isArray(parsed)) baseline = new Set(parsed);
-    }catch(e){}
-    ids.forEach(id => baseline.add(id));
-    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...baseline]));
-  }
-}
-
-document.getElementById("newFilterBtn").addEventListener("click", () => {
-  // NEWを開く：新着だけ表示
-  if(!newOnly){
-    newOnly = true;
-    updateNewFilterButton();
-    applyFilter();
-    return;
-  }
-
-  // NEWを閉じる：表示して確認した新着を既読にする
-  markDisplayedNewAsSeen();
-  newOnly = false;
-  updateNewFilterButton();
-  applyFilter();
-});
-updateNewFilterButton();
-
 function applyFilter() {
 
   const keyword = normalize(
@@ -1755,15 +1112,11 @@ function applyFilter() {
     ? true
     : item.name === selectedName
 
-    const matchNew =
-      newOnly ? isNewItem(item) : true
-
     return (
   matchKeyword &&
   matchType &&
   matchLocation &&
-  matchName &&
-  matchNew
+  matchName
 )
   })
 
@@ -1843,7 +1196,6 @@ function render(list){
         >
         <div>
           <span class="id">${item.id || ""}</span> /
-        ${isNewItem(item) ? '<span class="new-badge">NEW</span>' : ''}
           <span class="type">${item.type || ""}</span>
           <span class="book">${toRoman(item.bookNum)}</span>
         </div>
@@ -1944,9 +1296,6 @@ function toRoman(num) {
   return result
 }
 function clearFilters() {
-
-  newOnly = false;
-  updateNewFilterButton();
 
   // type全部OFF
   document
@@ -2132,7 +1481,7 @@ function saveSimulatorState() {
     };
     const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
     tx.objectStore(SIM_DB_STORE_NAME).put(state);
-    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.oncomplete = async () => { db.close(); try { await saveCloudSimulatorState(); } catch(e){ console.error(e); } resolve(); };
     tx.onerror = () => { db.close(); reject(tx.error); };
   })).catch(error => console.error("シミュレーター保存エラー:", error));
 }
@@ -2154,7 +1503,6 @@ function loadSimulatorState() {
       simState.bookItems = saved.bookItems.slice(0, 2);
       while (simState.bookItems.length < 2) simState.bookItems.push([]);
       simState.items = simState.bookItems[simState.currentBook] || [];
-      lastLocalBook2Signature = getBook2Signature();
       db.close();
       resolve(true);
     };
@@ -2203,10 +1551,10 @@ function extractNumber(text) {
 
 function setupSimulatorRoman() {
   const select = document.getElementById("simRoman");
-  if (!select || !Array.isArray(simData)) return;
+  if (!select || !Array.isArray(data)) return;
 
   const romans = [...new Set(
-    simData.map(item => String(item.bookNum || "").trim()).filter(Boolean)
+    data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
   )];
 
   // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
@@ -2240,7 +1588,7 @@ function makeSimulatorList() {
     return [];
   }
 
-  return simData.filter(item => {
+  return getSimulatorData().filter(item => {
     const num = extractNumber(item.id);
     if (roman === "") {
       return num >= start && num <= end;
@@ -2441,6 +1789,10 @@ async function openSimulator() {
   setupSimulatorRoman();
 
   const restored = await loadSimulatorState();
+  if (cloudUser) {
+    await loadCloudAddedData();
+    await loadCloudSimulatorState();
+  }
 
   if (restored) {
     document.getElementById("simFaces").value = String(simState.faces);
@@ -2473,9 +1825,6 @@ document.getElementById("simFaces").addEventListener("change", () => {
 });
 
 document.getElementById("simRoman").addEventListener("change", () => {
-  // 2bookはクラウド保存された配置を固定して使用する。
-  // bookNo.を変更しても2bookの内容は切り替えない。
-  if (simState.currentBook === 1) return;
   applySimulatorSelection();
 });
 
@@ -2486,14 +1835,6 @@ document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button 
 });
 
 function applySimulatorSelection() {
-  // 2bookはbookNo.・開始番号・終了番号の指定対象外。
-  // 保存済みの2book配置をそのまま維持する。
-  if (simState.currentBook === 1) {
-    simState.items = simState.bookItems[1] || (simState.bookItems[1] = []);
-    renderSimulator();
-    return;
-  }
-
   const base = makeSimulatorList().slice();
 
   // メダル番号は昇順（小さい番号 → 大きい番号）
@@ -2511,67 +1852,12 @@ document.getElementById("simDisplay").addEventListener("click", () => {
   applySimulatorSelection();
 });
 
-// =========================
-// 2BOOK 配置順CSV出力
-// =========================
-function csvEscape(value) {
-  const text = String(value ?? "");
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-function export2BookCsv() {
-  const bookItems = Array.isArray(simState.bookItems?.[1])
-    ? simState.bookItems[1]
-    : [];
-
-  // 2BOOKに実際に配置されているメダルだけを、配置順に出力
-  const rows = [["管理番号", "種類", "詳細"]];
-
-  for (const item of bookItems) {
-    if (!item) continue;
-
-    rows.push([
-      item.id || "",
-      item.type || "",
-      item.detail || ""
-    ]);
-  }
-
-  // UTF-8 BOM付き。Excelで日本語が文字化けしにくい形式
-  const csv = "\uFEFF" + rows
-    .map(row => row.map(csvEscape).join(","))
-    .join("\r\n");
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const now = new Date();
-  const stamp = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-    String(now.getHours()).padStart(2, "0"),
-    String(now.getMinutes()).padStart(2, "0")
-  ].join("");
-
-  a.href = url;
-  a.download = `2book_配置順_${stamp}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("simExportCsv").addEventListener("click", export2BookCsv);
-
-// 開始・終了番号を変更したときも1bookだけ表示を更新
+// 開始・終了番号を変更したときも表示を更新
 document.getElementById("simStart").addEventListener("change", () => {
-  if (simState.currentBook === 1) return;
   applySimulatorSelection();
 });
 
 document.getElementById("simEnd").addEventListener("change", () => {
-  if (simState.currentBook === 1) return;
   applySimulatorSelection();
 });
 
@@ -2588,7 +1874,7 @@ function setupAddTypeSelect() {
   if (!select) return;
 
   const types = [...new Set(
-    (Array.isArray(simData) ? simData : [])
+    (Array.isArray(data) ? data : [])
       .map(item => String(item.type || "").trim())
       .filter(Boolean)
   )];
@@ -2609,20 +1895,6 @@ function setupAddTypeSelect() {
   });
 }
 
-
-function getSequentialItemFromPrevious(bookItems, index) {
-  if (index <= 0) return null;
-  const prev = bookItems[index - 1];
-  if (!prev || !prev.id) return null;
-  const m = String(prev.id).match(/^([A-Za-z]+)-(\d+)$/);
-  if (!m) return null;
-  return {
-    prefix: m[1],
-    number: String(Number(m[2]) + 1).padStart(m[2].length, "0"),
-    type: prev.type || "",
-    detail: prev.detail || ""
-  };
-}
 
 function openAddDataModal(index, editMode = false, bookIndex = 0) {
   const modal = document.getElementById("addDataModal");
@@ -2654,18 +1926,10 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
     saveButton.textContent = "更新";
     title.textContent = `${bookIndex + 1}book データ`;
   } else {
-    const sequential = getSequentialItemFromPrevious(bookItems, index);
-    if (sequential) {
-      prefix.value = sequential.prefix;
-      number.value = sequential.number;
-      type.value = sequential.type;
-      detail.value = sequential.detail;
-    } else {
-      prefix.value = "L";
-      number.value = "";
-      type.value = "";
-      detail.value = "";
-    }
+    prefix.value = "L";
+    number.value = "";
+    type.value = "";
+    detail.value = "";
     deleteButton.style.display = "none";
     saveButton.textContent = "このマスに追加";
     title.textContent = `${bookIndex + 1}book にメダルを追加`;
@@ -2686,35 +1950,6 @@ function closeAddDataModal() {
   modal.style.display = "none";
   modal.dataset.simIndex = "-1";
   modal.dataset.editMode = "0";
-}
-
-async function saveCurrentAndMove(direction) {
-  const modal = document.getElementById("addDataModal");
-  if (!modal || modal.style.display === "none") return;
-  const currentIndex = Number(modal.dataset.simIndex);
-  const bookIndex = Number(modal.dataset.simBook || 0);
-  const bookItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
-  const prefix = document.getElementById("addIdPrefix").value;
-  const rawNumber = document.getElementById("addIdNumber").value.normalize("NFKC").replace(/\D/g, "");
-  const type = document.getElementById("addType").value.trim();
-  const detail = document.getElementById("addDetail").value.trim();
-  const message = document.getElementById("addDataMessage");
-  if (!rawNumber) { message.textContent = "管理番号の数字を入力してください。"; return; }
-  if (!type) { message.textContent = "種類を選択してください。"; return; }
-  const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
-  const source = data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
-  bookItems[currentIndex] = { ...(source || {}), id, type, detail, _simOnly: true };
-  simState.items = bookItems;
-  await saveSimulatorState();
-  const targetIndex = currentIndex + direction;
-  const maxIndex = simState.faces * 15 - 1;
-  if (targetIndex < 0 || targetIndex > maxIndex) {
-    closeAddDataModal();
-    renderSimulator();
-    return;
-  }
-  renderSimulator();
-  openAddDataModal(targetIndex, false, bookIndex);
 }
 
 async function addSimulatorData() {
@@ -2746,7 +1981,7 @@ async function addSimulatorData() {
   // シミュレーターでは、同じメダルを別bookに配置してもOK。
   // これはデータの複製ではなく「配置先の記録」です。
   // 既存データがあれば、その情報を参照して配置します。
-  const source = simData.find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  const source = getSimulatorData().find(item => String(item.id).toUpperCase() === id.toUpperCase());
   const oldItem = editMode ? (bookItems[index] || null) : null;
 
   const item = {
@@ -2764,35 +1999,9 @@ async function addSimulatorData() {
     bookItems[index] = item;
   }
 
-  // GitHubのmasterに存在しない「iPad/PCから追加したメダル」は端末＋クラウドへ保存
-  if (!source) {
-    const cloudItem = { ...item, _local:true };
-    const existingIndex = addedData.findIndex(x => String(x.id).toUpperCase() === id.toUpperCase());
-    if (existingIndex >= 0) addedData[existingIndex] = cloudItem;
-    else addedData.push(cloudItem);
-    await saveAddedData(cloudItem);
-    if (cloudUser) {
-      try {
-        await upsertCloudMedal(cloudItem);
-      } catch (error) {
-        console.error("追加メダルのクラウド保存エラー", error);
-        message.textContent = "端末には保存しましたが、クラウド保存に失敗しました。";
-      }
-    }
-    data = masterData;
-    simData = mergeData(masterData, addedData);
-    setupFilter();
-    createLocationSelect();
-    setupSimulatorRoman();
-  }
-
-  // シミュレーター配置データを端末へ保存。2bookだけクラウドへ保存
-  simState.items = simState.bookItems[simState.currentBook] || [];
-  await saveSimulatorState();
-  if (cloudUser && bookIndex === 1) {
-    try { await saveCloudSimulatorState(); }
-    catch (error) { console.error("2bookクラウド保存エラー", error); }
-  }
+  // シミュレーター配置データをPC/iPad内へ自動保存
+  simState.items = simState.bookItems[0] || [];
+  saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
@@ -2808,12 +2017,9 @@ async function deleteCurrentAddedData() {
   if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
 
   bookItems[index] = null;
-  simState.items = simState.bookItems[bookIndex] || [];
-  await saveSimulatorState();
-  if (cloudUser && bookIndex === 1) {
-    try { await saveCloudSimulatorState(); }
-    catch (error) { console.error("2bookクラウド保存エラー", error); }
-  }
+  await cloudDeleteAddedItem(item.id);
+  simState.items = simState.bookItems[0] || [];
+  saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
@@ -2831,12 +2037,12 @@ async function clearAllAddedData() {
     });
     db.close();
     if (cloudUser) {
-      const { error: cloudDeleteError } = await supabaseClient.from("medal_data").delete().neq("medal_id", "__never_delete__");
-      if (cloudDeleteError) console.error("クラウド追加データ全削除エラー", cloudDeleteError);
+      const { error: delErr } = await supabaseClient.from("medal_data").delete().neq("medal_id", "__never__");
+      if (delErr) console.error("クラウド追加データ全削除エラー", delErr);
+      await supabaseClient.from("medal_simulator_state").delete().eq("user_id", cloudUser.id);
     }
     addedData = [];
-    data = masterData;
-    simData = mergeData(masterData, addedData);
+    data = Array.isArray(masterData) ? [...masterData] : [];
 
     // 「全削除」は追加データだけでなく、
     // シミュレーターの保存配置も初期化する
@@ -2859,8 +2065,6 @@ async function clearAllAddedData() {
 document.getElementById("addDataClose").onclick = closeAddDataModal;
 document.getElementById("addDataCancel").onclick = closeAddDataModal;
 document.getElementById("addDataSave").onclick = addSimulatorData;
-document.getElementById("addDataNext").onclick = () => saveCurrentAndMove(1);
-document.getElementById("addDataPrev").onclick = () => saveCurrentAndMove(-1);
 document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
 document.getElementById("addDataClearAll").onclick = clearAllAddedData;
 
@@ -2923,24 +2127,146 @@ async function cacheImages(data) {
 
 }
 
-// =========================
-// アプリ起動
-// すべての変数・関数の初期化後に実行する
-//
-// 重要：先にIndexedDBの追加データを読み込んでから
-// Supabase同期を開始する。
-// これにより、iPadにだけ保存されていた追加データも
-// ログイン直後のクラウド同期で正しく読み込まれ、
-// 必要ならSupabaseへ送信される。
-// =========================
-async function startApp() {
-  await loadData();
-  // クラウド同期より前に端末の1/2BOOK状態をIndexedDBから復元
-  // これでiPadにしかない2BOOK配置もクラウドへ取り込める
-  await loadSimulatorState();
-  await initCloudAuth();
+/* =========================
+   Supabase 認証・自動同期 初期化
+   ========================= */
+let cloudSyncTimer = null;
+let cloudSyncBusy = false;
+
+async function refreshCloudData() {
+  if (!cloudUser || cloudSyncBusy) return;
+  cloudSyncBusy = true;
+  try {
+    await loadCloudAddedData();
+    await loadCloudSimulatorState();
+    if (typeof renderSimulator === "function") {
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      renderSimulator();
+    }
+  } catch (e) {
+    console.error("クラウド自動更新エラー:", e);
+  } finally {
+    cloudSyncBusy = false;
+  }
 }
-startApp();
+
+function startCloudAutoSync() {
+  if (cloudSyncTimer) clearInterval(cloudSyncTimer);
+  cloudSyncTimer = setInterval(() => refreshCloudData(), 10000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshCloudData();
+  });
+  window.addEventListener("focus", () => refreshCloudData());
+}
+
+async function initializeCloudSync() {
+  try {
+    const { data: sessionData, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+
+    cloudUser = sessionData?.session?.user || null;
+    updateCloudUI();
+
+    if (cloudUser) {
+      // iPad/PCに残っているローカル追加データを先にクラウドへ送る
+      await migrateLocalAddedDataToCloud();
+      // その後、クラウドを正として取得
+      await loadCloudAddedData();
+      await loadCloudSimulatorState();
+      setupCloudRealtime();
+      startCloudAutoSync();
+    }
+
+    await loadData();
+    if (typeof renderSimulator === "function") {
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      renderSimulator();
+    }
+  } catch (e) {
+    console.error("クラウド初期化エラー:", e);
+    updateCloudUI();
+    await loadData();
+  }
+}
+
+const cloudLoginButton = document.getElementById("cloudLogin");
+if (cloudLoginButton) {
+  cloudLoginButton.addEventListener("click", async () => {
+    const email = document.getElementById("cloudEmail")?.value.trim();
+    const password = document.getElementById("cloudPassword")?.value;
+    if (!email || !password) {
+      alert("メールアドレスとパスワードを入力してください。");
+      return;
+    }
+
+    cloudLoginButton.disabled = true;
+    cloudLoginButton.textContent = "ログイン中…";
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      cloudUser = data?.user || null;
+      updateCloudUI();
+      if (cloudUser) {
+        await migrateLocalAddedDataToCloud();
+        await loadCloudAddedData();
+        await loadCloudSimulatorState();
+        setupCloudRealtime();
+        startCloudAutoSync();
+        if (typeof renderSimulator === "function") {
+          simState.items = simState.bookItems[simState.currentBook] || [];
+          renderSimulator();
+        }
+      }
+      alert("クラウドに接続しました。");
+    } catch (e) {
+      console.error("Supabaseログインエラー:", e);
+      alert("ログインできませんでした。メールアドレス・パスワードを確認してください。\n\n" + (e?.message || ""));
+    } finally {
+      cloudLoginButton.disabled = false;
+      cloudLoginButton.textContent = "ログイン";
+    }
+  });
+}
+
+const cloudLogoutButton = document.getElementById("cloudLogout");
+if (cloudLogoutButton) {
+  cloudLogoutButton.addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+  });
+}
+
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+  cloudUser = session?.user || null;
+  updateCloudUI();
+
+  if (cloudUser) {
+    try {
+      await migrateLocalAddedDataToCloud();
+      await loadCloudAddedData();
+      await loadCloudSimulatorState();
+      setupCloudRealtime();
+      startCloudAutoSync();
+      if (typeof renderSimulator === "function") {
+        simState.items = simState.bookItems[simState.currentBook] || [];
+        renderSimulator();
+      }
+    } catch (e) {
+      console.error("ログイン後のクラウド同期エラー:", e);
+    }
+  } else {
+    if (cloudSyncTimer) {
+      clearInterval(cloudSyncTimer);
+      cloudSyncTimer = null;
+    }
+    if (cloudChannel) {
+      try { await supabaseClient.removeChannel(cloudChannel); } catch (e) {}
+      cloudChannel = null;
+    }
+  }
+});
+
+// HTML内の各イベント設定が完了してから初期化
+initializeCloudSync();
 
 </script>
 </body>
