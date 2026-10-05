@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>スーベニアメダル管理</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="メダル管理">
+<style>
+#cloudPanel{display:flex;align-items:center;gap:4px;flex-wrap:wrap;position:static;z-index:auto;background:#fff;border:1px solid #bbb;border-radius:6px;padding:2px 4px;margin:3px 0 5px;box-shadow:none;font-size:12px;width:fit-content;max-width:250px;box-sizing:border-box;}#cloudStatus{font-size:12px;font-weight:bold;white-space:nowrap;margin:0;}#cloudLoginArea{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}#cloudPanel input{width:92px;max-width:92px;box-sizing:border-box;padding:2px 4px;margin:0;height:24px;font-size:12px;}#cloudPanel button{padding:2px 6px;margin:0;height:24px;font-size:12px;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
+body {
+  font-family: sans-serif;
+  margin: 10px;
+}
+
+input {
+  max-width: 100px;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 4px;
+  width: 80%;
+  max-width: 300px;
+  }
+
+button {
+  margin: 5px 0;
+}
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.card {
+  width: 180px;
+  margin: 2px;
+  padding: 2px;
+}
+
+
+/* =========================
+   画像表示 高速化
+   ========================= */
+.card {
+  content-visibility: auto;
+  contain-intrinsic-size: 180px 180px;
+}
+
+.card img.medal-image {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 1px;
+  box-sizing: border-box;
+  aspect-ratio: 3 / 2;
+}
+
+/* 画像がない場合は背景の四角を表示しない */
+.card img.medal-image.noimage {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  object-fit: contain;
+}
+
+@media screen and (min-width: 700px) and (max-width: 800px) {
+  .card {
+    contain-intrinsic-size: 1px 180px;
+  }
+  .card img.medal-image {
+    height: 120px;
+  }
+}
+
+img {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 1px;
+}
+img.noimage{
+  background: transparent;
+}
+.id {
+     font-size: 18px;
+     font-weight: bold; 
+    }
+.name {
+  font-size: 12px;
+}
+
+.location {
+  font-size: 12px;
+  color: gray;
+}
+
+.date {
+  font-size: 11px;
+  color: #999;
+}
+
+.type {
+  font-size: 12px;
+  color: #999;
+}
+
+.detail {
+  font-size: 12px;
+  font-weight: bold;
+}
+.filters {
+  display: flex;
+  flex-wrap: nowrap;
+
+  gap: 8px;
+
+  overflow-x: auto;
+
+  padding-bottom: 4px;
+}
+
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 6px 30px;
+
+  background: #f3f3f3;
+  border-radius: 999px;
+
+  font-size: 15px;
+
+  cursor: pointer;
+
+  user-select: none;
+
+  transition: 0.2s;
+
+  white-space: nowrap;
+
+  flex: 0 0 auto;
+}
+
+.filters label:hover {
+  background: #e0e0e0;
+}
+
+.filters input[type="checkbox"] {
+  margin: 0;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+
+  background: white;
+
+  z-index: 999;
+
+  padding: 4px 0;
+
+  border-bottom: 1px solid #ddd;
+}
+.book{
+  margin-left: 6px;
+  font-size: 12px;
+  color: #999;
+}
+.legend {
+  font-size: 12px;
+  color: #666;
+  padding: 3px 0;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+/* =========================
+   iPad mini 6 縦向き
+   ========================= */
+@media screen and (min-width: 700px) and (max-width: 800px) {
+
+  body {
+    margin: 6px;
+  }
+
+  .topbar {
+    padding: 3px 0;
+  }
+
+  #search {
+    width: 95% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+    padding: 10px !important;
+    font-size: 16px !important;
+  }
+
+  #cloudPanel { width:95% !important; max-width:300px; }
+  #cloudPanel input { width:105px; max-width:105px; height:30px; font-size:13px; }
+  #cloudPanel button { height:30px; font-size:13px; }
+  #cloudStatus { font-size:13px; }
+
+  #printIds {
+    width: 100px !important;
+    padding: 8px !important;
+    font-size: 16px !important;
+  }
+
+  button {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 15px;
+    touch-action: manipulation;
+  }
+
+  #pageInput {
+    width: 50px !important;
+    height: 36px;
+    padding: 4px !important;
+    font-size: 16px !important;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .filters {
+    gap: 6px;
+    padding: 5px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filters label {
+    padding: 9px 14px;
+    font-size: 15px;
+  }
+
+  .filters input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+
+  #locationSelect,
+  #nameSelect {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 15px;
+    max-width: 48%;
+  }
+
+  /* ★ 3列表示 */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .card {
+    width: auto;
+    margin: 0;
+    padding: 3px;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .card img {
+    width: 100%;
+    height: 120px;
+    object-fit: contain;
+    box-sizing: border-box;
+  }
+
+  .id {
+    font-size: 16px;
+  }
+
+  .name {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .location {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .date,
+  .type,
+  .detail,
+  .book {
+    font-size: 10px;
+  }
+}
+
+/* =========================
+   配置シミュレーター
+   ========================= */
+#simulator {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,.45);
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+#simulator .sim-panel {
+  background: #fff;
+  max-width: 760px;
+  margin: 0 auto;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.sim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sim-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.sim-controls input,
+.sim-controls select {
+  min-height: 38px;
+  box-sizing: border-box;
+  font-size: 16px;
+  padding: 5px 8px;
+}
+.sim-controls input[type="number"] { width: 75px; }
+.sim-face {
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 10px;
+}
+.sim-face-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.sim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.sim-slot {
+  min-height: 62px;
+  border: 2px solid #888;
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 4px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: pre-line;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sim-slot.empty { color: #aaa; }
+.sim-slot.drag-over { outline: 3px solid #333; }
+.sim-help {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+}
+@media screen and (min-width: 700px) and (max-width: 800px) {
+  #simulator { padding: 6px; }
+  #simulator .sim-panel { width: 100%; }
+  .sim-slot { min-height: 68px; font-size: 13px; }
+}
+
+/* iPad用 データ追加画面 */
+#addDataModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0,0,0,.45);
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+#addDataModal .add-data-panel {
+  background: #fff;
+  max-width: 520px;
+  margin: 20px auto;
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.add-data-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 17px;
+}
+
+.add-data-form {
+  display: grid;
+  gap: 9px;
+}
+
+.add-data-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.add-data-form input {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 7px 9px;
+  margin: 0;
+  font-size: 16px;
+  border: 1px solid #bbb;
+  border-radius: 7px;
+}
+
+.add-data-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.add-data-buttons button {
+  flex: 1;
+  min-height: 44px;
+}
+
+.add-data-message {
+  min-height: 18px;
+  font-size: 13px;
+  color: #b00020;
+}
+
+.sim-slot.empty {
+  cursor: pointer;
+}
+
+.sim-slot.empty::after {
+  content: "タップして追加";
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 8px;
+}
+
+
+.add-delete-button{
+  background:#c62828 !important;
+  color:#fff !important;
+  border:none;
+}
+.add-delete-button:active{
+  opacity:.75;
+}
+#addDataModal.show{display:block;}
+
+.sim-book{margin:14px 0 22px;padding:10px;border:2px solid #888;border-radius:10px;background:#fafafa;}
+.sim-book-title{font-size:18px;font-weight:700;margin:0 0 8px;}
+
+.sim-book-tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.sim-book-tabs button {
+  padding: 8px 14px;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+.sim-book-tabs button.active {
+  font-weight: bold;
+  border-width: 2px;
+}
+
+
+/* シミュレーター：開始番号から次の行に配置 */
+.sim-start-label {
+  flex-basis: 100%;
+  width: 100%;
+}
+
+/* シミュレーター操作欄：開始番号の前で確実に改行 */
+.sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
+#newOnlyBtn.active{font-weight:700;border:2px solid #000;}
+</style>
+</head>
+
+<body>
+<div class="topbar">
+<input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
+style="
+  width:250px;
+  padding:2px 4px;
+  font-size:12px;
+   margin-bottom: 0;
+  "
+>
+<div id="cloudPanel">
+  <div id="cloudStatus">☁ 未ログイン</div>
+  <div id="cloudLoginArea">
+    <input id="cloudEmail" type="email" placeholder="メールアドレス">
+    <input id="cloudPassword" type="password" placeholder="パスワード">
+    <button id="cloudLogin">ログイン</button>
+  </div>
+  <button id="cloudLogout" style="display:none;">ログアウト</button>
+</div>
+<br>
+<br>
+<button onclick="prevPage()">← BACK</button>
+<input
+  type="number"
+  id="pageInput"
+  min="1"
+  style="
+  width:30px;
+  padding:2px 4px;
+  font-size:12px;
+  "
+>
+<span id="totalPages"></span>
+
+<button onclick="nextPage()">NEXT →</button>
+<button id="missingBtn">欠番</button>
+<button id="simulatorBtn">配置シミュレーター</button>
+<button onclick="clearFilters()">□</button>
+<button id="newOnlyBtn" type="button">NEW</button>
+<div class="legend">
+  L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
+</div>
+<div id="typeFilters" class="filters"></div>
+<select id="locationSelect">
+  <option value="">すべて</option>
+</select>
+
+<select id="nameSelect">
+  <option value="">すべて</option>
+</select>
+</div>
+
+<div id="simulator">
+  <div class="sim-panel">
+    <div class="sim-header">
+      <strong>スーベニアメダル配置シミュレーター</strong>
+      <button id="simClose">閉じる</button>
+    </div>
+
+    <div class="sim-controls">
+      <label>面数
+        <select id="simFaces">
+          <option value="3">3面</option>
+          <option value="4">4面</option>
+        </select>
+      </label>
+
+      <label>bookNo.
+        <select id="simRoman"></select>
+      </label>
+
+      <div id="simBookTabs" class="sim-book-tabs">
+        <button type="button" data-book-view="0" class="active">1book</button>
+        <button type="button" data-book-view="1">2book</button>
+      </div>
+
+      <div class="sim-force-break"></div>
+
+      <label>開始
+        <input id="simStart" type="number" value="1" min="1">
+      </label>
+
+      <label>終了
+        <input id="simEnd" type="number" value="45" min="1">
+      </label>
+
+      <button id="simDisplay">表示</button>
+      <button id="simCsvButton" type="button">2BOOK CSV</button>
+      
+    </div>
+
+    <div class="sim-help">
+      空きマスをタップすると入力できます。iPadで追加したメダルをタップすると入力画面から削除できます。ドラッグすると配置を入れ替えできます。
+    </div>
+    <div id="simFacesArea"></div>
+  </div>
+</div>
+
+<!-- iPad用 データ入力画面 -->
+<div id="addDataModal">
+  <div class="add-data-panel">
+    <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
+    <div class="add-data-form">
+      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
+      <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
+      <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
+<div id="addDataMessage" class="add-data-message"></div>
+      <div class="add-data-buttons">
+        <button type="button" id="addDataPrev">保存して前へ</button>
+        <button type="button" id="addDataNext">保存して次へ</button><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const locationGroups = {
+
+  "ランド": [
+    "ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ",
+    "ｱﾄﾞﾍﾞﾝﾁｬｰﾗﾝﾄﾞ",
+    "ｳｴｽﾀﾝﾗﾝﾄﾞ",
+    "ﾌｧﾝﾀｼﾞｰﾗﾝﾄﾞ",
+    "ﾄｩｰﾝﾀｳﾝ",
+    "ﾄｩﾓﾛｰﾗﾝﾄﾞ"
+  ],
+
+  "シー": [
+    "ﾒﾃﾞｨﾃﾚｰﾆｱﾝﾊｰﾊﾞｰ",
+    "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
+    "ﾛｽﾄﾘﾊﾞｰﾃﾞﾙﾀ",
+    "ﾏｰﾒｲﾄﾞﾗｸﾞｰﾝ",
+    "ﾐｽﾃﾘｱｽｱｲﾗﾝﾄﾞ",
+    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽ"
+  ],
+
+  "ホテル": [
+    "ﾐﾗｺｽﾀ",
+    "ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
+    "ｾﾚﾌﾞﾚｰｼｮﾝﾎﾃﾙ",
+    "ﾄｲｽﾄｰﾘｰﾎﾃﾙ",
+    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽﾎﾃﾙ"
+  ],
+
+  "リゾートライン": [
+    "ﾘｿﾞｰﾄﾗｲﾝ",  
+  ],
+  "特別付録": [
+    "特別付録",  
+  ]
+}
+let data = []
+let masterData = []
+let addedData = []
+let imageFolder = "images"
+let currentPage = 1
+const pageSize = 50
+let filteredData = []
+
+
+// Supabase
+const SUPABASE_URL = "https://tdlhidndalgctmpqggxu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_2eJD9STd9kUIti6zHRmmAg_2zTVk4bJ";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let cloudUser = null;
+let cloudChannel = null;
+
+// =========================
+// NEW 自動検出
+// 初回は既存データを基準としてNEWにしない。
+// 次回以降、data.jsonに新しく現れたIDだけをNEW扱いにする。
+// =========================
+let newOnly = false;
+let newIds = new Set();
+const NEW_BASELINE_KEY = "medalAppNewBaselineV1";
+
+function updateNewDetection(master) {
+  const ids = new Set((Array.isArray(master) ? master : []).map(x => String(x?.id || "").toUpperCase()).filter(Boolean));
+  let baseline = null;
+  try {
+    const raw = localStorage.getItem(NEW_BASELINE_KEY);
+    baseline = raw ? new Set(JSON.parse(raw)) : null;
+  } catch (_) {}
+  if (!baseline) {
+    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...ids]));
+    newIds = new Set();
+  } else {
+    newIds = new Set([...ids].filter(id => !baseline.has(id)));
+    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...ids]));
+  }
+}
+
+function isNewItem(item) {
+  return newIds.has(String(item?.id || "").toUpperCase());
+}
+
+function markNewSeen() {
+  newOnly = false;
+  const btn = document.getElementById("newOnlyBtn");
+  if (btn) btn.classList.remove("active");
+  applyFilter();
+}
+
+// データ読み込み
+async function loadData() {
+  try {
+    const response = await fetch("./data.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`data.json読み込みエラー: ${response.status}`);
+    masterData = await response.json();
+    updateNewDetection(masterData);
+    addedData = await loadAddedData();
+    // メイン画面はdata.jsonだけを表示する
+    data = Array.isArray(masterData) ? [...masterData] : [];
+    setupFilter();
+    createLocationSelect();
+    filteredData = data;
+    currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
+    localStorage.setItem("currentPage", currentPage);
+    renderPage();
+    setupSimulatorRoman();
+  } catch (error) {
+    console.error("data.jsonの読み込みに失敗しました", error);
+    try {
+      addedData = await loadAddedData();
+      data = [];
+      setupFilter();
+      createLocationSelect();
+      filteredData = data;
+      currentPage = 1;
+      renderPage();
+      setupSimulatorRoman();
+    } catch (e) {
+      console.error("保存データの読み込みにも失敗しました", e);
+    }
+  }
+}
+
+function getSimulatorData() {
+  const result = Array.isArray(masterData) ? [...masterData] : [];
+  const seen = new Set(result.map(x => String(x?.id || '').toUpperCase()));
+  (Array.isArray(addedData) ? addedData : []).forEach(item => {
+    const key = String(item?.id || '').toUpperCase();
+    if (key && !seen.has(key)) { result.push(item); seen.add(key); }
+  });
+  return result;
+}
+
+// 管理番号の数字だけを取り出す
+// L-0001 / S-0001 / H-0001 / LS-0001 → 1
+function getNumberOnly(id) {
+  const match = String(id || "").match(/\d+/);
+  return match ? String(Number(match[0])) : "";
+}
+
+// GitHub側を優先してデータを合体
+function mergeData(master, additions) {
+  const result = Array.isArray(master) ? [...master] : [];
+
+  const masterNumbers = new Set(
+    result
+      .map(item => getNumberOnly(item.id))
+      .filter(Boolean)
+  );
+
+  (Array.isArray(additions) ? additions : []).forEach(item => {
+    const num = getNumberOnly(item.id);
+
+    // 同じ数字がGitHubにあればGitHub側を使用
+    if (num && masterNumbers.has(num)) return;
+
+    result.push(item);
+  });
+
+  return result;
+}
+
+// =========================
+// iPad内データ保存 IndexedDB
+// =========================
+const ADD_DB_NAME = "medalAppDB";
+const ADD_STORE_NAME = "addedData";
+const ADD_DB_VERSION = 2;
+
+function openAddedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(ADD_DB_NAME, ADD_DB_VERSION);
+
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
+        db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(SIM_DB_STORE_NAME)) {
+        db.createObjectStore(SIM_DB_STORE_NAME, { keyPath: "id" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function stableCloudId(id) {
+  const str = String(id || "");
+  let h = 2166136261n;
+  for (const ch of str) { h ^= BigInt(ch.codePointAt(0)); h = (h * 16777619n) & 0x1fffffffffffffn; }
+  const n = Number(h % 9000000000000000n);
+  return n || 1;
+}
+
+async function getCloudUser() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  cloudUser = user || null;
+  updateCloudUI();
+  return cloudUser;
+}
+
+async function ensureCloudUser() {
+  if (cloudUser) return cloudUser;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    cloudUser = session?.user || null;
+    updateCloudUI();
+  } catch (e) {
+    console.error("クラウドセッション取得エラー", e);
+    cloudUser = null;
+  }
+  return cloudUser;
+}
+
+function updateCloudUI() {
+  const status = document.getElementById("cloudStatus");
+  const login = document.getElementById("cloudLoginArea");
+  const logout = document.getElementById("cloudLogout");
+  if (!status) return;
+  if (cloudUser) {
+    status.textContent = "☁ クラウド接続中";
+    status.style.color = "green";
+    if (login) login.style.display = "none";
+    if (logout) logout.style.display = "inline-block";
+  } else {
+    status.textContent = "☁ 未ログイン";
+    status.style.color = "#b00";
+    if (login) login.style.display = "block";
+    if (logout) logout.style.display = "none";
+  }
+}
+
+async function cloudUpsertAddedItem(item) {
+  if (!cloudUser || !item?.id) return false;
+  const row = {
+    id: stableCloudId(item.id),
+    medal_id: String(item.id),
+    name: item.name || "", location: item.location || "", date: item.date || "",
+    type: item.type || "", detail: item.detail || "", book_no: item.book_no || ""
+  };
+  const { error } = await supabaseClient.from("medal_data").upsert(row, { onConflict: "medal_id" });
+  if (error) { console.error("medal_data同期エラー", error); return false; }
+  return true;
+}
+
+async function cloudDeleteAddedItem(id) {
+  if (!cloudUser || !id) return;
+  const { error } = await supabaseClient.from("medal_data").delete().eq("medal_id", String(id));
+  if (error) console.error("medal_data削除エラー", error);
+}
+
+async function loadCloudAddedData() {
+  if (!cloudUser) return [];
+  const { data: rows, error } = await supabaseClient.from("medal_data").select("medal_id,name,location,date,type,detail,book_no").order("medal_id", { ascending: true });
+  if (error) { console.error("クラウド追加データ取得エラー", error); return []; }
+  const rows2 = (rows || []).map(r => ({ id:r.medal_id, name:r.name||"", location:r.location||"", date:r.date||"", type:r.type||"", detail:r.detail||"", book_no:r.book_no||"", _local:true, _cloud:true }));
+  addedData = rows2;
+  await saveAddedDataBulk(rows2);
+  return rows2;
+}
+
+async function saveAddedDataBulk(items) {
+  const db = await openAddedDB();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(ADD_STORE_NAME,"readwrite");
+    const store=tx.objectStore(ADD_STORE_NAME);
+    (items||[]).forEach(x=>store.put(x));
+    tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+  });
+  db.close();
+}
+
+async function migrateLocalAddedDataToCloud() {
+  if (!cloudUser) return;
+  const local = await loadAddedData();
+  for (const item of local) await cloudUpsertAddedItem(item);
+  await loadCloudAddedData();
+}
+
+async function saveCloudSimulatorState() {
+  if (!cloudUser) return;
+  const payload = {
+    user_id: cloudUser.id,
+    faces: Number(simState.faces) || 3,
+    book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [],
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await supabaseClient.from("medal_simulator_state").upsert(payload, { onConflict: "user_id" });
+  if (error) console.error("2BOOKクラウド同期エラー", error);
+}
+
+async function loadCloudSimulatorState() {
+  if (!cloudUser) return false;
+  const { data: row, error } = await supabaseClient.from("medal_simulator_state").select("faces,book2").eq("user_id", cloudUser.id).maybeSingle();
+  if (error) { console.error("2BOOKクラウド取得エラー", error); return false; }
+  if (!row) return false;
+  simState.faces = Number(row.faces) || simState.faces || 3;
+  simState.bookItems = Array.isArray(simState.bookItems) ? simState.bookItems : [[],[]];
+  simState.bookItems[1] = Array.isArray(row.book2) ? row.book2 : [];
+  while (simState.bookItems.length < 2) simState.bookItems.push([]);
+  return true;
+}
+
+function setupCloudRealtime() {
+  if (!cloudUser) return;
+  if (cloudChannel) { try { supabaseClient.removeChannel(cloudChannel); } catch(e){} }
+  cloudChannel = supabaseClient.channel("medal-cloud-sync-" + cloudUser.id)
+    .on("postgres_changes", {event:"*", schema:"public", table:"medal_data"}, async () => {
+      await loadCloudAddedData();
+      if (typeof renderSimulator === "function") renderSimulator();
+    })
+    .on("postgres_changes", {event:"*", schema:"public", table:"medal_simulator_state", filter:`user_id=eq.${cloudUser.id}`}, async () => {
+      const oldBook = simState.currentBook;
+      await loadCloudSimulatorState();
+      simState.currentBook = Math.min(oldBook, 1);
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      const faces = document.getElementById("simFaces"); if (faces) faces.value=String(simState.faces);
+      if (typeof renderSimulator === "function") renderSimulator();
+    })
+    .subscribe();
+}
+
+function loadAddedData() {
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readonly");
+      const request = tx.objectStore(ADD_STORE_NAME).getAll();
+
+      request.onsuccess = () => {
+        resolve((request.result || []).map(item => ({ ...item, _local: true })));
+        db.close();
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+        db.close();
+      };
+    });
+  });
+}
+
+function saveAddedData(item) {
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+    tx.objectStore(ADD_STORE_NAME).put(item);
+    tx.oncomplete = async () => { db.close(); try { await cloudUpsertAddedItem(item); } catch(e){ console.error(e); } resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  }));
+}
+
+
+// NEWボタン
+document.getElementById("newOnlyBtn")?.addEventListener("click", () => {
+  newOnly = !newOnly;
+  const btn = document.getElementById("newOnlyBtn");
+  btn.classList.toggle("active", newOnly);
+  applyFilter();
+  if (!newOnly) markNewSeen();
+});
+
+// 2BOOK CSV出力（管理番号・種類・詳細のみ）
+function export2BookCsv() {
+  const items = (simState.bookItems[1] || []).filter(Boolean);
+  const rows = [["管理番号", "種類", "詳細"]];
+  for (const item of items) rows.push([item.id || "", item.type || "", item.detail || ""]);
+  const csv = "\uFEFF" + rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `2BOOK_${new Date().toISOString().slice(0,19).replace(/[-:T]/g,"")}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+document.getElementById("simCsvButton")?.addEventListener("click", export2BookCsv);
+
+function stepAddNumber(delta) {
+  const input = document.getElementById("addIdNumber");
+  const n = Number(String(input.value || "").replace(/\D/g, ""));
+  input.value = String(Math.max(1, n + delta)).padStart(4, "0");
+}
+
+async function saveAndMove(delta) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
+
+  // 現在入力中の値を先に保持
+  const prefix = document.getElementById("addIdPrefix")?.value || "L";
+  const rawNumber = String(document.getElementById("addIdNumber")?.value || "")
+    .normalize("NFKC").replace(/\D/g, "");
+  const type = document.getElementById("addType")?.value || "";
+  const detail = document.getElementById("addDetail")?.value || "";
+  const currentIndex = Number(modal.dataset.simIndex || 0);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const editMode = modal.dataset.editMode === "1";
+
+  // 編集モードでも「保存して前へ／次へ」は使えるようにする
+  await addSimulatorData();
+
+  // 次のマス／前のマスへ移動
+  const nextIndex = Math.max(0, Math.min(59, currentIndex + delta));
+
+  // 管理番号を自動で +1 / -1
+  const currentNumber = Number(rawNumber || 0);
+  const nextNumber = Math.max(1, currentNumber + delta);
+
+  openAddDataModal(nextIndex, false, bookIndex);
+
+  // 前の入力内容を引き継ぐ
+  const nextPrefix = document.getElementById("addIdPrefix");
+  const nextNumberInput = document.getElementById("addIdNumber");
+  const nextType = document.getElementById("addType");
+  const nextDetail = document.getElementById("addDetail");
+
+  if (nextPrefix) nextPrefix.value = prefix;
+  if (nextNumberInput) nextNumberInput.value = String(nextNumber).padStart(4, "0");
+  if (nextType) nextType.value = type;
+  if (nextDetail) nextDetail.value = detail;
+
+  // 次の入力にすぐ打ち込めるようにする
+  setTimeout(() => nextNumberInput?.focus(), 50);
+}
+document.getElementById("addDataNext")?.addEventListener("click", () => saveAndMove(1));
+document.getElementById("addDataPrev")?.addEventListener("click", () => saveAndMove(-1));
+
+loadData()
+
+
+
+
+// 検索イベント
+document.getElementById("search").addEventListener("input", applyFilter)
+
+
+// チェックボックス生成
+function setupFilter() {
+  const container = document.getElementById("typeFilters")
+  container.innerHTML = ""
+
+  const types = [...new Set(data.map(item => item.type))]
+
+  types.forEach(type => {
+    const label = document.createElement("label")
+    label.style.marginRight = "10px"
+
+    const cb = document.createElement("input")
+    cb.type = "checkbox"
+    cb.value = type
+    cb.checked = true
+
+    cb.addEventListener("change", applyFilter)
+
+    label.appendChild(cb)
+    label.appendChild(document.createTextNode(" " + type))
+
+    container.appendChild(label)
+  })
+}
+function createLocationSelect() {
+
+  const locationSelect =
+    document.getElementById("locationSelect")
+
+  const nameSelect =
+    document.getElementById("nameSelect")
+
+  // エリアを初期化
+  locationSelect.innerHTML =
+    `<option value="">すべて</option>`
+
+  // 今まで通りグループ分け
+  for (const groupName in locationGroups) {
+
+    const optgroup =
+      document.createElement("optgroup")
+
+    optgroup.label = groupName
+
+    locationGroups[groupName]
+      .forEach(location => {
+
+        const option =
+          document.createElement("option")
+
+        option.value = location
+        option.textContent = location
+
+        optgroup.appendChild(option)
+      })
+
+    locationSelect.appendChild(optgroup)
+  }
+
+
+  // エリアが変更されたとき
+  locationSelect.addEventListener(
+    "change",
+    () => {
+
+      createNameSelect()
+
+      applyFilter()
+    }
+  )
+
+
+  // 店舗が変更されたとき
+  nameSelect.onchange = applyFilter
+
+
+  // 最初の店舗一覧を作る
+  createNameSelect()
+}
+function createNameSelect() {
+
+  const locationSelect =
+    document.getElementById("locationSelect")
+
+  const nameSelect =
+    document.getElementById("nameSelect")
+
+  const selectedLocation =
+    locationSelect.value
+
+
+  // 店舗プルダウンを初期化
+  nameSelect.innerHTML =
+    `<option value="">すべて</option>`
+
+
+  // 選択されたエリアのデータだけ取得
+  let targetData = data
+
+  if (selectedLocation !== "") {
+
+    targetData =
+      data.filter(item =>
+        item.location === selectedLocation
+      )
+  }
+
+
+  // nameだけ取り出して重複削除
+  const names = [
+    ...new Set(
+      targetData
+        .map(item => item.name)
+        .filter(name => name)
+    )
+  ]
+
+
+  // 名前順
+  names.sort()
+
+
+  // 店舗プルダウン作成
+  names.forEach(name => {
+
+    const option =
+      document.createElement("option")
+
+    option.value = name
+    option.textContent = name
+
+    nameSelect.appendChild(option)
+  })
+}
+
+function applyFilter() {
+
+  const keyword = normalize(
+    document.getElementById("search").value
+  )
+
+  // typeチェック
+  const checkedTypes = [
+    ...document.querySelectorAll("#typeFilters input:checked")
+  ].map(cb => cb.value)
+
+  // locationチェック
+  const selectedLocation = 
+  document.getElementById("locationSelect").value
+  const selectedName =
+  document.getElementById("nameSelect").value
+
+
+  const filtered = data.filter(item => {
+
+    const matchKeyword =
+
+      normalize(item.id).includes(keyword) ||
+      normalize(item.name).includes(keyword) ||
+      normalize(item.location).includes(keyword) ||
+      normalize(item.type).includes(keyword) ||
+      normalize(item.detail).includes(keyword) ||
+      normalize(String(item.bookNum || "")).includes(keyword) ||
+      normalize(toRoman(item.bookNum || 0)).includes(keyword)
+
+    const matchType =
+      checkedTypes.length === 0
+        ? true
+        : checkedTypes.includes(item.type)
+
+    const matchLocation =
+  selectedLocation === ""
+    ? true
+    : item.location === selectedLocation
+    const matchName =
+  selectedName === ""
+    ? true
+    : item.name === selectedName
+
+    const matchNew = !newOnly || isNewItem(item);
+
+    return (
+  matchKeyword &&
+  matchType &&
+  matchLocation &&
+  matchName &&
+  matchNew
+)
+  })
+
+filteredData = filtered;
+
+const savedPage =
+  parseInt(localStorage.getItem("currentPage")) || 1;
+
+const totalPages =
+  Math.max(
+    1,
+    Math.ceil(filteredData.length / pageSize)
+  );
+
+currentPage =
+  Math.min(savedPage, totalPages);
+
+renderPage();
+
+}
+
+function render(list){
+  const grid = document.getElementById("grid");
+  if (!grid) return;
+
+  // 前回の監視を解除
+  if (window._medalImageObserver) {
+    window._medalImageObserver.disconnect();
+  }
+
+  grid.innerHTML = "";
+
+  const BATCH_SIZE = 15;
+  let rendered = 0;
+
+  // 画像監視を1つだけ作る
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+
+      const img = entry.target;
+      const src = img.dataset.src;
+      if (src && !img.src) {
+        img.src = src;
+      }
+      observer.unobserve(img);
+    });
+  }, {
+    root: null,
+    rootMargin: "500px 0px",
+    threshold: 0.01
+  });
+
+  window._medalImageObserver = observer;
+
+  function appendBatch() {
+    const fragment = document.createDocumentFragment();
+    const end = Math.min(rendered + BATCH_SIZE, list.length);
+
+    for (let i = rendered; i < end; i++) {
+      const item = list[i];
+      const imgId = String(item.id || "").split("-").pop();
+      const finalImg = `${imageFolder}/${imgId}.webp`;
+
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <img
+          class="medal-image"
+          data-src="${finalImg}"
+          loading="${i < 6 ? "eager" : "lazy"}"
+          decoding="async"
+          width="180"
+          height="120"
+          alt=""
+        >
+        <div>
+          <span class="id">${item.id || ""}</span> /
+          <span class="type">${item.type || ""}</span>
+          <span class="book">${toRoman(item.bookNum)}</span>
+        </div>
+        <div class="detail">${item.detail || ""}</div>
+        <div class="date">${item.date || ""}</div>
+        <div class="location">${item.location || ""}</div>
+        <div class="name">${item.name || ""}</div>
+      `;
+
+      const img = div.querySelector(".medal-image");
+
+      img.onerror = function() {
+        if (this.dataset.fallback === "1") return;
+        this.dataset.fallback = "1";
+        this.removeAttribute("data-src");
+        this.src = "./noimage.png";
+        this.classList.add("noimage");
+      };
+
+      fragment.appendChild(div);
+    }
+
+    grid.appendChild(fragment);
+
+    // 最初の6枚は即読み込み、それ以外はObserverに任せる
+    const imgs = grid.querySelectorAll(".medal-image");
+    imgs.forEach(img => {
+      if (img.dataset.src && !img.src) {
+        if (img.loading === "eager") {
+          img.src = img.dataset.src;
+        } else {
+          observer.observe(img);
+        }
+      }
+    });
+
+    rendered = end;
+
+    if (rendered < list.length) {
+      const sentinel = document.createElement("div");
+      sentinel.className = "medal-load-sentinel";
+      sentinel.style.cssText = "height:1px;width:100%;";
+      grid.appendChild(sentinel);
+
+      const sentinelObserver = new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting) return;
+        sentinelObserver.disconnect();
+        sentinel.remove();
+        appendBatch();
+      }, { rootMargin: "700px 0px" });
+
+      sentinelObserver.observe(sentinel);
+    }
+  }
+
+  appendBatch();
+}
+
+
+function normalize(text) {
+  return (text || "")
+    .toString()
+    .normalize("NFKC")      // 半角→全角統一
+    .toLowerCase()          // 小文字化
+    .replace(/\s/g, "")     // 半角/全角スペース削除
+    .replace(/-/g, "")      // ハイフン削除
+}
+function toRoman(num) {
+
+  if (!num) return ""
+
+  const roman = [
+    ["M",1000],
+    ["CM",900],
+    ["D",500],
+    ["CD",400],
+    ["C",100],
+    ["XC",90],
+    ["L",50],
+    ["XL",40],
+    ["X",10],
+    ["IX",9],
+    ["V",5],
+    ["IV",4],
+    ["I",1]
+  ]
+
+  let result = ""
+
+  for (const [letter, value] of roman) {
+
+    while (num >= value) {
+      result += letter
+      num -= value
+    }
+  }
+
+  return result
+}
+function clearFilters() {
+
+  // type全部OFF
+  document
+    .querySelectorAll("#typeFilters input")
+    .forEach(cb => cb.checked = false)
+
+  // location初期化
+  document.getElementById("locationSelect").value = ""
+
+  applyFilter()
+}
+
+
+function checkMissing() {
+
+  if (!data || data.length === 0) {
+    alert("データがまだ読み込まれていません")
+    return
+  }
+
+  const nums = data
+    .map(item => parseInt(item.id.match(/\d+/)?.[0]))
+    .filter(n => !isNaN(n))
+
+  const set = new Set(nums)
+
+  const min = Math.min(...nums)
+  const max = Math.max(...nums)
+
+  let missing = []
+
+  for (let n = min; n <= max; n++) {
+    if (!set.has(n)) missing.push(n)
+  }
+
+  alert(
+    missing.length
+      ? "欠番:\n" + missing.map(n => String(n).padStart(4, "0")).join(", ")
+      : "欠番なし"
+  )
+}
+document.getElementById("missingBtn")
+  .addEventListener("click", checkMissing);
+
+function updateFolderPath() {
+
+  const el =
+    document.getElementById("folderPath")
+
+  if (!el) return
+
+  el.textContent =
+    "画像: " + imageFolder
+}
+
+async function selectImageFolder() {
+
+  const folder =
+    await window.electronAPI.selectFolder()
+
+  if (!folder) return
+
+  imageFolder = folder
+
+  localStorage.setItem(
+    "imageFolder",
+    folder
+  )
+
+
+  applyFilter()
+}
+function renderPage() {
+
+  const start =
+    (currentPage - 1) * pageSize
+
+  const end =
+    start + pageSize
+
+  const pageData =
+    filteredData.slice(start, end)
+
+  render(pageData)
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+document.getElementById("pageInput")
+  .value = currentPage
+
+   document.getElementById("totalPages")
+  .textContent = ` / ${totalPages}`
+   // 現在のページを記憶
+  localStorage.setItem("currentPage", currentPage);
+}
+
+
+function nextPage() {
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+  if (currentPage < totalPages) {
+
+    currentPage++
+
+    renderPage()
+  }
+}
+
+function prevPage() {
+
+  if (currentPage > 1) {
+
+    currentPage--
+
+    renderPage()
+  }
+}
+function goPage() {
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+  const value =
+    parseInt(
+      document.getElementById("pageInput").value
+    )
+
+  if (
+    isNaN(value) ||
+    value < 1 ||
+    value > totalPages
+  ) {
+    return
+  }
+
+  currentPage = value
+
+  renderPage()
+}
+document
+  .getElementById("pageInput")
+  .addEventListener("keydown", e => {
+
+    if (e.key === "Enter") {
+
+      goPage()
+    }
+  })
+
+updateFolderPath()
+
+
+/* =========================
+   iPad用 配置シミュレーター
+   VBA版の機能をJavaScriptへ移植
+   ========================= */
+const simState = {
+  faces: 3,
+  books: 2,
+  currentBook: 0,
+  items: [],
+  bookItems: [],
+  drag: null
+};
+
+/* =========================
+   配置シミュレーター自動保存
+   IndexedDBへ保存するため、アプリ終了後も保持
+========================= */
+const SIM_DB_STORE_NAME = "simulatorState";
+
+async function saveSimulatorState() {
+  const state = {
+    id: "current",
+    faces: Number(simState.faces) || 3,
+    books: 2,
+    currentBook: Number(simState.currentBook) || 0,
+    bookItems: Array.isArray(simState.bookItems) ? simState.bookItems : []
+  };
+
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_DB_STORE_NAME).put(state);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+  } catch (e) {
+    console.error("ローカルのシミュレーター保存エラー:", e);
+  }
+
+  // 2BOOKだけをクラウドへ同期
+  try {
+    await ensureCloudUser();
+    await saveCloudSimulatorState();
+  } catch (e) {
+    console.error("2BOOKクラウド同期エラー:", e);
+  }
+}
+
+function loadSimulatorState() {
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SIM_DB_STORE_NAME, "readonly");
+    const request = tx.objectStore(SIM_DB_STORE_NAME).get("current");
+    request.onsuccess = () => {
+      const saved = request.result;
+      if (!saved || !Array.isArray(saved.bookItems)) {
+        db.close();
+        resolve(false);
+        return;
+      }
+      simState.faces = Number(saved.faces) || 3;
+      simState.books = 2;
+      simState.currentBook = Math.min(Math.max(Number(saved.currentBook) || 0, 0), 1);
+      simState.bookItems = saved.bookItems.slice(0, 2);
+      while (simState.bookItems.length < 2) simState.bookItems.push([]);
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      db.close();
+      resolve(true);
+    };
+    request.onerror = () => { db.close(); reject(request.error); };
+  })).catch(error => {
+    console.error("シミュレーター復元エラー:", error);
+    return false;
+  });
+}
+
+async function clearSimulatorState() {
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_DB_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+    simState.bookItems = [[], []];
+    simState.items = simState.bookItems[0];
+    simState.currentBook = 0;
+  } catch (error) {
+    console.error("シミュレーター全削除エラー:", error);
+  }
+}
+
+function romanToNumber(text) {
+  const values = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+  let total = 0;
+  text = String(text || "").toUpperCase().trim();
+  for (let i = 0; i < text.length; i++) {
+    const cur = values[text[i]] || 0;
+    const next = i + 1 < text.length ? (values[text[i+1]] || 0) : 0;
+    total += cur < next ? -cur : cur;
+  }
+  return total;
+}
+
+function extractNumber(text) {
+  const m = String(text || "").match(/\d+/);
+  return m ? Number(m[0]) : -1;
+}
+
+function setupSimulatorRoman() {
+  const select = document.getElementById("simRoman");
+  if (!select || !Array.isArray(data)) return;
+
+  const romans = [...new Set(
+    data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
+  )];
+
+  // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
+  romans.sort((a, b) => {
+    const na = Number(a);
+    const nb = Number(b);
+
+    if (Number.isFinite(na) && Number.isFinite(nb)) {
+      return nb - na;
+    }
+
+    return romanToNumber(b) - romanToNumber(a);
+  });
+
+  select.innerHTML = '<option value="">すべて</option>';
+  romans.forEach(roman => {
+    const option = document.createElement("option");
+    option.value = roman;
+    option.textContent = roman;
+    select.appendChild(option);
+  });
+}
+
+function makeSimulatorList() {
+  const start = Number(document.getElementById("simStart").value || 1);
+  const end = Number(document.getElementById("simEnd").value || 45);
+  const roman = document.getElementById("simRoman").value;
+
+  if (start > end) {
+    alert("開始番号が終了番号より大きくなっています。");
+    return [];
+  }
+
+  return getSimulatorData().filter(item => {
+    const num = extractNumber(item.id);
+    if (roman === "") {
+      return num >= start && num <= end;
+    }
+    return String(item.bookNum || "").trim() === roman;
+  });
+}
+
+function simItemText(item) {
+  if (!item) return "";
+  return [
+    item.id || "",
+    item.type || "",
+    item.detail || ""
+  ].filter(Boolean).join("\n");
+}
+
+function buildSimulatorBooks() {
+  const base = makeSimulatorList();
+
+  if (!Array.isArray(simState.bookItems)) {
+    simState.bookItems = [];
+  }
+
+  while (simState.bookItems.length < simState.books) {
+    simState.bookItems.push([]);
+  }
+
+  if (simState.bookItems.length > simState.books) {
+    simState.bookItems.length = simState.books;
+  }
+
+  /*
+    1book:
+    ・保存済みの配置があれば、その配置をそのまま使用
+    ・まだ保存データがない場合だけ、選択条件の既存データを初期表示
+  */
+  const hasSavedBook1 = simState.bookItems[0].some(item => item);
+  if (!hasSavedBook1) {
+    simState.bookItems[0] = base.slice();
+  }
+
+  /*
+    2book:
+    ・保存済みの配置をそのまま使用
+    ・未保存なら空のまま
+  */
+
+  simState.currentBook = Math.min(
+    simState.currentBook,
+    simState.books - 1
+  );
+
+  simState.items = simState.bookItems[simState.currentBook] || [];
+}
+
+function updateBookTabs() {
+  const tabs = document.getElementById("simBookTabs");
+  if (!tabs) return;
+
+  tabs.style.display = simState.books >= 2 ? "flex" : "none";
+
+  tabs.querySelectorAll("button[data-book-view]").forEach(button => {
+    const book = Number(button.dataset.bookView);
+    button.style.display = book < simState.books ? "" : "none";
+    button.classList.toggle("active", book === simState.currentBook);
+  });
+}
+
+function switchSimulatorBook(bookIndex) {
+  const book = Number(bookIndex);
+  if (book < 0 || book >= simState.books) return;
+
+  simState.currentBook = book;
+  simState.items = simState.bookItems[book] || (simState.bookItems[book] = []);
+  saveSimulatorState();
+  updateBookTabs();
+  renderSimulator();
+}
+
+function renderSimulator() {
+  const area = document.getElementById("simFacesArea");
+  if (!area) return;
+
+  area.innerHTML = "";
+
+  const slotsPerFace = 15;
+  const bookIndex = simState.currentBook;
+  const currentBook = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
+
+  const bookBox = document.createElement("div");
+  bookBox.className = "sim-book";
+
+  const bookTitle = document.createElement("div");
+  bookTitle.className = "sim-book-title";
+  bookTitle.textContent = `${bookIndex + 1}book`;
+  bookBox.appendChild(bookTitle);
+
+  for (let face = 0; face < simState.faces; face++) {
+    const faceBox = document.createElement("div");
+    faceBox.className = "sim-face";
+
+    const title = document.createElement("div");
+    title.className = "sim-face-title";
+    title.textContent = `${face + 1}面`;
+    faceBox.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "sim-grid";
+
+    for (let slot = 0; slot < slotsPerFace; slot++) {
+      const index = face * slotsPerFace + slot;
+      const item = currentBook[index] || null;
+
+      const cell = document.createElement("div");
+      cell.className = "sim-slot" + (item ? "" : " empty");
+      if (item?._local) cell.classList.add("local-data");
+
+      cell.dataset.book = String(bookIndex);
+      cell.dataset.face = String(face);
+      cell.dataset.slot = String(slot);
+      cell.textContent = item ? simItemText(item) : "";
+
+      if (!item) {
+        cell.addEventListener("click", () => {
+          openAddDataModal(index, false, bookIndex);
+        });
+      } else {
+        cell.addEventListener("pointerdown", e => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          simState.drag = {
+            book: bookIndex,
+            index,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY
+          };
+          cell.setPointerCapture?.(e.pointerId);
+          cell.style.opacity = "0.55";
+        });
+
+        cell.addEventListener("pointerup", e => {
+          const drag = simState.drag;
+          if (!drag || drag.pointerId !== e.pointerId) return;
+          cell.style.opacity = "";
+
+          const dx = e.clientX - drag.startX;
+          const dy = e.clientY - drag.startY;
+          const moved = Math.sqrt(dx * dx + dy * dy) > 12;
+
+          if (!moved) {
+            if (item._local || item._simOnly) {
+              openAddDataModal(index, true, bookIndex);
+            }
+            simState.drag = null;
+            return;
+          }
+
+          const target = document.elementFromPoint(e.clientX, e.clientY);
+          const targetCell = target?.closest?.(".sim-slot");
+
+          if (targetCell && targetCell !== cell) {
+            const targetBook = Number(targetCell.dataset.book || bookIndex);
+            const targetIndex =
+              Number(targetCell.dataset.face) * slotsPerFace +
+              Number(targetCell.dataset.slot);
+
+            if (targetBook === bookIndex) {
+              [currentBook[index], currentBook[targetIndex]] =
+                [currentBook[targetIndex], currentBook[index]];
+              saveSimulatorState();
+              renderSimulator();
+            }
+          }
+
+          simState.drag = null;
+        });
+
+        cell.addEventListener("pointercancel", () => {
+          cell.style.opacity = "";
+          simState.drag = null;
+        });
+      }
+
+      grid.appendChild(cell);
+    }
+
+    faceBox.appendChild(grid);
+    bookBox.appendChild(faceBox);
+  }
+
+  area.appendChild(bookBox);
+  updateBookTabs();
+}
+
+async function openSimulator() {
+  document.getElementById("simulator").style.display = "block";
+  setupSimulatorRoman();
+
+  const restored = await loadSimulatorState();
+  if (cloudUser) {
+    await loadCloudAddedData();
+    await loadCloudSimulatorState();
+  }
+
+  if (restored) {
+    document.getElementById("simFaces").value = String(simState.faces);
+  } else {
+    simState.faces = Number(document.getElementById("simFaces").value || 3);
+    simState.books = 2;
+    simState.currentBook = 0;
+    simState.bookItems = [];
+    buildSimulatorBooks();
+    await saveSimulatorState();
+  }
+
+  simState.books = 2;
+  buildSimulatorBooks();
+  renderSimulator();
+}
+
+function closeSimulator() {
+  document.getElementById("simulator").style.display = "none";
+  simState.drag = null;
+}
+
+document.getElementById("simulatorBtn").addEventListener("click", openSimulator);
+document.getElementById("simClose").addEventListener("click", closeSimulator);
+
+document.getElementById("simFaces").addEventListener("change", () => {
+  simState.faces = Number(document.getElementById("simFaces").value);
+  saveSimulatorState();
+  renderSimulator();
+});
+
+document.getElementById("simRoman").addEventListener("change", () => {
+  applySimulatorSelection();
+});
+
+document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button => {
+  button.addEventListener("click", () => {
+    switchSimulatorBook(Number(button.dataset.bookView));
+  });
+});
+
+function applySimulatorSelection() {
+  const base = makeSimulatorList().slice();
+
+  // メダル番号は昇順（小さい番号 → 大きい番号）
+  base.sort((a, b) => extractNumber(a.id) - extractNumber(b.id));
+
+  // 「表示」を押したときは、現在のbookを選択条件で作り直す
+  // これで開始・終了番号、bookNo.を変更した結果が確実に反映される
+  simState.bookItems[simState.currentBook] = base;
+  simState.items = simState.bookItems[simState.currentBook];
+  saveSimulatorState();
+  renderSimulator();
+}
+
+document.getElementById("simDisplay").addEventListener("click", () => {
+  applySimulatorSelection();
+});
+
+// 開始・終了番号を変更したときも表示を更新
+document.getElementById("simStart").addEventListener("change", () => {
+  applySimulatorSelection();
+});
+
+document.getElementById("simEnd").addEventListener("change", () => {
+  applySimulatorSelection();
+});
+
+// シミュレーター内の配置を管理番号順に並べ替える
+
+
+// =========================
+// 空きマス → データ追加
+// =========================
+let addTargetIndex = -1;
+
+function setupAddTypeSelect() {
+  const select = document.getElementById("addType");
+  if (!select) return;
+
+  const types = [...new Set(
+    (Array.isArray(data) ? data : [])
+      .map(item => String(item.type || "").trim())
+      .filter(Boolean)
+  )];
+
+  if (!types.length) types.push("ﾚｷﾞｭﾗｰ");
+
+  select.innerHTML = "";
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = "種類を選択";
+  select.appendChild(first);
+
+  types.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    select.appendChild(option);
+  });
+}
+
+
+function openAddDataModal(index, editMode = false, bookIndex = 0) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
+
+  const bookItems = simState.bookItems[bookIndex] || [];
+  const item = editMode ? (bookItems[index] || null) : null;
+
+  setupAddTypeSelect();
+
+  const prefix = document.getElementById("addIdPrefix");
+  const number = document.getElementById("addIdNumber");
+  const type = document.getElementById("addType");
+  const detail = document.getElementById("addDetail");
+  const deleteButton = document.getElementById("addDataDelete");
+  const saveButton = document.getElementById("addDataSave");
+  const message = document.getElementById("addDataMessage");
+  const title = document.getElementById("addDataTitle");
+
+  if (message) message.textContent = "";
+
+  if (item) {
+    const m = String(item.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+    prefix.value = m?.[1] || "L";
+    number.value = m?.[2] || "";
+    type.value = item.type || "";
+    detail.value = item.detail || "";
+    deleteButton.style.display = "none";
+    saveButton.textContent = "更新";
+    title.textContent = `${bookIndex + 1}book データ`;
+  } else {
+    prefix.value = "L";
+    number.value = "";
+    type.value = "";
+    detail.value = "";
+    deleteButton.style.display = "none";
+    saveButton.textContent = "このマスに追加";
+    title.textContent = `${bookIndex + 1}book にメダルを追加`;
+  }
+
+  modal.dataset.simIndex = String(index);
+  modal.dataset.simBook = String(bookIndex);
+  modal.dataset.editMode = editMode ? "1" : "0";
+  modal.style.display = "block";
+
+  if (!editMode) setTimeout(() => number.focus(), 50);
+}
+
+function closeAddDataModal() {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
+
+  modal.style.display = "none";
+  modal.dataset.simIndex = "-1";
+  modal.dataset.editMode = "0";
+}
+
+async function addSimulatorData() {
+  const modal = document.getElementById("addDataModal");
+  const index = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const editMode = modal.dataset.editMode === "1";
+  const bookItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
+
+  const prefix = document.getElementById("addIdPrefix").value;
+  const rawNumber = document.getElementById("addIdNumber").value
+    .normalize("NFKC")
+    .replace(/\D/g, "");
+  const type = document.getElementById("addType").value.trim();
+  const detail = document.getElementById("addDetail").value.trim();
+  const message = document.getElementById("addDataMessage");
+
+  if (!rawNumber) {
+    message.textContent = "管理番号の数字を入力してください。";
+    return;
+  }
+  if (!type) {
+    message.textContent = "種類を選択してください。";
+    return;
+  }
+
+  const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
+
+  // シミュレーターでは、同じメダルを別bookに配置してもOK。
+  // これはデータの複製ではなく「配置先の記録」です。
+  // 既存データがあれば、その情報を参照して配置します。
+  const source = getSimulatorData().find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  const oldItem = editMode ? (bookItems[index] || null) : null;
+
+  const item = {
+    ...(source || {}),
+    id,
+    type: type || source?.type || "",
+    detail: detail || source?.detail || "",
+    _simOnly: true
+  };
+
+  if (oldItem) {
+    // 編集時はこのbookの配置だけ更新
+    bookItems[index] = item;
+  } else {
+    bookItems[index] = item;
+  }
+
+  // シミュレーター配置データをPC/iPad内へ自動保存
+  // 手入力で作ったデータは medal_data にも即時保存する
+  try {
+    await ensureCloudUser();
+    if (cloudUser) {
+      await cloudUpsertAddedItem(item);
+    }
+  } catch (e) {
+    console.error("追加メダルのクラウド同期エラー:", e);
+  }
+
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  await saveSimulatorState();
+  renderSimulator();
+  closeAddDataModal();
+}
+
+async function deleteCurrentAddedData() {
+  const modal = document.getElementById("addDataModal");
+  const index = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const bookItems = simState.bookItems[bookIndex] || [];
+  const item = bookItems[index];
+
+  if (!item) return;
+  if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
+
+  bookItems[index] = null;
+  try {
+    await ensureCloudUser();
+    if (cloudUser && item._simOnly) {
+      await cloudDeleteAddedItem(item.id);
+    }
+  } catch (e) {
+    console.error("追加メダル削除のクラウド同期エラー:", e);
+  }
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  await saveSimulatorState();
+  renderSimulator();
+  closeAddDataModal();
+}
+
+async function clearAllAddedData() {
+  if (!confirm("保存されている追加データとシミュレーター配置をすべて削除します。\nGitHubのdata.jsonは削除されません。\nこの操作は元に戻せません。\n実行しますか？")) return;
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+      tx.objectStore(ADD_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+    if (cloudUser) {
+      const { error: delErr } = await supabaseClient.from("medal_data").delete().neq("medal_id", "__never__");
+      if (delErr) console.error("クラウド追加データ全削除エラー", delErr);
+      await supabaseClient.from("medal_simulator_state").delete().eq("user_id", cloudUser.id);
+    }
+    addedData = [];
+    data = Array.isArray(masterData) ? [...masterData] : [];
+
+    // 「全削除」は追加データだけでなく、
+    // シミュレーターの保存配置も初期化する
+    clearSimulatorState();
+    setupFilter();
+    createLocationSelect();
+    filteredData = data;
+    currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
+    renderPage();
+    setupSimulatorRoman();
+    renderSimulator();
+    closeAddDataModal();
+    alert("保存データをすべて削除しました。");
+  } catch (error) {
+    console.error("iPad追加データ全削除エラー:", error);
+    alert("削除できませんでした。");
+  }
+}
+
+document.getElementById("addDataClose").onclick = closeAddDataModal;
+document.getElementById("addDataCancel").onclick = closeAddDataModal;
+document.getElementById("addDataSave").onclick = addSimulatorData;
+document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
+document.getElementById("addDataClearAll").onclick = clearAllAddedData;
+
+document.getElementById("addDataModal").onclick = e => {
+  if (e.target.id === "addDataModal") {
+    closeAddDataModal();
+  }
+};
+
+async function cacheImages(data) {
+
+  if (!("caches" in window)) return;
+
+  const cache = await caches.open("medal-app-v5");
+
+  const batchSize = 100;
+
+  for (let i = 0; i < data.length; i += batchSize) {
+
+    const batch = data.slice(i, i + batchSize);
+
+    await Promise.all(
+
+      batch.map(async item => {
+
+        const imgId = item.id.split("-").pop();
+
+        const url = `./images/${imgId}.webp`;
+
+        try {
+
+          const cached = await cache.match(url);
+
+          if (!cached) {
+
+            const response = await fetch(url);
+
+            if (response.ok) {
+              await cache.put(url, response.clone());
+            }
+
+          }
+
+        } catch (e) {}
+
+      })
+
+    );
+
+    console.log(
+      `画像キャッシュ ${Math.min(i + batchSize, data.length)} / ${data.length}`
+    );
+
+    // iPadを休ませる
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+  }
+
+  console.log("全画像キャッシュ完了");
+
+}
+
+/* =========================
+   Supabase認証・自動同期の初期化
+   ========================= */
+async function initializeCloudSync() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    cloudUser = session?.user || null;
+    updateCloudUI();
+
+    if (cloudUser) {
+      // 先にiPad/PCのローカル追加データをクラウドへ移行
+      await migrateLocalAddedDataToCloud();
+      await loadCloudSimulatorState();
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      if (typeof renderSimulator === "function") renderSimulator();
+      setupCloudRealtime();
+    }
+  } catch (e) {
+    console.error("クラウド初期化エラー", e);
+  }
+}
+
+// ログイン
+document.getElementById("cloudLogin")?.addEventListener("click", async () => {
+  const email = document.getElementById("cloudEmail")?.value.trim();
+  const password = document.getElementById("cloudPassword")?.value || "";
+  const status = document.getElementById("cloudStatus");
+  if (!email || !password) {
+    alert("メールアドレスとパスワードを入力してください。");
+    return;
+  }
+  if (status) status.textContent = "☁ ログイン中…";
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.error("ログインエラー", error);
+    if (status) status.textContent = "☁ ログイン失敗";
+    alert("ログインできませんでした。メールアドレスまたはパスワードを確認してください。\n\n" + error.message);
+    updateCloudUI();
+    return;
+  }
+  cloudUser = data.user;
+  updateCloudUI();
+  await migrateLocalAddedDataToCloud();
+  await loadCloudSimulatorState();
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  if (typeof renderSimulator === "function") renderSimulator();
+  setupCloudRealtime();
+});
+
+// ログアウト
+document.getElementById("cloudLogout")?.addEventListener("click", async () => {
+  if (cloudChannel) { try { await supabaseClient.removeChannel(cloudChannel); } catch(e) {} cloudChannel = null; }
+  await supabaseClient.auth.signOut();
+  cloudUser = null;
+  updateCloudUI();
+});
+
+// Supabaseのセッション変更を確実に反映
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+  cloudUser = session?.user || null;
+  updateCloudUI();
+  if (cloudUser) {
+    await migrateLocalAddedDataToCloud();
+    await loadCloudSimulatorState();
+    simState.items = simState.bookItems[simState.currentBook] || [];
+    if (typeof renderSimulator === "function") renderSimulator();
+    setupCloudRealtime();
+  } else if (cloudChannel) {
+    try { await supabaseClient.removeChannel(cloudChannel); } catch(e) {}
+    cloudChannel = null;
+  }
+});
+
+// ページを戻したときにも最新状態を取得
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible") return;
+  await ensureCloudUser();
+  if (!cloudUser) return;
+  await loadCloudSimulatorState();
+  await loadCloudAddedData();
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  if (typeof renderSimulator === "function") renderSimulator();
+});
+
+// 念のため30秒ごとにクラウドの2BOOKを確認
+setInterval(async () => {
+  if (document.visibilityState !== "visible") return;
+  await ensureCloudUser();
+  if (!cloudUser) return;
+  await loadCloudSimulatorState();
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  if (typeof renderSimulator === "function" && document.getElementById("simulator")?.style.display !== "none") {
+    renderSimulator();
+  }
+}, 30000);
+
+initializeCloudSync();
+
+</script>
+</body>
+</html>
