@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="メダル管理">
 <style>
-#cloudPanel{display:flex;align-items:center;gap:4px;flex-wrap:wrap;position:static;z-index:auto;background:#fff;border:1px solid #bbb;border-radius:6px;padding:2px 4px;margin:3px 0 5px;box-shadow:none;font-size:12px;width:fit-content;max-width:250px;box-sizing:border-box;}#cloudStatus{font-size:12px;font-weight:bold;white-space:nowrap;margin:0;}#cloudLoginArea{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}#cloudPanel input{width:92px;max-width:92px;box-sizing:border-box;padding:2px 4px;margin:0;height:24px;font-size:12px;}#cloudPanel button{padding:2px 6px;margin:0;height:24px;font-size:12px;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
+#appVersion{position:fixed;top:2px;left:4px;z-index:2001;font-size:9px;line-height:12px;color:#888;background:rgba(255,255,255,.85);padding:0 3px;border-radius:3px;pointer-events:none;}#cloudPanel{display:flex;align-items:center;gap:3px;flex-wrap:wrap;position:static;z-index:auto;background:#fff;border:0;border-radius:4px;padding:0;margin:1px 0 2px;box-shadow:none;font-size:11px;width:fit-content;max-width:100%;box-sizing:border-box;}#cloudStatus{font-size:11px;font-weight:bold;white-space:nowrap;margin:0;}#cloudLoginArea{display:flex;align-items:center;gap:2px;flex-wrap:wrap;}#cloudPanel input{width:88px;max-width:88px;box-sizing:border-box;padding:1px 3px;margin:0;height:21px;font-size:11px;}#cloudPanel button{padding:1px 5px;margin:0;height:21px;font-size:11px;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
 body {
   font-family: sans-serif;
   margin: 10px;
@@ -26,8 +26,9 @@ input {
   }
 
 button {
-  margin: 5px 0;
+  margin: 2px 2px;
 }
+.topbar > button { margin: 1px 2px; }
 .grid {
   display: flex;
   flex-wrap: wrap;
@@ -164,7 +165,7 @@ img.noimage{
 
   z-index: 999;
 
-  padding: 4px 0;
+  padding: 2px 0;
 
   border-bottom: 1px solid #ddd;
 }
@@ -201,10 +202,10 @@ img.noimage{
     font-size: 16px !important;
   }
 
-  #cloudPanel { width:95% !important; max-width:300px; }
-  #cloudPanel input { width:105px; max-width:105px; height:30px; font-size:13px; }
-  #cloudPanel button { height:30px; font-size:13px; }
-  #cloudStatus { font-size:13px; }
+  #cloudPanel { width:auto !important; max-width:100%; margin:1px 0 2px; }
+  #cloudPanel input { width:88px; max-width:88px; height:21px; font-size:11px; }
+  #cloudPanel button { height:21px; font-size:11px; padding:1px 5px; }
+  #cloudStatus { font-size:11px; }
 
   #printIds {
     width: 100px !important;
@@ -481,6 +482,8 @@ img.noimage{
 }
 #addDataModal.show{display:block;}
 
+.number-step-btn{min-width:38px;min-height:42px;padding:4px 7px!important;margin:0!important;font-size:16px!important;line-height:1;border:1px solid #aaa;border-radius:6px;background:#fff;touch-action:manipulation;}.number-step-btn:active{background:#e9e9e9;}
+
 .sim-book{margin:14px 0 22px;padding:10px;border:2px solid #888;border-radius:10px;background:#fafafa;}
 .sim-book-title{font-size:18px;font-weight:700;margin:0 0 8px;}
 
@@ -515,6 +518,7 @@ img.noimage{
 </head>
 
 <body>
+<div id="appVersion">V3.1</div>
 <div class="topbar">
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
 style="
@@ -533,8 +537,6 @@ style="
   </div>
   <button id="cloudLogout" style="display:none;">ログアウト</button>
 </div>
-<br>
-<br>
 <button onclick="prevPage()">← BACK</button>
 <input
   type="number"
@@ -617,7 +619,7 @@ style="
   <div class="add-data-panel">
     <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
     <div class="add-data-form">
-      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
+      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"> <button type="button" id="addNumberUp" class="number-step-btn" aria-label="番号を1増やす">▲</button><button type="button" id="addNumberDown" class="number-step-btn" aria-label="番号を1減らす">▼</button></div></label>
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
@@ -1024,6 +1026,13 @@ function stepAddNumber(delta) {
   const n = Number(String(input.value || "").replace(/\D/g, ""));
   input.value = String(Math.max(1, n + delta)).padStart(4, "0");
 }
+
+document.getElementById("addNumberUp")?.addEventListener("click", () => stepAddNumber(1));
+document.getElementById("addNumberDown")?.addEventListener("click", () => stepAddNumber(-1));
+document.getElementById("addIdNumber")?.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp") { e.preventDefault(); stepAddNumber(1); }
+  if (e.key === "ArrowDown") { e.preventDefault(); stepAddNumber(-1); }
+});
 
 async function saveAndMove(delta) {
   const modal = document.getElementById("addDataModal");
