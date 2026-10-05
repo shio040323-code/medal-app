@@ -6880,17 +6880,170 @@
     "name": "特別付録",
     "location": "特別付録",
     "date": "",
+    "type": "付録",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "B-0766",
+    "name": "ﾎﾞﾝ･ｳﾞｫﾔｰｼﾞｭ",
+    "location": "ﾎﾞﾝ･ｳﾞｫﾔｰｼﾞｭ",
+    "date": "",
     "type": "ｲﾍﾞﾝﾄ",
     "detail": "2026 HALLOWEEN",
     "bookNum": 18
   },
   {
-    "id": "Z-999999",
-    "name": "ｱｰﾝﾄ･ﾍﾟｸﾞｽ･ｳﾞｨﾚｯｼﾞｽﾄｱ",
-    "location": "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
+    "id": "H-0767",
+    "name": "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
+    "location": "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
     "date": "",
     "type": "ｲﾍﾞﾝﾄ",
-    "detail": "",
+    "detail": "2026 HALLOWEEN",
     "bookNum": 18
+  },
+  {
+    "id": "H-0768",
+    "name": "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
+    "location": "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "D-0774",
+    "name": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞ･ｽﾃｰｼｮﾝ",
+    "location": "ﾘｿﾞｰﾄﾗｲﾝ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "B-0776",
+    "name": "ﾎﾞﾝ･ｳﾞｫﾔｰｼﾞｭ",
+    "location": "ﾎﾞﾝ･ｳﾞｫﾔｰｼﾞｭ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "D-0777",
+    "name": "東京ﾃﾞｨｽﾞﾆｰｼｰ･ｽﾃｰｼｮﾝ",
+    "location": "ﾘｿﾞｰﾄﾗｲﾝ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "D-0778",
+    "name": "ﾍﾞｲｻｲﾄﾞ･ｽﾃｰｼｮﾝ",
+    "location": "ﾘｿﾞｰﾄﾗｲﾝ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "D-0779",
+    "name": "ﾘｿﾞｰﾄｹﾞｰﾄｳｪｲ･ｽﾃｰｼｮﾝ",
+    "location": "ﾘｿﾞｰﾄﾗｲﾝ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "H-0780",
+    "name": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "location": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "H-0781",
+    "name": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "location": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "H-0782",
+    "name": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "location": "東京ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "date": "",
+    "type": "ｲﾍﾞﾝﾄ",
+    "detail": "2026 HALLOWEEN",
+    "bookNum": 18
+  },
+  {
+    "id": "A-0783",
+    "name": "特別付録",
+    "location": "特別付録",
+    "date": "",
+    "type": "付録",
+    "detail": "",
+    "bookNum": 19
+  },
+  {
+    "id": "L-0791",
+    "name": "ﾍﾟﾆｰｱｰｹｰﾄﾞ",
+    "location": "ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ",
+    "date": "",
+    "type": "ﾏﾝｽﾘｰ",
+    "detail": "2026/09",
+    "bookNum": 19
+  },
+  {
+    "id": "L-0792",
+    "name": "ﾄｩﾓﾛｰﾗﾝﾄﾞ･ﾃﾗｽ",
+    "location": "ﾄｩﾓﾛｰﾗﾝﾄﾞ",
+    "date": "",
+    "type": "ﾏﾝｽﾘｰ",
+    "detail": "2026/09",
+    "bookNum": 19
+  },
+  {
+    "id": "S-0793",
+    "name": "ｽﾁｰﾑﾎﾞｰﾄ･ﾐｯｷｰｽﾞ",
+    "location": "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
+    "date": "",
+    "type": "ﾏﾝｽﾘｰ",
+    "detail": "2026/09",
+    "bookNum": 19
+  },
+  {
+    "id": "L-0794",
+    "name": "ﾍﾟﾆｰｱｰｹｰﾄﾞ",
+    "location": "ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ",
+    "date": "",
+    "type": "ﾏﾝｽﾘｰ",
+    "detail": "2026/10",
+    "bookNum": 19
+  },
+  {
+    "id": "L-0795",
+    "name": "ﾄｩﾓﾛｰﾗﾝﾄﾞ･ﾃﾗｽ",
+    "location": "ﾄｩﾓﾛｰﾗﾝﾄﾞ",
+    "date": "",
+    "type": "ﾏﾝｽﾘｰ",
+    "detail": "2026/10",
+    "bookNum": 19
+  },
+  {
+    "id": "S-0796",
+    "name": "ｽﾁｰﾑﾎﾞｰﾄ･ﾐｯｷｰｽﾞ",
+    "location": "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
+    "date": "",
+    "type": "ﾏﾝｽﾘｰ",
+    "detail": "2026/10",
+    "bookNum": 19
   }
 ]
