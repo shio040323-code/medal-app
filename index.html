@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="メダル管理">
 <style>
-#cloudPanel{position:fixed;right:10px;top:10px;z-index:9999;background:#fff;border:1px solid #bbb;border-radius:10px;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:13px;max-width:320px;}#cloudPanel input{width:150px;max-width:150px;padding:6px;margin:2px;}#cloudPanel button{padding:5px 8px;}#cloudStatus{margin:3px 0;font-weight:bold;}
+#cloudPanel{position:static;z-index:auto;background:#fff;border:1px solid #bbb;border-radius:8px;padding:6px 8px;margin:6px 0 8px;box-shadow:none;font-size:13px;max-width:none;box-sizing:border-box;}#cloudPanel input{width:150px;max-width:150px;padding:6px;margin:2px;}#cloudPanel button{padding:5px 8px;}#cloudStatus{margin:0 0 3px;font-weight:bold;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
 body {
   font-family: sans-serif;
   margin: 10px;
@@ -519,6 +519,15 @@ style="
    margin-bottom: 0;
   "
 >
+<div id="cloudPanel">
+  <div id="cloudStatus">☁ 未ログイン</div>
+  <div id="cloudLoginArea">
+    <input id="cloudEmail" type="email" placeholder="メールアドレス">
+    <input id="cloudPassword" type="password" placeholder="パスワード">
+    <button id="cloudLogin">ログイン</button>
+  </div>
+  <button id="cloudLogout" style="display:none;">ログアウト</button>
+</div>
 <br>
 <br>
 <button onclick="prevPage()">← BACK</button>
@@ -615,15 +624,7 @@ style="
 </div>
 
 <div class="grid" id="grid"></div>
-<div id="cloudPanel">
-  <div id="cloudStatus">☁ 未ログイン</div>
-  <div id="cloudLoginArea">
-    <input id="cloudEmail" type="email" placeholder="メールアドレス">
-    <input id="cloudPassword" type="password" placeholder="パスワード">
-    <button id="cloudLogin">ログイン</button>
-  </div>
-  <button id="cloudLogout" style="display:none;">ログアウト</button>
-</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const locationGroups = {
