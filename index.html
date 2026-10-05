@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="メダル管理">
 <style>
-#cloudPanel{position:static;z-index:auto;background:#fff;border:1px solid #bbb;border-radius:8px;padding:6px 8px;margin:6px 0 8px;box-shadow:none;font-size:13px;max-width:none;box-sizing:border-box;}#cloudPanel input{width:150px;max-width:150px;padding:6px;margin:2px;}#cloudPanel button{padding:5px 8px;}#cloudStatus{margin:0 0 3px;font-weight:bold;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
+#cloudPanel{display:flex;align-items:center;gap:4px;flex-wrap:wrap;position:static;z-index:auto;background:#fff;border:1px solid #bbb;border-radius:6px;padding:2px 4px;margin:3px 0 5px;box-shadow:none;font-size:12px;width:fit-content;max-width:250px;box-sizing:border-box;}#cloudStatus{font-size:12px;font-weight:bold;white-space:nowrap;margin:0;}#cloudLoginArea{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}#cloudPanel input{width:92px;max-width:92px;box-sizing:border-box;padding:2px 4px;margin:0;height:24px;font-size:12px;}#cloudPanel button{padding:2px 6px;margin:0;height:24px;font-size:12px;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
 body {
   font-family: sans-serif;
   margin: 10px;
@@ -200,6 +200,11 @@ img.noimage{
     padding: 10px !important;
     font-size: 16px !important;
   }
+
+  #cloudPanel { width:95% !important; max-width:300px; }
+  #cloudPanel input { width:105px; max-width:105px; height:30px; font-size:13px; }
+  #cloudPanel button { height:30px; font-size:13px; }
+  #cloudStatus { font-size:13px; }
 
   #printIds {
     width: 100px !important;
@@ -709,9 +714,19 @@ function isNewItem(item) {
 }
 
 function markNewSeen() {
+  // NEW解除後は、通常の一覧の最終ページへ戻す
   newOnly = false;
   const btn = document.getElementById("newOnlyBtn");
   if (btn) btn.classList.remove("active");
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil((Array.isArray(data) ? data.length : 0) / pageSize)
+  );
+
+  currentPage = totalPages;
+  localStorage.setItem("currentPage", String(currentPage));
+
   applyFilter();
 }
 
@@ -1012,17 +1027,43 @@ function stepAddNumber(delta) {
 
 async function saveAndMove(delta) {
   const modal = document.getElementById("addDataModal");
-  if (!modal || modal.dataset.editMode === "1") {
-    await addSimulatorData();
-    return;
-  }
-  await addSimulatorData();
-  stepAddNumber(delta);
-  const index = Number(modal.dataset.simIndex);
+  if (!modal) return;
+
+  // 現在入力中の値を先に保持
+  const prefix = document.getElementById("addIdPrefix")?.value || "L";
+  const rawNumber = String(document.getElementById("addIdNumber")?.value || "")
+    .normalize("NFKC").replace(/\D/g, "");
+  const type = document.getElementById("addType")?.value || "";
+  const detail = document.getElementById("addDetail")?.value || "";
+  const currentIndex = Number(modal.dataset.simIndex || 0);
   const bookIndex = Number(modal.dataset.simBook || 0);
-  const nextIndex = Math.max(0, Math.min(59, index + delta));
+  const editMode = modal.dataset.editMode === "1";
+
+  // 編集モードでも「保存して前へ／次へ」は使えるようにする
+  await addSimulatorData();
+
+  // 次のマス／前のマスへ移動
+  const nextIndex = Math.max(0, Math.min(59, currentIndex + delta));
+
+  // 管理番号を自動で +1 / -1
+  const currentNumber = Number(rawNumber || 0);
+  const nextNumber = Math.max(1, currentNumber + delta);
+
   openAddDataModal(nextIndex, false, bookIndex);
-  document.getElementById("addIdNumber").value = String(Math.max(1, Number(document.getElementById("addIdNumber").value || 1) + delta)).padStart(4,"0");
+
+  // 前の入力内容を引き継ぐ
+  const nextPrefix = document.getElementById("addIdPrefix");
+  const nextNumberInput = document.getElementById("addIdNumber");
+  const nextType = document.getElementById("addType");
+  const nextDetail = document.getElementById("addDetail");
+
+  if (nextPrefix) nextPrefix.value = prefix;
+  if (nextNumberInput) nextNumberInput.value = String(nextNumber).padStart(4, "0");
+  if (nextType) nextType.value = type;
+  if (nextDetail) nextDetail.value = detail;
+
+  // 次の入力にすぐ打ち込めるようにする
+  setTimeout(() => nextNumberInput?.focus(), 50);
 }
 document.getElementById("addDataNext")?.addEventListener("click", () => saveAndMove(1));
 document.getElementById("addDataPrev")?.addEventListener("click", () => saveAndMove(-1));
