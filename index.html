@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="メダル管理">
 <style>
-#appVersion{position:fixed;top:2px;left:4px;z-index:2001;font-size:9px;line-height:12px;color:#888;background:rgba(255,255,255,.85);padding:0 3px;border-radius:3px;pointer-events:none;}#cloudPanel{display:flex;align-items:center;gap:3px;flex-wrap:wrap;position:static;z-index:auto;background:#fff;border:0;border-radius:4px;padding:0;margin:1px 0 2px;box-shadow:none;font-size:11px;width:fit-content;max-width:100%;box-sizing:border-box;}#cloudStatus{font-size:11px;font-weight:bold;white-space:nowrap;margin:0;}#cloudLoginArea{display:flex;align-items:center;gap:2px;flex-wrap:wrap;}#cloudPanel input{width:88px;max-width:88px;box-sizing:border-box;padding:1px 3px;margin:0;height:21px;font-size:11px;}#cloudPanel button{padding:1px 5px;margin:0;height:21px;font-size:11px;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
+#appVersion{position:fixed;top:2px;left:4px;z-index:2001;font-size:9px;line-height:12px;color:#888;background:rgba(255,255,255,.85);padding:0 3px;border-radius:3px;pointer-events:none;}.sim-slot{position:relative;} .sim-slot-delete{position:absolute;top:2px;right:2px;z-index:5;width:20px;height:20px;min-width:20px;padding:0;margin:0;border:1px solid #999;border-radius:50%;background:#fff;color:#c62828;font-size:14px;line-height:18px;font-weight:bold;cursor:pointer;box-sizing:border-box;} .sim-slot-delete:active{background:#f3f3f3;transform:scale(.94);}#cloudPanel{display:flex;align-items:center;gap:3px;flex-wrap:wrap;position:static;z-index:auto;background:#fff;border:0;border-radius:4px;padding:0;margin:1px 0 2px;box-shadow:none;font-size:11px;width:fit-content;max-width:100%;box-sizing:border-box;}#cloudStatus{font-size:11px;font-weight:bold;white-space:nowrap;margin:0;}#cloudLoginArea{display:flex;align-items:center;gap:2px;flex-wrap:wrap;}#cloudPanel input{width:88px;max-width:88px;box-sizing:border-box;padding:1px 3px;margin:0;height:21px;font-size:11px;}#cloudPanel button{padding:1px 5px;margin:0;height:21px;font-size:11px;}#newOnlyBtn{background:#d32f2f !important;color:#fff !important;border:1px solid #b71c1c !important;font-weight:700;}#newOnlyBtn.active{background:#b71c1c !important;color:#fff !important;border:2px solid #7f0000 !important;}
 body {
   font-family: sans-serif;
   margin: 10px;
@@ -518,7 +518,7 @@ img.noimage{
 </head>
 
 <body>
-<div id="appVersion">V3.2</div>
+<div id="appVersion">V3.3</div>
 <div class="topbar">
 <input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
 style="
@@ -1883,6 +1883,29 @@ function renderSimulator() {
       cell.dataset.face = String(face);
       cell.dataset.slot = String(slot);
       cell.textContent = item ? simItemText(item) : "";
+
+      if (item) {
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "sim-slot-delete";
+        deleteButton.textContent = "×";
+        deleteButton.title = "このマスを削除";
+        deleteButton.setAttribute("aria-label", "このマスを削除");
+        deleteButton.addEventListener("pointerdown", e => {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+        deleteButton.addEventListener("click", async e => {
+          e.preventDefault();
+          e.stopPropagation();
+          currentBook[index] = null;
+          simState.bookItems[bookIndex] = currentBook;
+          simState.items = currentBook;
+          await saveSimulatorState();
+          renderSimulator();
+        });
+        cell.appendChild(deleteButton);
+      }
 
       if (!item) {
         cell.addEventListener("click", () => {
