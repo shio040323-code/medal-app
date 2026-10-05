@@ -2098,8 +2098,25 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
     saveButton.textContent = "更新";
     title.textContent = `${bookIndex + 1}book データ`;
   } else {
-    prefix.value = "L";
-    number.value = "";
+    // 新規追加時は、このbookに現在配置されている管理番号の
+    // 「最大番号 + 1」を入力補助する。
+    // 例：L-0001 / L-0003 / L-0008 があれば → L-0009
+    const currentItems = Array.isArray(bookItems) ? bookItems.filter(Boolean) : [];
+    let maxNumber = 0;
+    let maxPrefix = "L";
+
+    for (const currentItem of currentItems) {
+      const match = String(currentItem?.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+      if (!match) continue;
+      const n = Number(match[2]);
+      if (Number.isFinite(n) && n > maxNumber) {
+        maxNumber = n;
+        maxPrefix = match[1];
+      }
+    }
+
+    prefix.value = maxPrefix;
+    number.value = String(maxNumber + 1).padStart(4, "0");
     type.value = "";
     detail.value = "";
     deleteButton.style.display = "none";
