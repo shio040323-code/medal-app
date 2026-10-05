@@ -505,6 +505,7 @@ img.noimage{
 
 /* シミュレーター操作欄：開始番号の前で確実に改行 */
 .sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
+#newOnlyBtn.active{font-weight:700;border:2px solid #000;}
 </style>
 </head>
 
@@ -537,6 +538,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button onclick="clearFilters()">□</button>
+<button id="newOnlyBtn" type="button">NEW</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
 </div>
@@ -585,6 +587,7 @@ style="
       </label>
 
       <button id="simDisplay">表示</button>
+      <button id="simCsvButton" type="button">2BOOK CSV</button>
       
     </div>
 
@@ -604,7 +607,9 @@ style="
       <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+      <div class="add-data-buttons">
+        <button type="button" id="addDataPrev">保存して前へ</button>
+        <button type="button" id="addDataNext">保存して次へ</button><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
     </div>
   </div>
 </div>
@@ -673,12 +678,49 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let cloudUser = null;
 let cloudChannel = null;
 
+// =========================
+// NEW 自動検出
+// 初回は既存データを基準としてNEWにしない。
+// 次回以降、data.jsonに新しく現れたIDだけをNEW扱いにする。
+// =========================
+let newOnly = false;
+let newIds = new Set();
+const NEW_BASELINE_KEY = "medalAppNewBaselineV1";
+
+function updateNewDetection(master) {
+  const ids = new Set((Array.isArray(master) ? master : []).map(x => String(x?.id || "").toUpperCase()).filter(Boolean));
+  let baseline = null;
+  try {
+    const raw = localStorage.getItem(NEW_BASELINE_KEY);
+    baseline = raw ? new Set(JSON.parse(raw)) : null;
+  } catch (_) {}
+  if (!baseline) {
+    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...ids]));
+    newIds = new Set();
+  } else {
+    newIds = new Set([...ids].filter(id => !baseline.has(id)));
+    localStorage.setItem(NEW_BASELINE_KEY, JSON.stringify([...ids]));
+  }
+}
+
+function isNewItem(item) {
+  return newIds.has(String(item?.id || "").toUpperCase());
+}
+
+function markNewSeen() {
+  newOnly = false;
+  const btn = document.getElementById("newOnlyBtn");
+  if (btn) btn.classList.remove("active");
+  applyFilter();
+}
+
 // データ読み込み
 async function loadData() {
   try {
     const response = await fetch("./data.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`data.json読み込みエラー: ${response.status}`);
     masterData = await response.json();
+    updateNewDetection(masterData);
     addedData = await loadAddedData();
     // メイン画面はdata.jsonだけを表示する
     data = Array.isArray(masterData) ? [...masterData] : [];
@@ -784,6 +826,19 @@ async function getCloudUser() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   cloudUser = user || null;
   updateCloudUI();
+  return cloudUser;
+}
+
+async function ensureCloudUser() {
+  if (cloudUser) return cloudUser;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    cloudUser = session?.user || null;
+    updateCloudUI();
+  } catch (e) {
+    console.error("クラウドセッション取得エラー", e);
+    cloudUser = null;
+  }
   return cloudUser;
 }
 
@@ -923,6 +978,53 @@ function saveAddedData(item) {
   }));
 }
 
+
+// NEWボタン
+document.getElementById("newOnlyBtn")?.addEventListener("click", () => {
+  newOnly = !newOnly;
+  const btn = document.getElementById("newOnlyBtn");
+  btn.classList.toggle("active", newOnly);
+  applyFilter();
+  if (!newOnly) markNewSeen();
+});
+
+// 2BOOK CSV出力（管理番号・種類・詳細のみ）
+function export2BookCsv() {
+  const items = (simState.bookItems[1] || []).filter(Boolean);
+  const rows = [["管理番号", "種類", "詳細"]];
+  for (const item of items) rows.push([item.id || "", item.type || "", item.detail || ""]);
+  const csv = "\uFEFF" + rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `2BOOK_${new Date().toISOString().slice(0,19).replace(/[-:T]/g,"")}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+document.getElementById("simCsvButton")?.addEventListener("click", export2BookCsv);
+
+function stepAddNumber(delta) {
+  const input = document.getElementById("addIdNumber");
+  const n = Number(String(input.value || "").replace(/\D/g, ""));
+  input.value = String(Math.max(1, n + delta)).padStart(4, "0");
+}
+
+async function saveAndMove(delta) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal || modal.dataset.editMode === "1") {
+    await addSimulatorData();
+    return;
+  }
+  await addSimulatorData();
+  stepAddNumber(delta);
+  const index = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const nextIndex = Math.max(0, Math.min(59, index + delta));
+  openAddDataModal(nextIndex, false, bookIndex);
+  document.getElementById("addIdNumber").value = String(Math.max(1, Number(document.getElementById("addIdNumber").value || 1) + delta)).padStart(4,"0");
+}
+document.getElementById("addDataNext")?.addEventListener("click", () => saveAndMove(1));
+document.getElementById("addDataPrev")?.addEventListener("click", () => saveAndMove(-1));
 
 loadData()
 
@@ -1112,11 +1214,14 @@ function applyFilter() {
     ? true
     : item.name === selectedName
 
+    const matchNew = !newOnly || isNewItem(item);
+
     return (
   matchKeyword &&
   matchType &&
   matchLocation &&
-  matchName
+  matchName &&
+  matchNew
 )
   })
 
@@ -1470,20 +1575,36 @@ const simState = {
 ========================= */
 const SIM_DB_STORE_NAME = "simulatorState";
 
-function saveSimulatorState() {
-  return openAddedDB().then(db => new Promise((resolve, reject) => {
-    const state = {
-      id: "current",
-      faces: Number(simState.faces) || 3,
-      books: 2,
-      currentBook: Number(simState.currentBook) || 0,
-      bookItems: Array.isArray(simState.bookItems) ? simState.bookItems : []
-    };
-    const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
-    tx.objectStore(SIM_DB_STORE_NAME).put(state);
-    tx.oncomplete = async () => { db.close(); try { await saveCloudSimulatorState(); } catch(e){ console.error(e); } resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  })).catch(error => console.error("シミュレーター保存エラー:", error));
+async function saveSimulatorState() {
+  const state = {
+    id: "current",
+    faces: Number(simState.faces) || 3,
+    books: 2,
+    currentBook: Number(simState.currentBook) || 0,
+    bookItems: Array.isArray(simState.bookItems) ? simState.bookItems : []
+  };
+
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_DB_STORE_NAME).put(state);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+  } catch (e) {
+    console.error("ローカルのシミュレーター保存エラー:", e);
+  }
+
+  // 2BOOKだけをクラウドへ同期
+  try {
+    await ensureCloudUser();
+    await saveCloudSimulatorState();
+  } catch (e) {
+    console.error("2BOOKクラウド同期エラー:", e);
+  }
 }
 
 function loadSimulatorState() {
@@ -2000,8 +2121,18 @@ async function addSimulatorData() {
   }
 
   // シミュレーター配置データをPC/iPad内へ自動保存
-  simState.items = simState.bookItems[0] || [];
-  saveSimulatorState();
+  // 手入力で作ったデータは medal_data にも即時保存する
+  try {
+    await ensureCloudUser();
+    if (cloudUser) {
+      await cloudUpsertAddedItem(item);
+    }
+  } catch (e) {
+    console.error("追加メダルのクラウド同期エラー:", e);
+  }
+
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  await saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
@@ -2017,9 +2148,16 @@ async function deleteCurrentAddedData() {
   if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
 
   bookItems[index] = null;
-  await cloudDeleteAddedItem(item.id);
-  simState.items = simState.bookItems[0] || [];
-  saveSimulatorState();
+  try {
+    await ensureCloudUser();
+    if (cloudUser && item._simOnly) {
+      await cloudDeleteAddedItem(item.id);
+    }
+  } catch (e) {
+    console.error("追加メダル削除のクラウド同期エラー:", e);
+  }
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  await saveSimulatorState();
   renderSimulator();
   closeAddDataModal();
 }
@@ -2128,144 +2266,101 @@ async function cacheImages(data) {
 }
 
 /* =========================
-   Supabase 認証・自動同期 初期化
+   Supabase認証・自動同期の初期化
    ========================= */
-let cloudSyncTimer = null;
-let cloudSyncBusy = false;
-
-async function refreshCloudData() {
-  if (!cloudUser || cloudSyncBusy) return;
-  cloudSyncBusy = true;
-  try {
-    await loadCloudAddedData();
-    await loadCloudSimulatorState();
-    if (typeof renderSimulator === "function") {
-      simState.items = simState.bookItems[simState.currentBook] || [];
-      renderSimulator();
-    }
-  } catch (e) {
-    console.error("クラウド自動更新エラー:", e);
-  } finally {
-    cloudSyncBusy = false;
-  }
-}
-
-function startCloudAutoSync() {
-  if (cloudSyncTimer) clearInterval(cloudSyncTimer);
-  cloudSyncTimer = setInterval(() => refreshCloudData(), 10000);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) refreshCloudData();
-  });
-  window.addEventListener("focus", () => refreshCloudData());
-}
-
 async function initializeCloudSync() {
   try {
-    const { data: sessionData, error } = await supabaseClient.auth.getSession();
-    if (error) throw error;
-
-    cloudUser = sessionData?.session?.user || null;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    cloudUser = session?.user || null;
     updateCloudUI();
 
     if (cloudUser) {
-      // iPad/PCに残っているローカル追加データを先にクラウドへ送る
+      // 先にiPad/PCのローカル追加データをクラウドへ移行
       await migrateLocalAddedDataToCloud();
-      // その後、クラウドを正として取得
-      await loadCloudAddedData();
       await loadCloudSimulatorState();
-      setupCloudRealtime();
-      startCloudAutoSync();
-    }
-
-    await loadData();
-    if (typeof renderSimulator === "function") {
       simState.items = simState.bookItems[simState.currentBook] || [];
-      renderSimulator();
+      if (typeof renderSimulator === "function") renderSimulator();
+      setupCloudRealtime();
     }
   } catch (e) {
-    console.error("クラウド初期化エラー:", e);
-    updateCloudUI();
-    await loadData();
+    console.error("クラウド初期化エラー", e);
   }
 }
 
-const cloudLoginButton = document.getElementById("cloudLogin");
-if (cloudLoginButton) {
-  cloudLoginButton.addEventListener("click", async () => {
-    const email = document.getElementById("cloudEmail")?.value.trim();
-    const password = document.getElementById("cloudPassword")?.value;
-    if (!email || !password) {
-      alert("メールアドレスとパスワードを入力してください。");
-      return;
-    }
+// ログイン
+document.getElementById("cloudLogin")?.addEventListener("click", async () => {
+  const email = document.getElementById("cloudEmail")?.value.trim();
+  const password = document.getElementById("cloudPassword")?.value || "";
+  const status = document.getElementById("cloudStatus");
+  if (!email || !password) {
+    alert("メールアドレスとパスワードを入力してください。");
+    return;
+  }
+  if (status) status.textContent = "☁ ログイン中…";
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.error("ログインエラー", error);
+    if (status) status.textContent = "☁ ログイン失敗";
+    alert("ログインできませんでした。メールアドレスまたはパスワードを確認してください。\n\n" + error.message);
+    updateCloudUI();
+    return;
+  }
+  cloudUser = data.user;
+  updateCloudUI();
+  await migrateLocalAddedDataToCloud();
+  await loadCloudSimulatorState();
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  if (typeof renderSimulator === "function") renderSimulator();
+  setupCloudRealtime();
+});
 
-    cloudLoginButton.disabled = true;
-    cloudLoginButton.textContent = "ログイン中…";
-    try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      cloudUser = data?.user || null;
-      updateCloudUI();
-      if (cloudUser) {
-        await migrateLocalAddedDataToCloud();
-        await loadCloudAddedData();
-        await loadCloudSimulatorState();
-        setupCloudRealtime();
-        startCloudAutoSync();
-        if (typeof renderSimulator === "function") {
-          simState.items = simState.bookItems[simState.currentBook] || [];
-          renderSimulator();
-        }
-      }
-      alert("クラウドに接続しました。");
-    } catch (e) {
-      console.error("Supabaseログインエラー:", e);
-      alert("ログインできませんでした。メールアドレス・パスワードを確認してください。\n\n" + (e?.message || ""));
-    } finally {
-      cloudLoginButton.disabled = false;
-      cloudLoginButton.textContent = "ログイン";
-    }
-  });
-}
+// ログアウト
+document.getElementById("cloudLogout")?.addEventListener("click", async () => {
+  if (cloudChannel) { try { await supabaseClient.removeChannel(cloudChannel); } catch(e) {} cloudChannel = null; }
+  await supabaseClient.auth.signOut();
+  cloudUser = null;
+  updateCloudUI();
+});
 
-const cloudLogoutButton = document.getElementById("cloudLogout");
-if (cloudLogoutButton) {
-  cloudLogoutButton.addEventListener("click", async () => {
-    await supabaseClient.auth.signOut();
-  });
-}
-
+// Supabaseのセッション変更を確実に反映
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
   cloudUser = session?.user || null;
   updateCloudUI();
-
   if (cloudUser) {
-    try {
-      await migrateLocalAddedDataToCloud();
-      await loadCloudAddedData();
-      await loadCloudSimulatorState();
-      setupCloudRealtime();
-      startCloudAutoSync();
-      if (typeof renderSimulator === "function") {
-        simState.items = simState.bookItems[simState.currentBook] || [];
-        renderSimulator();
-      }
-    } catch (e) {
-      console.error("ログイン後のクラウド同期エラー:", e);
-    }
-  } else {
-    if (cloudSyncTimer) {
-      clearInterval(cloudSyncTimer);
-      cloudSyncTimer = null;
-    }
-    if (cloudChannel) {
-      try { await supabaseClient.removeChannel(cloudChannel); } catch (e) {}
-      cloudChannel = null;
-    }
+    await migrateLocalAddedDataToCloud();
+    await loadCloudSimulatorState();
+    simState.items = simState.bookItems[simState.currentBook] || [];
+    if (typeof renderSimulator === "function") renderSimulator();
+    setupCloudRealtime();
+  } else if (cloudChannel) {
+    try { await supabaseClient.removeChannel(cloudChannel); } catch(e) {}
+    cloudChannel = null;
   }
 });
 
-// HTML内の各イベント設定が完了してから初期化
+// ページを戻したときにも最新状態を取得
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible") return;
+  await ensureCloudUser();
+  if (!cloudUser) return;
+  await loadCloudSimulatorState();
+  await loadCloudAddedData();
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  if (typeof renderSimulator === "function") renderSimulator();
+});
+
+// 念のため30秒ごとにクラウドの2BOOKを確認
+setInterval(async () => {
+  if (document.visibilityState !== "visible") return;
+  await ensureCloudUser();
+  if (!cloudUser) return;
+  await loadCloudSimulatorState();
+  simState.items = simState.bookItems[simState.currentBook] || [];
+  if (typeof renderSimulator === "function" && document.getElementById("simulator")?.style.display !== "none") {
+    renderSimulator();
+  }
+}, 30000);
+
 initializeCloudSync();
 
 </script>
