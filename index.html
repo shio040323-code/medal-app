@@ -357,6 +357,23 @@
     <option value="">すべてのJA</option>
   </select>
 
+  <div id="inkFilters" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:0 0 7px;">
+    <button type="button" data-ink="" class="ink-filter active">すべて</button>
+    <button type="button" data-ink="amber" class="ink-filter">アンバー</button>
+    <button type="button" data-ink="amethyst" class="ink-filter">アメジスト</button>
+    <button type="button" data-ink="emerald" class="ink-filter">エメラルド</button>
+    <button type="button" data-ink="ruby" class="ink-filter">ルビー</button>
+    <button type="button" data-ink="sapphire" class="ink-filter">サファイア</button>
+    <button type="button" data-ink="steel" class="ink-filter">スティール</button>
+  </div>
+  <style>
+    .ink-filter{min-width:0;min-height:42px;padding:6px 4px;border:1px solid #ccc;border-radius:10px;background:#fff;font-size:14px;font-weight:700;white-space:nowrap}
+    .ink-filter.active{background:#333;color:#fff;border-color:#333}
+    @media(max-width:700px){#inkFilters{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+    #accountActions{display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding:4px 0}
+    #accountActions button,#authPanel input{min-height:38px}
+  </style>
+
   <input
     id="search"
     type="search"
@@ -366,12 +383,12 @@
     spellcheck="false"
   >
 
-  <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
+  <div id="accountActions" style="display:flex!important;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
     <button id="collectionButton" type="button" style="padding:8px 12px;border:0;border-radius:8px;background:#123b70;color:white;font-weight:700">コレクション表</button>
     <button id="printButton" type="button" style="padding:8px 12px;border:1px solid #aaa;border-radius:8px;background:white;font-weight:700">表示中を印刷</button>
     <span id="authState" style="font-size:12px;color:#555">共有データ未接続</span>
   </div>
-  <div id="authPanel" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
+  <div id="authPanel" style="display:flex!important;visibility:visible!important;opacity:1!important;gap:6px;flex-wrap:wrap;margin-top:7px">
     <input id="authEmail" type="email" placeholder="Supabase登録メール" autocomplete="username" style="flex:1;min-width:160px;padding:8px;border:1px solid #ccc;border-radius:7px">
     <input id="authPassword" type="password" placeholder="パスワード" autocomplete="current-password" style="flex:1;min-width:130px;padding:8px;border:1px solid #ccc;border-radius:7px">
     <button id="loginButton" type="button" style="padding:8px 12px;border:1px solid #aaa;border-radius:7px;background:white">ログイン</button>
@@ -401,6 +418,7 @@ let sharedCounts = new Map();
 
 let allCards = [];
 let filteredCards = [];
+let selectedInk = "";
 
 const gallery = document.getElementById("gallery");
 const search = document.getElementById("search");
@@ -543,8 +561,13 @@ function render() {
 
     const matchesSearch =
       !keyword || cardSearchText(card).includes(keyword);
+    const inkNames = [...(Array.isArray(card.colors) ? card.colors : []), card.color, card.color2]
+      .filter(Boolean).map(v => String(v).trim().toLowerCase());
+    const inkAliases = {"琥珀":"amber","アンバー":"amber","黄":"amber","アメジスト":"amethyst","紫":"amethyst","エメラルド":"emerald","緑":"emerald","ルビー":"ruby","赤":"ruby","サファイア":"sapphire","青":"sapphire","鋼鉄":"steel","スティール":"steel","灰":"steel","グレー":"steel"};
+    const normalizedInks = inkNames.map(v => inkAliases[v] || v);
+    const matchesInk = !selectedInk || normalizedInks.includes(selectedInk) || (selectedInk === "amber" && normalizedInks.includes("yellow")) || (selectedInk === "amethyst" && normalizedInks.includes("purple")) || (selectedInk === "emerald" && normalizedInks.includes("green")) || (selectedInk === "ruby" && normalizedInks.includes("red")) || (selectedInk === "sapphire" && normalizedInks.includes("blue")) || (selectedInk === "steel" && (normalizedInks.includes("grey") || normalizedInks.includes("gray")));
 
-    return matchesSet && matchesSearch;
+    return matchesSet && matchesSearch && matchesInk;
   });
 
   count.textContent = `${filteredCards.length} / ${allCards.length}枚`;
@@ -778,6 +801,11 @@ async function loadData() {
 
 search.addEventListener("input", render);
 setFilter.addEventListener("change", render);
+document.querySelectorAll(".ink-filter").forEach(button => button.addEventListener("click", () => {
+  selectedInk = button.dataset.ink || "";
+  document.querySelectorAll(".ink-filter").forEach(b => b.classList.toggle("active", b === button));
+  render();
+}));
 
 close.addEventListener("click", () => {
   modal.classList.remove("show");
