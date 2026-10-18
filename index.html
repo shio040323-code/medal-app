@@ -131,6 +131,13 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.18);
   }
 
+  .card-image-wrap.ink-amber { background-color: #FFE48F; }
+  .card-image-wrap.ink-amethyst { background-color: #C7A1E3; }
+  .card-image-wrap.ink-emerald { background-color: #9BFFC8; }
+  .card-image-wrap.ink-ruby { background-color: #FFA7A7; }
+  .card-image-wrap.ink-sapphire { background-color: #B9EDFF; }
+  .card-image-wrap.ink-steel { background-color: #CDCDCD; }
+  .card-image-wrap.ink-dual { background: linear-gradient(135deg, var(--ink-a) 0 50%, var(--ink-b) 50% 100%); }
   .card-image-wrap.owned {
     box-shadow: 0 0 0 3px #d4b45d, 0 1px 5px rgba(0,0,0,.25);
   }
@@ -309,6 +316,17 @@
     z-index: 2;
   }
 
+  @media print {
+    @page { margin: 7mm; }
+    body { background: #fff !important; padding: 0 !important; }
+    #header, #loading, #empty, #modal, .zoom-button { display: none !important; }
+    #gallery { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 4mm !important; padding: 0 !important; }
+    .card { break-inside: avoid; page-break-inside: avoid; }
+    .card-image-wrap { box-shadow: none !important; border: 1px solid #999 !important; border-radius: 0 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .card-image-wrap.purchased::before, .card-image-wrap.purchased::after { display: none !important; }
+    .card-code { font-size: 10pt; } .card-name { font-size: 8pt; min-height: 0; }
+    .card-rarity, .card-counts { font-size: 7pt; }
+  }
   @media (min-width: 700px) {
     #gallery {
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -350,6 +368,7 @@
 
   <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
     <button id="collectionButton" type="button" style="padding:8px 12px;border:0;border-radius:8px;background:#123b70;color:white;font-weight:700">コレクション表</button>
+    <button id="printButton" type="button" style="padding:8px 12px;border:1px solid #aaa;border-radius:8px;background:white;font-weight:700">表示中を印刷</button>
     <span id="authState" style="font-size:12px;color:#555">共有データ未接続</span>
   </div>
   <div id="authPanel" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
@@ -500,6 +519,17 @@ function buildSetFilter() {
   }
 }
 
+const INK_COLORS = { amber:"#FFE48F", yellow:"#FFE48F", amethyst:"#C7A1E3", purple:"#C7A1E3", emerald:"#9BFFC8", green:"#9BFFC8", ruby:"#FFA7A7", red:"#FFA7A7", sapphire:"#B9EDFF", blue:"#B9EDFF", steel:"#CDCDCD", grey:"#CDCDCD", gray:"#CDCDCD", "琥珀":"#FFE48F", "アンバー":"#FFE48F", "黄":"#FFE48F", "アメジスト":"#C7A1E3", "紫":"#C7A1E3", "エメラルド":"#9BFFC8", "緑":"#9BFFC8", "ルビー":"#FFA7A7", "赤":"#FFA7A7", "サファイア":"#B9EDFF", "青":"#B9EDFF", "鋼鉄":"#CDCDCD", "スティール":"#CDCDCD", "灰":"#CDCDCD", "グレー":"#CDCDCD" };
+function applyInkBackground(wrap, card) {
+  const colors = [];
+  for (const value of [...(Array.isArray(card.colors) ? card.colors : []), card.color, card.color2]) {
+    const color = INK_COLORS[String(value ?? "").trim().toLowerCase()] || INK_COLORS[String(value ?? "").trim()];
+    if (color && !colors.includes(color)) colors.push(color);
+  }
+  if (colors.length >= 2) { wrap.classList.add("ink-dual"); wrap.style.setProperty("--ink-a", colors[0]); wrap.style.setProperty("--ink-b", colors[1]); }
+  else if (colors.length === 1) { const cls = {"#FFE48F":"ink-amber","#C7A1E3":"ink-amethyst","#9BFFC8":"ink-emerald","#FFA7A7":"ink-ruby","#B9EDFF":"ink-sapphire","#CDCDCD":"ink-steel"}[colors[0]]; wrap.classList.add(cls); }
+}
+
 function render() {
   gallery.innerHTML = "";
 
@@ -529,6 +559,7 @@ function render() {
 
     const wrap = document.createElement("div");
     wrap.className = "card-image-wrap";
+    applyInkBackground(wrap, card);
 
     const imageData = getImageData(card);
 
@@ -800,6 +831,8 @@ function updateAuthUi() {
     document.getElementById("authPassword").style.display = "";
   }
 }
+
+document.getElementById("printButton").addEventListener("click", () => window.print());
 
 document.getElementById("collectionButton").addEventListener("click", () => {
   window.location.href = "./collection.html";
