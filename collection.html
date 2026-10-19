@@ -52,13 +52,14 @@ button{cursor:pointer} button:hover{filter:brightness(1.15)} .primary{background
  header,#inputScreen,#resetPasswordPanel,#cards{display:none!important}
  #printTableWrap{display:block!important;font-family:Arial,Meiryo,sans-serif}
  #printTitle{font-size:8pt;font-weight:800;margin:0 0 1mm}
- #printTable{width:100%;height:275mm;border-collapse:collapse;table-layout:fixed;font-size:4.2pt}
- #printTable td{padding:0.15mm 0.2mm;vertical-align:middle;border-bottom:0.2mm solid #ccc;height:12.8mm}
- #printTable .entry{display:flex;align-items:center;gap:0;min-height:0;height:100%;white-space:nowrap;break-inside:avoid;overflow:hidden}
- #printTable .code-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;min-width:0;max-width:100%;padding:.2mm .3mm;margin:0;border-radius:.4mm;font-size:4.1pt;line-height:1;font-weight:900;color:#111;white-space:nowrap;letter-spacing:-.1px}
- #printTable .rarity{display:inline-flex;flex:0 0 1.4mm;width:1.4mm;min-width:1.4mm;max-width:1.4mm;overflow:hidden;align-items:center;gap:0;padding:0;margin:0;border:0;border-radius:0;background:transparent!important;box-shadow:none;color:#111!important;font-size:0;line-height:1}
- #printTable .rarity::before{content:"";display:inline-block;width:1.3mm;height:1.3mm;flex:0 0 1.3mm;margin:0;filter:none}
- #printTable .counts{display:inline-flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:.3mm;margin-left:auto;font-size:3.5pt;line-height:1;white-space:nowrap}
+ /* A4縦：210枚なら7列×30行。番号は上から下、下端で右列へ */
+ #printTable{width:100%;height:270mm;border-collapse:collapse;table-layout:fixed;font-size:5pt}
+ #printTable td{padding:0.25mm 0.45mm;vertical-align:middle;border-bottom:0.2mm solid #ccc;height:8.8mm;overflow:hidden}
+ #printTable .entry{display:flex;align-items:center;gap:0.35mm;min-height:0;height:100%;white-space:nowrap;break-inside:avoid;overflow:hidden}
+ #printTable .code-chip{display:inline-flex;align-items:center;justify-content:flex-start;flex:0 1 auto;min-width:0;max-width:100%;padding:.35mm .5mm;margin:0;border-radius:.6mm;font-size:5pt;line-height:1.1;font-weight:900;color:#111;white-space:nowrap;letter-spacing:-.15px;overflow:hidden}
+ #printTable .rarity{display:inline-flex;flex:0 0 1.8mm;width:1.8mm;min-width:1.8mm;max-width:1.8mm;overflow:hidden;align-items:center;gap:0;padding:0;margin:0;border:0;border-radius:0;background:transparent!important;box-shadow:none;color:#111!important;font-size:0;line-height:1}
+ #printTable .rarity::before{content:"";display:inline-block;width:1.6mm;height:1.6mm;flex:0 0 1.6mm;margin:0;filter:none}
+ #printTable .counts{display:inline-flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;gap:.3mm;margin-left:auto;font-size:4pt;line-height:1;white-space:nowrap}
  #printTable .counts span{display:inline-block;white-space:nowrap}
  #printTable .dual-chip{background:linear-gradient(135deg,var(--ink1) 0 49%,var(--ink2) 51% 100%)!important}
 }
@@ -403,7 +404,7 @@ function buildPrintTable(){
   cells.push(`<td><div class="entry">${chip}${mark}<span class="counts"><span>N ${v.n}</span><span>F ${v.f}</span></span></div></td>`);
  }
  // 縦方向に番号順で並べ、下端まで行ったら次の列へ移動
- const rowsPerColumn=21;
+ const rowsPerColumn=30;
  const columnCount=Math.max(1,Math.ceil(cells.length/rowsPerColumn));
  let body="";
  for(let rowIndex=0;rowIndex<rowsPerColumn;rowIndex++){
