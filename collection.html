@@ -47,18 +47,18 @@ button{cursor:pointer} button:hover{filter:brightness(1.15)} .primary{background
 /* 印刷専用レイアウト：A4縦・最大210枚を1ページに配置 */
 #printTableWrap{display:none}
 @media print{
- @page{size:A4 portrait;margin:4mm}
- html,body{width:202mm!important;height:289mm!important;margin:0!important;padding:0!important;background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
- body{display:block!important}
+ @page{size:A4 portrait;margin:3mm}
+ html,body{width:204mm!important;height:291mm!important;margin:0!important;padding:0!important;background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ body{display:block!important;overflow:hidden!important}
  header,#inputScreen,#resetPasswordPanel,#cards{display:none!important}
- #printTableWrap{display:block!important;position:static!important;width:202mm!important;height:289mm!important;max-width:202mm!important;margin:0!important;padding:0!important;overflow:hidden!important;font-family:Arial,Meiryo,sans-serif}
- #printTitle{display:block!important;height:5mm;line-height:5mm;font-size:7pt;font-weight:800;margin:0;padding:0;box-sizing:border-box}
- #printGrid{display:grid!important;position:static!important;width:202mm!important;height:284mm!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;grid-template-rows:repeat(30,minmax(0,1fr))!important;grid-auto-flow:column!important;column-gap:1mm!important;row-gap:0!important;box-sizing:border-box!important;overflow:hidden!important}
- .print-cell{width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;display:flex!important;align-items:center!important;gap:.5mm!important;padding:0 .35mm!important;border-bottom:.15mm solid #ccc!important;box-sizing:border-box!important;overflow:hidden!important;white-space:nowrap!important;break-inside:avoid!important}
- .print-code{display:inline-flex!important;flex:0 0 auto!important;width:15mm!important;min-width:15mm!important;max-width:15mm!important;height:4.2mm!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;padding:.3mm!important;border-radius:.5mm!important;font-size:5.3pt!important;line-height:1!important;font-weight:900!important;color:#111!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important}
+ #printTableWrap{display:block!important;position:fixed!important;left:0!important;top:0!important;width:204mm!important;height:291mm!important;margin:0!important;padding:0!important;overflow:hidden!important;font-family:Arial,Meiryo,sans-serif}
+ #printTitle{display:block!important;height:5mm!important;line-height:5mm!important;font-size:7pt!important;font-weight:800!important;margin:0!important;padding:0!important}
+ #printGrid{display:grid!important;position:absolute!important;left:0!important;top:5mm!important;width:204mm!important;height:286mm!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;grid-template-rows:repeat(30,minmax(0,1fr))!important;grid-auto-flow:column!important;grid-auto-columns:auto!important;grid-auto-rows:auto!important;column-gap:1mm!important;row-gap:0!important;box-sizing:border-box!important;overflow:hidden!important}
+ .print-cell{width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;display:flex!important;align-items:center!important;gap:.4mm!important;padding:0 .25mm!important;border-bottom:.15mm solid #ccc!important;box-sizing:border-box!important;overflow:hidden!important;white-space:nowrap!important;break-inside:avoid!important}
+ .print-code{display:inline-flex!important;flex:0 0 15mm!important;width:15mm!important;min-width:15mm!important;max-width:15mm!important;height:4mm!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;padding:.2mm!important;border-radius:.5mm!important;font-size:5.2pt!important;line-height:1!important;font-weight:900!important;color:#111!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important}
  .print-rarity{display:inline-flex!important;flex:0 0 2.2mm!important;width:2.2mm!important;height:2.4mm!important;min-width:2.2mm!important;max-width:2.2mm!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:transparent!important;font-size:0!important;line-height:1!important}
  .print-rarity::before{content:""!important;display:inline-block!important;width:2mm!important;height:2mm!important;flex:0 0 2mm!important;margin:0!important;filter:none!important}
- .print-counts{display:inline-flex!important;flex:1 1 auto!important;min-width:0!important;align-items:center!important;justify-content:flex-end!important;gap:.5mm!important;margin-left:auto!important;font-size:4.4pt!important;line-height:1!important;white-space:nowrap!important}
+ .print-counts{display:inline-flex!important;flex:1 1 auto!important;min-width:0!important;align-items:center!important;justify-content:flex-end!important;gap:.4mm!important;margin-left:auto!important;font-size:4.2pt!important;line-height:1!important;white-space:nowrap!important}
  .print-counts span{display:inline-block!important;white-space:nowrap!important}
  .print-code.dual-chip{background:linear-gradient(135deg,var(--ink1) 0 49%,var(--ink2) 51% 100%)!important}
 }
@@ -392,7 +392,7 @@ function buildPrintTable(){
  const wrap=$("printTableWrap");
  const rarityClass={"レア":"rare","スーパーレア":"super","レジェンダリー":"legendary","エピック":"epic","エンチャンテッド":"enchanted","アイコニック":"iconic"};
  const cardsHtml=[];
- for(const c of visibleCards){
+ for(const c of visibleCards.slice(0,210)){
   const inks=getCardInks(c),v=counts.get(String(c.code))||{n:Number(c.normal||0),f:Number(c.foil||0)};
   const code=escapePrint(c.code);
   const first=inks[0]&&INK_COLORS[inks[0]]?INK_COLORS[inks[0]].hex:"#fff";
