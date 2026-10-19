@@ -44,23 +44,22 @@ button{cursor:pointer} button:hover{filter:brightness(1.15)} .primary{background
 @media(max-width:600px){.high-only #cards{grid-template-columns:repeat(2,minmax(0,1fr));}.high-only .card .rarity::before{width:20px;height:20px;flex-basis:20px}.high-only .card .count-chip{font-size:12px}.high-only .card .count-chip b{font-size:17px}}
 @media(min-width:1000px){#cards{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:10px}}
 
-/* 印刷専用：カード順に左から右へ並べる。通常画面には影響しない */
+/* 印刷専用の独立レイアウト。通常画面のカードCSSは変更しない */
 #printTableWrap{display:none}
 @media print{
  @page{size:A4 portrait;margin:4mm}
- html,body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ html,body{margin:0!important;padding:0!important;background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
  header,#inputScreen,#resetPasswordPanel,#cards{display:none!important}
- #printTableWrap{display:block!important;font-family:Arial,Meiryo,sans-serif}
- #printTitle{font-size:8pt;font-weight:800;line-height:4mm;margin:0 0 1mm;height:4mm}
- #printTable{width:100%;height:276mm;max-height:276mm;border-collapse:collapse;table-layout:fixed;font-size:4.2pt;page-break-inside:avoid;break-inside:avoid}
- #printTable td{padding:0.1mm 0.2mm;vertical-align:middle;border-bottom:0.2mm solid #ccc;height:9.15mm;max-height:9.15mm;overflow:hidden}
- #printTable .entry{display:flex;align-items:center;gap:0.25mm;min-width:0;min-height:0;height:100%;white-space:nowrap;break-inside:avoid;overflow:hidden}
- #printTable .code-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;min-width:0;max-width:calc(100% - 9mm);padding:.35mm .45mm;margin:0;border-radius:.4mm;font-size:5pt;line-height:1.05;font-weight:900;color:#111;white-space:nowrap;letter-spacing:-.1px;overflow:visible}
- #printTable .rarity{display:inline-flex;flex:0 0 1.7mm;width:1.7mm;min-width:1.7mm;max-width:1.7mm;overflow:hidden;align-items:center;gap:0;padding:0;margin:0;border:0;border-radius:0;background:transparent!important;box-shadow:none;color:#111!important;font-size:0;line-height:1}
- #printTable .rarity::before{content:"";display:inline-block;width:1.5mm;height:1.5mm;flex:0 0 1.5mm;margin:0;filter:none}
- #printTable .counts{display:inline-flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:.45mm;margin-left:auto;font-size:4.1pt;line-height:1;white-space:nowrap}
- #printTable .counts span{display:inline-block;white-space:nowrap}
- #printTable .dual-chip{background:linear-gradient(135deg,var(--ink1) 0 49%,var(--ink2) 51% 100%)!important}
+ #printTableWrap{display:block!important;width:202mm!important;height:285mm!important;overflow:hidden!important;font-family:Arial,Meiryo,sans-serif}
+ #printTitle{height:4mm;line-height:4mm;font-size:7pt;font-weight:800;margin:0;padding:0 0 .5mm;box-sizing:border-box}
+ #printGrid{display:grid!important;width:202mm;height:280mm;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(30,minmax(0,1fr));grid-auto-flow:column;column-gap:.4mm;row-gap:0;box-sizing:border-box;overflow:hidden}
+ .print-cell{min-width:0;min-height:0;display:flex;align-items:center;gap:.25mm;padding:0 .2mm;border-bottom:.15mm solid #ccc;box-sizing:border-box;overflow:hidden;white-space:nowrap;break-inside:avoid}
+ .print-code{display:inline-flex;flex:0 1 auto;min-width:0;max-width:18mm;align-items:center;justify-content:center;box-sizing:border-box;padding:.45mm .55mm;border-radius:.6mm;font-size:5.1pt;line-height:1;font-weight:900;color:#111;white-space:nowrap;overflow:hidden}
+ .print-rarity{display:inline-flex!important;flex:0 0 2.2mm!important;width:2.2mm!important;height:2.4mm!important;min-width:2.2mm!important;max-width:2.2mm!important;align-items:center;justify-content:center;overflow:visible!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:transparent!important;font-size:0!important;line-height:1!important}
+ .print-rarity::before{content:""!important;display:inline-block!important;width:2mm!important;height:2mm!important;flex:0 0 2mm!important;margin:0!important;filter:none!important}
+ .print-counts{display:inline-flex;flex:0 0 auto;align-items:center;gap:.45mm;margin-left:auto;font-size:4.2pt;line-height:1;white-space:nowrap}
+ .print-counts span{display:inline-block;white-space:nowrap}
+ .print-code.dual-chip{background:linear-gradient(135deg,var(--ink1) 0 49%,var(--ink2) 51% 100%)!important}
 }
 </style>
 </head>
@@ -391,30 +390,21 @@ function escapePrint(value){return String(value??"").replace(/[&<>"]/g,ch=>({"&"
 function buildPrintTable(){
  const wrap=$("printTableWrap");
  const rarityClass={"レア":"rare","スーパーレア":"super","レジェンダリー":"legendary","エピック":"epic","エンチャンテッド":"enchanted","アイコニック":"iconic"};
- const cells=[];
+ const cardsHtml=[];
  for(const c of visibleCards){
   const inks=getCardInks(c),v=counts.get(String(c.code))||{n:Number(c.normal||0),f:Number(c.foil||0)};
   const code=escapePrint(c.code);
   const first=inks[0]&&INK_COLORS[inks[0]]?INK_COLORS[inks[0]].hex:"#fff";
   const second=inks[1]&&INK_COLORS[inks[1]]?INK_COLORS[inks[1]].hex:first;
-  const chip=inks.length>=2?`<span class="code-chip dual-chip" style="--ink1:${first};--ink2:${second}">${code}</span>`:`<span class="code-chip" style="background:${first}">${code}</span>`;
+  const chip=inks.length>=2
+   ? `<span class="print-code dual-chip" style="--ink1:${first};--ink2:${second}">${code}</span>`
+   : `<span class="print-code" style="background:${first}">${code}</span>`;
   const cls=rarityClass[c.rarity];
-  const mark=cls?`<span class="rarity ${cls}" aria-label="${escapePrint(c.rarity)}"></span>`:"";
-  cells.push(`<td><div class="entry">${chip}${mark}<span class="counts"><span>N ${v.n}</span><span>F ${v.f}</span></span></div></td>`);
+  const mark=cls?`<span class="rarity ${cls} print-rarity" aria-label="${escapePrint(c.rarity)}"></span>`:"";
+  cardsHtml.push(`<div class="print-cell">${chip}${mark}<span class="print-counts"><span>N ${v.n}</span><span>F ${v.f}</span></span></div>`);
  }
- // 縦方向に番号順で並べ、下端まで行ったら次の列へ移動
- const rowsPerColumn=30;
- const columnCount=Math.max(1,Math.ceil(cells.length/rowsPerColumn));
- let body="";
- for(let rowIndex=0;rowIndex<rowsPerColumn;rowIndex++){
-  const row=[];
-  for(let col=0;col<columnCount;col++){
-   const cellIndex=col*rowsPerColumn+rowIndex;
-   row.push(cellIndex<cells.length?cells[cellIndex]:"<td></td>");
-  }
-  body+=`<tr>${row.join("")}</tr>`;
- }
- wrap.innerHTML=`<div id="printTitle">LORCANA　コレクション一覧</div><table id="printTable" style="--print-columns:${columnCount}"><colgroup>${Array.from({length:columnCount},()=>`<col style="width:${100/columnCount}%">`).join("")}</colgroup><tbody>${body}</tbody></table>`;
+ // 固定7列×30行。grid-auto-flow:columnにより、30枚を上から下へ並べて右列へ進む。
+ wrap.innerHTML=`<div id="printTitle">LORCANA　コレクション一覧</div><div id="printGrid">${cardsHtml.join("")}</div>`;
 }
 $("printButton").addEventListener("click",()=>{buildPrintTable();window.print();});
 $("back").addEventListener("click",()=>location.href="./index.html");
