@@ -44,23 +44,21 @@ button{cursor:pointer} button:hover{filter:brightness(1.15)} .primary{background
 @media(max-width:600px){.high-only #cards{grid-template-columns:repeat(2,minmax(0,1fr));}.high-only .card .rarity::before{width:20px;height:20px;flex-basis:20px}.high-only .card .count-chip{font-size:12px}.high-only .card .count-chip b{font-size:17px}}
 @media(min-width:1000px){#cards{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:10px}}
 
-/* 印刷専用：A4縦を広く使い、3列×8行でページ分割。画面表示は変更しない */
+/* 印刷専用：カード順に左から右へ並べる。通常画面には影響しない */
 #printTableWrap{display:none}
 @media print{
- @page{size:A4 portrait;margin:7mm}
+ @page{size:A4 portrait;margin:4mm}
  html,body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
  header,#inputScreen,#resetPasswordPanel,#cards{display:none!important}
- #printTableWrap{display:block!important;font-family:Arial,Meiryo,sans-serif;width:100%}
- #printTitle{font-size:15pt;font-weight:800;margin:0 0 3mm;height:9mm}
- .print-page{width:100%;height:280mm;break-after:page;page-break-after:always;overflow:hidden}
- .print-page:last-child{break-after:auto;page-break-after:auto}
- #printTable{width:100%;height:268mm;border-collapse:collapse;table-layout:fixed;font-size:10pt}
- #printTable td{width:33.333%;padding:1mm 1.5mm;vertical-align:middle;border-bottom:1px solid #bbb}
- #printTable .entry{display:flex;align-items:center;gap:0;min-height:32mm;height:32mm;white-space:nowrap;break-inside:avoid}
- #printTable .code-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:0;padding:1.5mm 1.5mm;margin:0;border-radius:1.5mm;font-size:10pt;line-height:1.2;font-weight:900;color:#111;white-space:nowrap}
- #printTable .rarity{display:inline-flex;flex:0 0 4mm;width:4mm;min-width:4mm;max-width:4mm;overflow:hidden;align-items:center;gap:0;padding:0;margin:0 0 0 .3mm;border:0;border-radius:0;background:transparent!important;box-shadow:none;color:#111!important;font-size:0;line-height:1}
- #printTable .rarity::before{content:"";display:inline-block;width:4mm;height:4mm;flex:0 0 4mm;margin:0;filter:none}
- #printTable .counts{display:inline-flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:1.5mm;margin-left:auto;font-size:9pt;line-height:1;white-space:nowrap}
+ #printTableWrap{display:block!important;font-family:Arial,Meiryo,sans-serif}
+ #printTitle{font-size:8pt;font-weight:800;margin:0 0 1mm}
+ #printTable{width:100%;height:275mm;border-collapse:collapse;table-layout:fixed;font-size:4.2pt}
+ #printTable td{padding:0.15mm 0.2mm;vertical-align:middle;border-bottom:0.2mm solid #ccc;height:12.8mm}
+ #printTable .entry{display:flex;align-items:center;gap:0;min-height:0;height:100%;white-space:nowrap;break-inside:avoid;overflow:hidden}
+ #printTable .code-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;min-width:0;max-width:100%;padding:.2mm .3mm;margin:0;border-radius:.4mm;font-size:4.1pt;line-height:1;font-weight:900;color:#111;white-space:nowrap;letter-spacing:-.1px}
+ #printTable .rarity{display:inline-flex;flex:0 0 1.4mm;width:1.4mm;min-width:1.4mm;max-width:1.4mm;overflow:hidden;align-items:center;gap:0;padding:0;margin:0;border:0;border-radius:0;background:transparent!important;box-shadow:none;color:#111!important;font-size:0;line-height:1}
+ #printTable .rarity::before{content:"";display:inline-block;width:1.3mm;height:1.3mm;flex:0 0 1.3mm;margin:0;filter:none}
+ #printTable .counts{display:inline-flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:.3mm;margin-left:auto;font-size:3.5pt;line-height:1;white-space:nowrap}
  #printTable .counts span{display:inline-block;white-space:nowrap}
  #printTable .dual-chip{background:linear-gradient(135deg,var(--ink1) 0 49%,var(--ink2) 51% 100%)!important}
 }
@@ -404,23 +402,19 @@ function buildPrintTable(){
   const mark=cls?`<span class="rarity ${cls}" aria-label="${escapePrint(c.rarity)}"></span>`:"";
   cells.push(`<td><div class="entry">${chip}${mark}<span class="counts"><span>N ${v.n}</span><span>F ${v.f}</span></span></div></td>`);
  }
- // 1列8枚を上から下へ、3列目まで進んだら次ページへ。A4縦を広く使用。
- const perPage=24, rowsPerColumn=8, columns=3;
- const pages=[];
- for(let offset=0;offset<cells.length;offset+=perPage){
-  const chunk=cells.slice(offset,offset+perPage);
-  let body="";
-  for(let r=0;r<rowsPerColumn;r++){
-   const row=[];
-   for(let c=0;c<columns;c++){
-    const i=c*rowsPerColumn+r;
-    row.push(chunk[i]||"<td><div class=\"entry\"></div></td>");
-   }
-   body+=`<tr>${row.join("")}</tr>`;
+ // 縦方向に番号順で並べ、下端まで行ったら次の列へ移動
+ const rowsPerColumn=21;
+ const columnCount=Math.max(1,Math.ceil(cells.length/rowsPerColumn));
+ let body="";
+ for(let rowIndex=0;rowIndex<rowsPerColumn;rowIndex++){
+  const row=[];
+  for(let col=0;col<columnCount;col++){
+   const cellIndex=col*rowsPerColumn+rowIndex;
+   row.push(cellIndex<cells.length?cells[cellIndex]:"<td></td>");
   }
-  pages.push(`<section class="print-page"><div id="printTitle">LORCANA　コレクション一覧</div><table id="printTable"><tbody>${body}</tbody></table></section>`);
+  body+=`<tr>${row.join("")}</tr>`;
  }
- wrap.innerHTML=pages.join("");
+ wrap.innerHTML=`<div id="printTitle">LORCANA　コレクション一覧</div><table id="printTable" style="--print-columns:${columnCount}"><colgroup>${Array.from({length:columnCount},()=>`<col style="width:${100/columnCount}%">`).join("")}</colgroup><tbody>${body}</tbody></table>`;
 }
 $("printButton").addEventListener("click",()=>{buildPrintTable();window.print();});
 $("back").addEventListener("click",()=>location.href="./index.html");
