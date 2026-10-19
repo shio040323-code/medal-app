@@ -2,914 +2,2003 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#081a36">
+<title>スーベニアメダル管理</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ロルカナ未取得">
-<link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>ロルカナ 未取得カード</title>
-
+<meta name="apple-mobile-web-app-title" content="メダル管理">
 <style>
-  * {
-    box-sizing: border-box;
+body {
+  font-family: sans-serif;
+  margin: 10px;
+}
+
+input {
+  max-width: 100px;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 4px;
+  width: 80%;
+  max-width: 300px;
   }
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #f5f5f5;
-    color: #222;
-    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-                 "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  }
+button {
+  margin: 5px 0;
+}
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+}
 
-  html, body {
-    width: 100%;
-    min-height: 100%;
-    overscroll-behavior-y: contain;
+.card {
+  width: 180px;
+  margin: 2px;
+  padding: 2px;
+}
+
+
+/* =========================
+   画像表示 高速化
+   ========================= */
+.card {
+  content-visibility: auto;
+  contain-intrinsic-size: 180px 180px;
+}
+
+.card img.medal-image {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 1px;
+  box-sizing: border-box;
+  aspect-ratio: 3 / 2;
+}
+
+/* 画像がない場合は背景の四角を表示しない */
+.card img.medal-image.noimage {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  object-fit: contain;
+}
+
+@media screen and (min-width: 700px) and (max-width: 800px) {
+  .card {
+    contain-intrinsic-size: 1px 180px;
   }
+  .card img.medal-image {
+    height: 120px;
+  }
+}
+
+img {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 1px;
+}
+img.noimage{
+  background: transparent;
+}
+.id {
+     font-size: 18px;
+     font-weight: bold; 
+    }
+.name {
+  font-size: 12px;
+}
+
+.location {
+  font-size: 12px;
+  color: gray;
+}
+
+.date {
+  font-size: 11px;
+  color: #999;
+}
+
+.type {
+  font-size: 12px;
+  color: #999;
+}
+
+.detail {
+  font-size: 12px;
+  font-weight: bold;
+}
+.filters {
+  display: flex;
+  flex-wrap: nowrap;
+
+  gap: 8px;
+
+  overflow-x: auto;
+
+  padding-bottom: 4px;
+}
+
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 6px 30px;
+
+  background: #f3f3f3;
+  border-radius: 999px;
+
+  font-size: 15px;
+
+  cursor: pointer;
+
+  user-select: none;
+
+  transition: 0.2s;
+
+  white-space: nowrap;
+
+  flex: 0 0 auto;
+}
+
+.filters label:hover {
+  background: #e0e0e0;
+}
+
+.filters input[type="checkbox"] {
+  margin: 0;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+
+  background: white;
+
+  z-index: 999;
+
+  padding: 4px 0;
+
+  border-bottom: 1px solid #ddd;
+}
+.book{
+  margin-left: 6px;
+  font-size: 12px;
+  color: #999;
+}
+.legend {
+  font-size: 12px;
+  color: #666;
+  padding: 3px 0;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+/* =========================
+   iPad mini 6 縦向き
+   ========================= */
+@media screen and (min-width: 700px) and (max-width: 800px) {
 
   body {
-    min-height: 100dvh;
-    padding-top: env(safe-area-inset-top);
-    padding-right: env(safe-area-inset-right);
-    padding-left: env(safe-area-inset-left);
-    padding-bottom: env(safe-area-inset-bottom);
-    overflow-x: hidden;
+    margin: 6px;
   }
 
-  #header {
-    width: 100%;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(255,255,255,.96);
-    backdrop-filter: blur(10px);
-    padding: 10px 10px 8px;
-    border-bottom: 1px solid #ddd;
-  }
-
-  .title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  #title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-  }
-
-  #count {
-    font-size: 14px;
-    color: #666;
-    white-space: nowrap;
-  }
-
-  #setFilter {
-    width: 100%;
-    height: 42px;
-    margin-bottom: 7px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 0 10px;
-    font-size: 16px;
-    background: white;
-    color: #222;
+  .topbar {
+    padding: 3px 0;
   }
 
   #search {
-    width: 100%;
-    height: 42px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 0 12px;
-    font-size: 16px;
-    background: white;
-    outline: none;
-  }
-
-  #search:focus {
-    border-color: #888;
-  }
-
-  #status {
-    margin-top: 7px;
-    font-size: 12px;
-    color: #777;
-    min-height: 16px;
-  }
-
-  #gallery {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    padding: 8px 5px 20px;
-    align-items: start;
-  }
-
-  .card {
-    min-width: 0;
-    text-align: center;
-  }
-
-  .card-image-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 5 / 7;
-    background: #eee;
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,.18);
-  }
-
-  .card-image-wrap.ink-amber { background-color: #FFE48F; }
-  .card-image-wrap.ink-amethyst { background-color: #C7A1E3; }
-  .card-image-wrap.ink-emerald { background-color: #9BFFC8; }
-  .card-image-wrap.ink-ruby { background-color: #FFA7A7; }
-  .card-image-wrap.ink-sapphire { background-color: #B9EDFF; }
-  .card-image-wrap.ink-steel { background-color: #CDCDCD; }
-  .card-image-wrap.ink-dual { background: linear-gradient(135deg, var(--ink-a) 0 50%, var(--ink-b) 50% 100%); }
-  .card-image-wrap.owned {
-    box-shadow: 0 0 0 3px #d4b45d, 0 1px 5px rgba(0,0,0,.25);
-  }
-  /* 未取得カードも画像は暗くせず、元の明るさで表示 */
-  .card-image-wrap.not-owned .card-image {
-    filter: none;
-  }
-
-  .card-image-wrap.purchased {
-    box-shadow: 0 0 0 3px #b91c1c, 0 1px 5px rgba(0,0,0,.25);
-  }
-
-  /* 購入済み：赤いハンコ風スタンプ */
-  .card-image-wrap.purchased::after {
-    content: "購入済";
-    position: absolute;
-    top: 10px; right: 8px; z-index: 2;
-    width: 48px; height: 48px;
-    display: flex; align-items: center; justify-content: center;
+    width: 95% !important;
+    max-width: none !important;
     box-sizing: border-box;
-    border: 3px solid #b91c1c;
-    border-radius: 50%;
-    background: rgba(255,255,255,.08);
-    color: #b91c1c;
-    font-size: 12px; font-weight: 900;
-    letter-spacing: 1px; text-align: center;
-    transform: rotate(-12deg);
-    pointer-events: none; opacity: .9;
+    padding: 10px !important;
+    font-size: 16px !important;
   }
 
-  .card-image-wrap.purchased::before {
-    content: "";
-    position: absolute;
-    top: 14px; right: 12px; z-index: 2;
-    width: 40px; height: 40px;
-    border: 1px solid #b91c1c; border-radius: 50%;
-    transform: rotate(-12deg);
-    pointer-events: none; opacity: .75;
+  #printIds {
+    width: 100px !important;
+    padding: 8px !important;
+    font-size: 16px !important;
   }
 
-  .card-image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    cursor: pointer;
-    background: transparent;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .zoom-button {
-    display: block;
-    width: 100%;
-    margin-top: 4px;
-    padding: 5px 8px;
-    border: 1px solid #bbb;
-    border-radius: 6px;
-    background: #fff;
-    color: #333;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
+  button {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 15px;
     touch-action: manipulation;
   }
 
-  .zoom-button:active {
-    background: #eee;
+  #pageInput {
+    width: 50px !important;
+    height: 36px;
+    padding: 4px !important;
+    font-size: 16px !important;
+    box-sizing: border-box;
+    text-align: center;
   }
 
-  .no-image {
+  .filters {
+    gap: 6px;
+    padding: 5px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filters label {
+    padding: 9px 14px;
+    font-size: 15px;
+  }
+
+  .filters input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+
+  #locationSelect,
+  #nameSelect {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 15px;
+    max-width: 48%;
+  }
+
+  /* ★ 3列表示 */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
     width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #999;
-    font-size: 12px;
-    background: transparent;
+    box-sizing: border-box;
   }
 
-  .card-code {
-    margin-top: 3px;
-    font-size: 14px;
-    line-height: 1.05;
-    font-weight: 700;
-    word-break: break-all;
+  .card {
+    width: auto;
+    margin: 0;
+    padding: 3px;
+    box-sizing: border-box;
+    min-width: 0;
   }
 
-  .card-name {
-    margin-top: 2px;
-    font-size: 11px;
-    line-height: 1.15;
-    min-height: 25px;
-    word-break: break-word;
-  }
-
-  .card-rarity {
-    margin-top: 1px;
-    font-size: 10px;
-    color: #777;
-    line-height: 1.1;
-  }
-
-  .card-counts {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 3px;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1.1;
-  }
-
-  .count-n,
-  .count-f {
-    white-space: nowrap;
-  }
-
-  .count-n {
-    color: #555;
-  }
-
-  .count-f {
-    color: #7a4d00;
-  }
-
-  .count-f.active {
-    color: red;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  #empty {
-    display: none;
-    text-align: center;
-    padding: 50px 20px;
-    color: #777;
-  }
-
-  #loading {
-    text-align: center;
-    padding: 50px 20px;
-    color: #777;
-  }
-
-  #modal {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,.94);
-    padding: 20px;
-  }
-
-  #modal.show {
-    display: flex;
-  }
-
-  #modal-img {
-    max-width: 100%;
-    max-height: 90vh;
+  .card img {
+    width: 100%;
+    height: 120px;
     object-fit: contain;
-    border-radius: 5px;
+    box-sizing: border-box;
   }
 
-  #close {
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    right: 18px;
-    color: white;
-    font-size: 38px;
-    line-height: 1;
-    cursor: pointer;
-    z-index: 2;
+  .id {
+    font-size: 16px;
   }
 
-  @media print {
-    @page { margin: 7mm; }
-    body { background: #fff !important; padding: 0 !important; }
-    #header, #loading, #empty, #modal, .zoom-button { display: none !important; }
-    #gallery { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 4mm !important; padding: 0 !important; }
-    .card { break-inside: avoid; page-break-inside: avoid; }
-    .card-image-wrap { box-shadow: none !important; border: 1px solid #999 !important; border-radius: 0 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .card-image-wrap.purchased::before, .card-image-wrap.purchased::after { display: none !important; }
-    .card-code { font-size: 10pt; } .card-name { font-size: 8pt; min-height: 0; }
-    .card-rarity, .card-counts { font-size: 7pt; }
+  .name {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  @media (min-width: 700px) {
-    #gallery {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 10px;
-      padding: 10px;
-    }
 
-    .card-code {
-      font-size: 16px;
-    }
-
-    .card-name {
-      font-size: 12px;
-    }
+  .location {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  .date,
+  .type,
+  .detail,
+  .book {
+    font-size: 10px;
+  }
+}
+
+/* =========================
+   配置シミュレーター
+   ========================= */
+#simulator {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,.45);
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+#simulator .sim-panel {
+  background: #fff;
+  max-width: 760px;
+  margin: 0 auto;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.sim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sim-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.sim-controls input,
+.sim-controls select {
+  min-height: 38px;
+  box-sizing: border-box;
+  font-size: 16px;
+  padding: 5px 8px;
+}
+.sim-controls input[type="number"] { width: 75px; }
+.sim-face {
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 10px;
+}
+.sim-face-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.sim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.sim-slot {
+  min-height: 62px;
+  border: 2px solid #888;
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 4px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: pre-line;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sim-slot.empty { color: #aaa; }
+.sim-slot.drag-over { outline: 3px solid #333; }
+.sim-help {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+}
+@media screen and (min-width: 700px) and (max-width: 800px) {
+  #simulator { padding: 6px; }
+  #simulator .sim-panel { width: 100%; }
+  .sim-slot { min-height: 68px; font-size: 13px; }
+}
+
+/* iPad用 データ追加画面 */
+#addDataModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0,0,0,.45);
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+#addDataModal .add-data-panel {
+  background: #fff;
+  max-width: 520px;
+  margin: 20px auto;
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.add-data-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 17px;
+}
+
+.add-data-form {
+  display: grid;
+  gap: 9px;
+}
+
+.add-data-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.add-data-form input {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 7px 9px;
+  margin: 0;
+  font-size: 16px;
+  border: 1px solid #bbb;
+  border-radius: 7px;
+}
+
+.add-data-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.add-data-buttons button {
+  flex: 1;
+  min-height: 44px;
+}
+
+.add-data-message {
+  min-height: 18px;
+  font-size: 13px;
+  color: #b00020;
+}
+
+.sim-slot.empty {
+  cursor: pointer;
+}
+
+.sim-slot.empty::after {
+  content: "タップして追加";
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 8px;
+}
+
+
+.add-delete-button{
+  background:#c62828 !important;
+  color:#fff !important;
+  border:none;
+}
+.add-delete-button:active{
+  opacity:.75;
+}
+#addDataModal.show{display:block;}
+
+.sim-book{margin:14px 0 22px;padding:10px;border:2px solid #888;border-radius:10px;background:#fafafa;}
+.sim-book-title{font-size:18px;font-weight:700;margin:0 0 8px;}
+
+.sim-book-tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.sim-book-tabs button {
+  padding: 8px 14px;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+.sim-book-tabs button.active {
+  font-weight: bold;
+  border-width: 2px;
+}
+
+
+/* シミュレーター：開始番号から次の行に配置 */
+.sim-start-label {
+  flex-basis: 100%;
+  width: 100%;
+}
+
+/* シミュレーター操作欄：開始番号の前で確実に改行 */
+.sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
 </style>
 </head>
 
 <body>
+<div class="topbar">
+<input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
+style="
+  width:250px;
+  padding:2px 4px;
+  font-size:12px;
+   margin-bottom: 0;
+  "
+>
+<br>
+<br>
+<button onclick="prevPage()">← BACK</button>
+<input
+  type="number"
+  id="pageInput"
+  min="1"
+  style="
+  width:30px;
+  padding:2px 4px;
+  font-size:12px;
+  "
+>
+<span id="totalPages"></span>
 
-<header id="header">
-  <div class="title-row">
-    <h1 id="title">ロルカナ 未取得カード</h1>
-    <div id="count">読み込み中...</div>
-  </div>
+<button onclick="nextPage()">NEXT →</button>
+<button id="missingBtn">欠番</button>
+<button id="simulatorBtn">配置シミュレーター</button>
+<button onclick="clearFilters()">□</button>
+<div class="legend">
+  L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
+</div>
+<div id="typeFilters" class="filters"></div>
+<select id="locationSelect">
+  <option value="">すべて</option>
+</select>
 
-  <select id="setFilter" aria-label="カードセット選択">
-    <option value="">すべてのJA</option>
-  </select>
-
-  <div id="inkFilters" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:0 0 7px;">
-    <button type="button" data-ink="" class="ink-filter active">すべて</button>
-    <button type="button" data-ink="amber" class="ink-filter">アンバー</button>
-    <button type="button" data-ink="amethyst" class="ink-filter">アメジスト</button>
-    <button type="button" data-ink="emerald" class="ink-filter">エメラルド</button>
-    <button type="button" data-ink="ruby" class="ink-filter">ルビー</button>
-    <button type="button" data-ink="sapphire" class="ink-filter">サファイア</button>
-    <button type="button" data-ink="steel" class="ink-filter">スティール</button>
-  </div>
-  <style>
-    .ink-filter{min-width:0;min-height:42px;padding:6px 4px;border:1px solid #ccc;border-radius:10px;background:#fff;font-size:14px;font-weight:700;white-space:nowrap}
-    .ink-filter.active{background:#333;color:#fff;border-color:#333}
-    @media(max-width:700px){#inkFilters{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
-    #accountActions{display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding:4px 0}
-    #accountActions button,#authPanel input{min-height:38px}
-  </style>
-
-  <input
-    id="search"
-    type="search"
-    placeholder="カード番号・カード名で検索"
-    autocomplete="off"
-    autocapitalize="off"
-    spellcheck="false"
-  >
-
-  <div id="accountActions" style="display:flex!important;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
-    <button id="collectionButton" type="button" style="padding:8px 12px;border:0;border-radius:8px;background:#123b70;color:white;font-weight:700">コレクション表</button>
-    <button id="printButton" type="button" style="padding:8px 12px;border:1px solid #aaa;border-radius:8px;background:white;font-weight:700">表示中を印刷</button>
-    <span id="authState" style="font-size:12px;color:#555">共有データ未接続</span>
-  </div>
-  <div id="authPanel" style="display:flex!important;visibility:visible!important;opacity:1!important;gap:6px;flex-wrap:wrap;margin-top:7px">
-    <input id="authEmail" type="email" placeholder="Supabase登録メール" autocomplete="username" style="flex:1;min-width:160px;padding:8px;border:1px solid #ccc;border-radius:7px">
-    <input id="authPassword" type="password" placeholder="パスワード" autocomplete="current-password" style="flex:1;min-width:130px;padding:8px;border:1px solid #ccc;border-radius:7px">
-    <button id="loginButton" type="button" style="padding:8px 12px;border:1px solid #aaa;border-radius:7px;background:white">ログイン</button>
-    <button id="logoutButton" type="button" style="display:none;padding:8px 12px;border:1px solid #aaa;border-radius:7px;background:white">ログアウト</button>
-  </div>
-  <div id="status"></div>
-</header>
-
-<div id="loading">未取得カードデータを読み込んでいます...</div>
-<div id="empty">該当する未取得カードがありません。</div>
-<div id="gallery"></div>
-
-<div id="modal">
-  <span id="close">×</span>
-  <img id="modal-img" alt="">
+<select id="nameSelect">
+  <option value="">すべて</option>
+</select>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div id="simulator">
+  <div class="sim-panel">
+    <div class="sim-header">
+      <strong>スーベニアメダル配置シミュレーター</strong>
+      <button id="simClose">閉じる</button>
+    </div>
+
+    <div class="sim-controls">
+      <label>面数
+        <select id="simFaces">
+          <option value="3">3面</option>
+          <option value="4">4面</option>
+        </select>
+      </label>
+
+      <label>bookNo.
+        <select id="simRoman"></select>
+      </label>
+
+      <div id="simBookTabs" class="sim-book-tabs">
+        <button type="button" data-book-view="0" class="active">1book</button>
+        <button type="button" data-book-view="1">2book</button>
+      </div>
+
+      <div class="sim-force-break"></div>
+
+      <label>開始
+        <input id="simStart" type="number" value="1" min="1">
+      </label>
+
+      <label>終了
+        <input id="simEnd" type="number" value="45" min="1">
+      </label>
+
+      <button id="simDisplay">表示</button>
+      
+    </div>
+
+    <div class="sim-help">
+      空きマスをタップすると入力できます。iPadで追加したメダルをタップすると入力画面から削除できます。ドラッグすると配置を入れ替えできます。
+    </div>
+    <div id="simFacesArea"></div>
+  </div>
+</div>
+
+<!-- iPad用 データ入力画面 -->
+<div id="addDataModal">
+  <div class="add-data-panel">
+    <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
+    <div class="add-data-form">
+      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
+      <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
+      <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
+<div id="addDataMessage" class="add-data-message"></div>
+      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
 <script>
-"use strict";
+const locationGroups = {
 
-const SUPABASE_URL = "https://znmsbvbtcbtgzgtljxzc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_yb9oh1nKNgb6uFeN_pPf2Q_kQksgoK6";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-let signedInUser = null;
-let sharedCounts = new Map();
+  "ランド": [
+    "ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ",
+    "ｱﾄﾞﾍﾞﾝﾁｬｰﾗﾝﾄﾞ",
+    "ｳｴｽﾀﾝﾗﾝﾄﾞ",
+    "ﾌｧﾝﾀｼﾞｰﾗﾝﾄﾞ",
+    "ﾄｩｰﾝﾀｳﾝ",
+    "ﾄｩﾓﾛｰﾗﾝﾄﾞ"
+  ],
 
-let allCards = [];
-let filteredCards = [];
-let selectedInk = "";
+  "シー": [
+    "ﾒﾃﾞｨﾃﾚｰﾆｱﾝﾊｰﾊﾞｰ",
+    "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
+    "ﾛｽﾄﾘﾊﾞｰﾃﾞﾙﾀ",
+    "ﾏｰﾒｲﾄﾞﾗｸﾞｰﾝ",
+    "ﾐｽﾃﾘｱｽｱｲﾗﾝﾄﾞ",
+    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽ"
+  ],
 
-const gallery = document.getElementById("gallery");
-const search = document.getElementById("search");
-const setFilter = document.getElementById("setFilter");
-const count = document.getElementById("count");
-const status = document.getElementById("status");
-const loading = document.getElementById("loading");
-const empty = document.getElementById("empty");
-const modal = document.getElementById("modal");
-const modalImg = document.getElementById("modal-img");
-const close = document.getElementById("close");
+  "ホテル": [
+    "ﾐﾗｺｽﾀ",
+    "ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
+    "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
+    "ｾﾚﾌﾞﾚｰｼｮﾝﾎﾃﾙ",
+    "ﾄｲｽﾄｰﾘｰﾎﾃﾙ",
+    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽﾎﾃﾙ"
+  ],
 
-// iPad側だけで管理する「購入済み」情報
-const PURCHASED_KEY = "lorcana_ipad_purchased_v1";
-let purchasedCards = loadPurchasedCards();
+  "リゾートライン": [
+    "ﾘｿﾞｰﾄﾗｲﾝ",  
+  ],
+  "特別付録": [
+    "特別付録",  
+  ]
+}
+let data = []
+let masterData = []
+let addedData = []
+let imageFolder = "images"
+let currentPage = 1
+const pageSize = 50
+let filteredData = []
 
-function loadPurchasedCards() {
+
+// データ読み込み
+async function loadData() {
   try {
-    const saved = localStorage.getItem(PURCHASED_KEY);
-    const list = saved ? JSON.parse(saved) : [];
-    return new Set(Array.isArray(list) ? list.map(String) : []);
+    const response = await fetch("./data.json", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`data.json読み込みエラー: ${response.status}`);
+    }
+
+    masterData = await response.json();
+
+    // iPad内に保存した追加データを読み込む
+    addedData = await loadAddedData();
+
+    // GitHubのdata.jsonを優先して合体
+    data = mergeData(masterData, addedData);
+
+    setupFilter();
+    createLocationSelect();
+
+    filteredData = data;
+
+    // アプリ起動時は必ずメイン画面の最終ページを表示
+    currentPage = Math.max(
+      1,
+      Math.ceil(filteredData.length / pageSize)
+    );
+    localStorage.setItem("currentPage", currentPage);
+
+    renderPage();
+    setupSimulatorRoman();
+    // 全画像の先読みは行わない。必要な画像だけ表示時に読み込む。
+
+    console.log("GitHubのdata.json + iPad追加データを読み込みました");
   } catch (error) {
-    console.warn("購入情報の読み込みに失敗しました", error);
-    return new Set();
+    console.error("data.jsonの読み込みに失敗しました", error);
+
+    // オフライン時はiPad保存分だけでも表示
+    try {
+      addedData = await loadAddedData();
+      data = mergeData([], addedData);
+      setupFilter();
+      createLocationSelect();
+      filteredData = data;
+      // オフライン起動時も最終ページを表示
+      currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
+      localStorage.setItem("currentPage", currentPage);
+      renderPage();
+      setupSimulatorRoman();
+    } catch (e) {
+      console.error("iPad保存データの読み込みにも失敗しました", e);
+    }
   }
 }
 
-function savePurchasedCards() {
-  localStorage.setItem(PURCHASED_KEY, JSON.stringify([...purchasedCards]));
+// 管理番号の数字だけを取り出す
+// L-0001 / S-0001 / H-0001 / LS-0001 → 1
+function getNumberOnly(id) {
+  const match = String(id || "").match(/\d+/);
+  return match ? String(Number(match[0])) : "";
 }
 
-function getCardKey(card) {
-  return String(card.code || card.id || card.image || card.name || "");
+// GitHub側を優先してデータを合体
+function mergeData(master, additions) {
+  const result = Array.isArray(master) ? [...master] : [];
+
+  const masterNumbers = new Set(
+    result
+      .map(item => getNumberOnly(item.id))
+      .filter(Boolean)
+  );
+
+  (Array.isArray(additions) ? additions : []).forEach(item => {
+    const num = getNumberOnly(item.id);
+
+    // 同じ数字がGitHubにあればGitHub側を使用
+    if (num && masterNumbers.has(num)) return;
+
+    result.push(item);
+  });
+
+  return result;
 }
 
-function togglePurchased(card, wrap) {
-  const key = getCardKey(card);
-  if (!key) return;
+// =========================
+// iPad内データ保存 IndexedDB
+// =========================
+const ADD_DB_NAME = "medalAppDB";
+const ADD_STORE_NAME = "addedData";
+const ADD_DB_VERSION = 2;
 
-  if (purchasedCards.has(key)) {
-    purchasedCards.delete(key);
+function openAddedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(ADD_DB_NAME, ADD_DB_VERSION);
+
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
+        db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(SIM_DB_STORE_NAME)) {
+        db.createObjectStore(SIM_DB_STORE_NAME, { keyPath: "id" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function loadAddedData() {
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readonly");
+      const request = tx.objectStore(ADD_STORE_NAME).getAll();
+
+      request.onsuccess = () => {
+        resolve((request.result || []).map(item => ({ ...item, _local: true })));
+        db.close();
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+        db.close();
+      };
+    });
+  });
+}
+
+function saveAddedData(item) {
+  return openAddedDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+      tx.objectStore(ADD_STORE_NAME).put(item);
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  });
+}
+
+
+loadData()
+
+
+
+
+// 検索イベント
+document.getElementById("search").addEventListener("input", applyFilter)
+
+
+// チェックボックス生成
+function setupFilter() {
+  const container = document.getElementById("typeFilters")
+  container.innerHTML = ""
+
+  const types = [...new Set(data.map(item => item.type))]
+
+  types.forEach(type => {
+    const label = document.createElement("label")
+    label.style.marginRight = "10px"
+
+    const cb = document.createElement("input")
+    cb.type = "checkbox"
+    cb.value = type
+    cb.checked = true
+
+    cb.addEventListener("change", applyFilter)
+
+    label.appendChild(cb)
+    label.appendChild(document.createTextNode(" " + type))
+
+    container.appendChild(label)
+  })
+}
+function createLocationSelect() {
+
+  const locationSelect =
+    document.getElementById("locationSelect")
+
+  const nameSelect =
+    document.getElementById("nameSelect")
+
+  // エリアを初期化
+  locationSelect.innerHTML =
+    `<option value="">すべて</option>`
+
+  // 今まで通りグループ分け
+  for (const groupName in locationGroups) {
+
+    const optgroup =
+      document.createElement("optgroup")
+
+    optgroup.label = groupName
+
+    locationGroups[groupName]
+      .forEach(location => {
+
+        const option =
+          document.createElement("option")
+
+        option.value = location
+        option.textContent = location
+
+        optgroup.appendChild(option)
+      })
+
+    locationSelect.appendChild(optgroup)
+  }
+
+
+  // エリアが変更されたとき
+  locationSelect.addEventListener(
+    "change",
+    () => {
+
+      createNameSelect()
+
+      applyFilter()
+    }
+  )
+
+
+  // 店舗が変更されたとき
+  nameSelect.onchange = applyFilter
+
+
+  // 最初の店舗一覧を作る
+  createNameSelect()
+}
+function createNameSelect() {
+
+  const locationSelect =
+    document.getElementById("locationSelect")
+
+  const nameSelect =
+    document.getElementById("nameSelect")
+
+  const selectedLocation =
+    locationSelect.value
+
+
+  // 店舗プルダウンを初期化
+  nameSelect.innerHTML =
+    `<option value="">すべて</option>`
+
+
+  // 選択されたエリアのデータだけ取得
+  let targetData = data
+
+  if (selectedLocation !== "") {
+
+    targetData =
+      data.filter(item =>
+        item.location === selectedLocation
+      )
+  }
+
+
+  // nameだけ取り出して重複削除
+  const names = [
+    ...new Set(
+      targetData
+        .map(item => item.name)
+        .filter(name => name)
+    )
+  ]
+
+
+  // 名前順
+  names.sort()
+
+
+  // 店舗プルダウン作成
+  names.forEach(name => {
+
+    const option =
+      document.createElement("option")
+
+    option.value = name
+    option.textContent = name
+
+    nameSelect.appendChild(option)
+  })
+}
+
+function applyFilter() {
+
+  const keyword = normalize(
+    document.getElementById("search").value
+  )
+
+  // typeチェック
+  const checkedTypes = [
+    ...document.querySelectorAll("#typeFilters input:checked")
+  ].map(cb => cb.value)
+
+  // locationチェック
+  const selectedLocation = 
+  document.getElementById("locationSelect").value
+  const selectedName =
+  document.getElementById("nameSelect").value
+
+
+  const filtered = data.filter(item => {
+
+    const matchKeyword =
+
+      normalize(item.id).includes(keyword) ||
+      normalize(item.name).includes(keyword) ||
+      normalize(item.location).includes(keyword) ||
+      normalize(item.type).includes(keyword) ||
+      normalize(item.detail).includes(keyword) ||
+      normalize(String(item.bookNum || "")).includes(keyword) ||
+      normalize(toRoman(item.bookNum || 0)).includes(keyword)
+
+    const matchType =
+      checkedTypes.length === 0
+        ? true
+        : checkedTypes.includes(item.type)
+
+    const matchLocation =
+  selectedLocation === ""
+    ? true
+    : item.location === selectedLocation
+    const matchName =
+  selectedName === ""
+    ? true
+    : item.name === selectedName
+
+    return (
+  matchKeyword &&
+  matchType &&
+  matchLocation &&
+  matchName
+)
+  })
+
+filteredData = filtered;
+
+const savedPage =
+  parseInt(localStorage.getItem("currentPage")) || 1;
+
+const totalPages =
+  Math.max(
+    1,
+    Math.ceil(filteredData.length / pageSize)
+  );
+
+currentPage =
+  Math.min(savedPage, totalPages);
+
+renderPage();
+
+}
+
+function render(list){
+  const grid = document.getElementById("grid");
+  if (!grid) return;
+
+  // 前回の監視を解除
+  if (window._medalImageObserver) {
+    window._medalImageObserver.disconnect();
+  }
+
+  grid.innerHTML = "";
+
+  const BATCH_SIZE = 15;
+  let rendered = 0;
+
+  // 画像監視を1つだけ作る
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+
+      const img = entry.target;
+      const src = img.dataset.src;
+      if (src && !img.src) {
+        img.src = src;
+      }
+      observer.unobserve(img);
+    });
+  }, {
+    root: null,
+    rootMargin: "500px 0px",
+    threshold: 0.01
+  });
+
+  window._medalImageObserver = observer;
+
+  function appendBatch() {
+    const fragment = document.createDocumentFragment();
+    const end = Math.min(rendered + BATCH_SIZE, list.length);
+
+    for (let i = rendered; i < end; i++) {
+      const item = list[i];
+      const imgId = String(item.id || "").split("-").pop();
+      const finalImg = `${imageFolder}/${imgId}.webp`;
+
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <img
+          class="medal-image"
+          data-src="${finalImg}"
+          loading="${i < 6 ? "eager" : "lazy"}"
+          decoding="async"
+          width="180"
+          height="120"
+          alt=""
+        >
+        <div>
+          <span class="id">${item.id || ""}</span> /
+          <span class="type">${item.type || ""}</span>
+          <span class="book">${toRoman(item.bookNum)}</span>
+        </div>
+        <div class="detail">${item.detail || ""}</div>
+        <div class="date">${item.date || ""}</div>
+        <div class="location">${item.location || ""}</div>
+        <div class="name">${item.name || ""}</div>
+      `;
+
+      const img = div.querySelector(".medal-image");
+
+      img.onerror = function() {
+        if (this.dataset.fallback === "1") return;
+        this.dataset.fallback = "1";
+        this.removeAttribute("data-src");
+        this.src = "./noimage.png";
+        this.classList.add("noimage");
+      };
+
+      fragment.appendChild(div);
+    }
+
+    grid.appendChild(fragment);
+
+    // 最初の6枚は即読み込み、それ以外はObserverに任せる
+    const imgs = grid.querySelectorAll(".medal-image");
+    imgs.forEach(img => {
+      if (img.dataset.src && !img.src) {
+        if (img.loading === "eager") {
+          img.src = img.dataset.src;
+        } else {
+          observer.observe(img);
+        }
+      }
+    });
+
+    rendered = end;
+
+    if (rendered < list.length) {
+      const sentinel = document.createElement("div");
+      sentinel.className = "medal-load-sentinel";
+      sentinel.style.cssText = "height:1px;width:100%;";
+      grid.appendChild(sentinel);
+
+      const sentinelObserver = new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting) return;
+        sentinelObserver.disconnect();
+        sentinel.remove();
+        appendBatch();
+      }, { rootMargin: "700px 0px" });
+
+      sentinelObserver.observe(sentinel);
+    }
+  }
+
+  appendBatch();
+}
+
+
+function normalize(text) {
+  return (text || "")
+    .toString()
+    .normalize("NFKC")      // 半角→全角統一
+    .toLowerCase()          // 小文字化
+    .replace(/\s/g, "")     // 半角/全角スペース削除
+    .replace(/-/g, "")      // ハイフン削除
+}
+function toRoman(num) {
+
+  if (!num) return ""
+
+  const roman = [
+    ["M",1000],
+    ["CM",900],
+    ["D",500],
+    ["CD",400],
+    ["C",100],
+    ["XC",90],
+    ["L",50],
+    ["XL",40],
+    ["X",10],
+    ["IX",9],
+    ["V",5],
+    ["IV",4],
+    ["I",1]
+  ]
+
+  let result = ""
+
+  for (const [letter, value] of roman) {
+
+    while (num >= value) {
+      result += letter
+      num -= value
+    }
+  }
+
+  return result
+}
+function clearFilters() {
+
+  // type全部OFF
+  document
+    .querySelectorAll("#typeFilters input")
+    .forEach(cb => cb.checked = false)
+
+  // location初期化
+  document.getElementById("locationSelect").value = ""
+
+  applyFilter()
+}
+
+
+function checkMissing() {
+
+  if (!data || data.length === 0) {
+    alert("データがまだ読み込まれていません")
+    return
+  }
+
+  const nums = data
+    .map(item => parseInt(item.id.match(/\d+/)?.[0]))
+    .filter(n => !isNaN(n))
+
+  const set = new Set(nums)
+
+  const min = Math.min(...nums)
+  const max = Math.max(...nums)
+
+  let missing = []
+
+  for (let n = min; n <= max; n++) {
+    if (!set.has(n)) missing.push(n)
+  }
+
+  alert(
+    missing.length
+      ? "欠番:\n" + missing.map(n => String(n).padStart(4, "0")).join(", ")
+      : "欠番なし"
+  )
+}
+document.getElementById("missingBtn")
+  .addEventListener("click", checkMissing);
+
+function updateFolderPath() {
+
+  const el =
+    document.getElementById("folderPath")
+
+  if (!el) return
+
+  el.textContent =
+    "画像: " + imageFolder
+}
+
+async function selectImageFolder() {
+
+  const folder =
+    await window.electronAPI.selectFolder()
+
+  if (!folder) return
+
+  imageFolder = folder
+
+  localStorage.setItem(
+    "imageFolder",
+    folder
+  )
+
+
+  applyFilter()
+}
+function renderPage() {
+
+  const start =
+    (currentPage - 1) * pageSize
+
+  const end =
+    start + pageSize
+
+  const pageData =
+    filteredData.slice(start, end)
+
+  render(pageData)
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+document.getElementById("pageInput")
+  .value = currentPage
+
+   document.getElementById("totalPages")
+  .textContent = ` / ${totalPages}`
+   // 現在のページを記憶
+  localStorage.setItem("currentPage", currentPage);
+}
+
+
+function nextPage() {
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+  if (currentPage < totalPages) {
+
+    currentPage++
+
+    renderPage()
+  }
+}
+
+function prevPage() {
+
+  if (currentPage > 1) {
+
+    currentPage--
+
+    renderPage()
+  }
+}
+function goPage() {
+
+  const totalPages =
+    Math.ceil(filteredData.length / pageSize)
+
+  const value =
+    parseInt(
+      document.getElementById("pageInput").value
+    )
+
+  if (
+    isNaN(value) ||
+    value < 1 ||
+    value > totalPages
+  ) {
+    return
+  }
+
+  currentPage = value
+
+  renderPage()
+}
+document
+  .getElementById("pageInput")
+  .addEventListener("keydown", e => {
+
+    if (e.key === "Enter") {
+
+      goPage()
+    }
+  })
+
+updateFolderPath()
+
+
+/* =========================
+   iPad用 配置シミュレーター
+   VBA版の機能をJavaScriptへ移植
+   ========================= */
+const simState = {
+  faces: 3,
+  books: 2,
+  currentBook: 0,
+  items: [],
+  bookItems: [],
+  drag: null
+};
+
+/* =========================
+   配置シミュレーター自動保存
+   IndexedDBへ保存するため、アプリ終了後も保持
+========================= */
+const SIM_DB_STORE_NAME = "simulatorState";
+
+function saveSimulatorState() {
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
+    const state = {
+      id: "current",
+      faces: Number(simState.faces) || 3,
+      books: 2,
+      currentBook: Number(simState.currentBook) || 0,
+      bookItems: Array.isArray(simState.bookItems) ? simState.bookItems : []
+    };
+    const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+    tx.objectStore(SIM_DB_STORE_NAME).put(state);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  })).catch(error => console.error("シミュレーター保存エラー:", error));
+}
+
+function loadSimulatorState() {
+  return openAddedDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SIM_DB_STORE_NAME, "readonly");
+    const request = tx.objectStore(SIM_DB_STORE_NAME).get("current");
+    request.onsuccess = () => {
+      const saved = request.result;
+      if (!saved || !Array.isArray(saved.bookItems)) {
+        db.close();
+        resolve(false);
+        return;
+      }
+      simState.faces = Number(saved.faces) || 3;
+      simState.books = 2;
+      simState.currentBook = Math.min(Math.max(Number(saved.currentBook) || 0, 0), 1);
+      simState.bookItems = saved.bookItems.slice(0, 2);
+      while (simState.bookItems.length < 2) simState.bookItems.push([]);
+      simState.items = simState.bookItems[simState.currentBook] || [];
+      db.close();
+      resolve(true);
+    };
+    request.onerror = () => { db.close(); reject(request.error); };
+  })).catch(error => {
+    console.error("シミュレーター復元エラー:", error);
+    return false;
+  });
+}
+
+async function clearSimulatorState() {
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+      tx.objectStore(SIM_DB_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+    simState.bookItems = [[], []];
+    simState.items = simState.bookItems[0];
+    simState.currentBook = 0;
+  } catch (error) {
+    console.error("シミュレーター全削除エラー:", error);
+  }
+}
+
+function romanToNumber(text) {
+  const values = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+  let total = 0;
+  text = String(text || "").toUpperCase().trim();
+  for (let i = 0; i < text.length; i++) {
+    const cur = values[text[i]] || 0;
+    const next = i + 1 < text.length ? (values[text[i+1]] || 0) : 0;
+    total += cur < next ? -cur : cur;
+  }
+  return total;
+}
+
+function extractNumber(text) {
+  const m = String(text || "").match(/\d+/);
+  return m ? Number(m[0]) : -1;
+}
+
+function setupSimulatorRoman() {
+  const select = document.getElementById("simRoman");
+  if (!select || !Array.isArray(data)) return;
+
+  const romans = [...new Set(
+    data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
+  )];
+
+  // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
+  romans.sort((a, b) => {
+    const na = Number(a);
+    const nb = Number(b);
+
+    if (Number.isFinite(na) && Number.isFinite(nb)) {
+      return nb - na;
+    }
+
+    return romanToNumber(b) - romanToNumber(a);
+  });
+
+  select.innerHTML = '<option value="">すべて</option>';
+  romans.forEach(roman => {
+    const option = document.createElement("option");
+    option.value = roman;
+    option.textContent = roman;
+    select.appendChild(option);
+  });
+}
+
+function makeSimulatorList() {
+  const start = Number(document.getElementById("simStart").value || 1);
+  const end = Number(document.getElementById("simEnd").value || 45);
+  const roman = document.getElementById("simRoman").value;
+
+  if (start > end) {
+    alert("開始番号が終了番号より大きくなっています。");
+    return [];
+  }
+
+  return data.filter(item => {
+    const num = extractNumber(item.id);
+    if (roman === "") {
+      return num >= start && num <= end;
+    }
+    return String(item.bookNum || "").trim() === roman;
+  });
+}
+
+function simItemText(item) {
+  if (!item) return "";
+  return [
+    item.id || "",
+    item.type || "",
+    item.detail || ""
+  ].filter(Boolean).join("\n");
+}
+
+function buildSimulatorBooks() {
+  const base = makeSimulatorList();
+
+  if (!Array.isArray(simState.bookItems)) {
+    simState.bookItems = [];
+  }
+
+  while (simState.bookItems.length < simState.books) {
+    simState.bookItems.push([]);
+  }
+
+  if (simState.bookItems.length > simState.books) {
+    simState.bookItems.length = simState.books;
+  }
+
+  /*
+    1book:
+    ・保存済みの配置があれば、その配置をそのまま使用
+    ・まだ保存データがない場合だけ、選択条件の既存データを初期表示
+  */
+  const hasSavedBook1 = simState.bookItems[0].some(item => item);
+  if (!hasSavedBook1) {
+    simState.bookItems[0] = base.slice();
+  }
+
+  /*
+    2book:
+    ・保存済みの配置をそのまま使用
+    ・未保存なら空のまま
+  */
+
+  simState.currentBook = Math.min(
+    simState.currentBook,
+    simState.books - 1
+  );
+
+  simState.items = simState.bookItems[simState.currentBook] || [];
+}
+
+function updateBookTabs() {
+  const tabs = document.getElementById("simBookTabs");
+  if (!tabs) return;
+
+  tabs.style.display = simState.books >= 2 ? "flex" : "none";
+
+  tabs.querySelectorAll("button[data-book-view]").forEach(button => {
+    const book = Number(button.dataset.bookView);
+    button.style.display = book < simState.books ? "" : "none";
+    button.classList.toggle("active", book === simState.currentBook);
+  });
+}
+
+function switchSimulatorBook(bookIndex) {
+  const book = Number(bookIndex);
+  if (book < 0 || book >= simState.books) return;
+
+  simState.currentBook = book;
+  simState.items = simState.bookItems[book] || (simState.bookItems[book] = []);
+  saveSimulatorState();
+  updateBookTabs();
+  renderSimulator();
+}
+
+function renderSimulator() {
+  const area = document.getElementById("simFacesArea");
+  if (!area) return;
+
+  area.innerHTML = "";
+
+  const slotsPerFace = 15;
+  const bookIndex = simState.currentBook;
+  const currentBook = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
+
+  const bookBox = document.createElement("div");
+  bookBox.className = "sim-book";
+
+  const bookTitle = document.createElement("div");
+  bookTitle.className = "sim-book-title";
+  bookTitle.textContent = `${bookIndex + 1}book`;
+  bookBox.appendChild(bookTitle);
+
+  for (let face = 0; face < simState.faces; face++) {
+    const faceBox = document.createElement("div");
+    faceBox.className = "sim-face";
+
+    const title = document.createElement("div");
+    title.className = "sim-face-title";
+    title.textContent = `${face + 1}面`;
+    faceBox.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "sim-grid";
+
+    for (let slot = 0; slot < slotsPerFace; slot++) {
+      const index = face * slotsPerFace + slot;
+      const item = currentBook[index] || null;
+
+      const cell = document.createElement("div");
+      cell.className = "sim-slot" + (item ? "" : " empty");
+      if (item?._local) cell.classList.add("local-data");
+
+      cell.dataset.book = String(bookIndex);
+      cell.dataset.face = String(face);
+      cell.dataset.slot = String(slot);
+      cell.textContent = item ? simItemText(item) : "";
+
+      if (!item) {
+        cell.addEventListener("click", () => {
+          openAddDataModal(index, false, bookIndex);
+        });
+      } else {
+        cell.addEventListener("pointerdown", e => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          simState.drag = {
+            book: bookIndex,
+            index,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY
+          };
+          cell.setPointerCapture?.(e.pointerId);
+          cell.style.opacity = "0.55";
+        });
+
+        cell.addEventListener("pointerup", e => {
+          const drag = simState.drag;
+          if (!drag || drag.pointerId !== e.pointerId) return;
+          cell.style.opacity = "";
+
+          const dx = e.clientX - drag.startX;
+          const dy = e.clientY - drag.startY;
+          const moved = Math.sqrt(dx * dx + dy * dy) > 12;
+
+          if (!moved) {
+            if (item._local || item._simOnly) {
+              openAddDataModal(index, true, bookIndex);
+            }
+            simState.drag = null;
+            return;
+          }
+
+          const target = document.elementFromPoint(e.clientX, e.clientY);
+          const targetCell = target?.closest?.(".sim-slot");
+
+          if (targetCell && targetCell !== cell) {
+            const targetBook = Number(targetCell.dataset.book || bookIndex);
+            const targetIndex =
+              Number(targetCell.dataset.face) * slotsPerFace +
+              Number(targetCell.dataset.slot);
+
+            if (targetBook === bookIndex) {
+              [currentBook[index], currentBook[targetIndex]] =
+                [currentBook[targetIndex], currentBook[index]];
+              saveSimulatorState();
+              renderSimulator();
+            }
+          }
+
+          simState.drag = null;
+        });
+
+        cell.addEventListener("pointercancel", () => {
+          cell.style.opacity = "";
+          simState.drag = null;
+        });
+      }
+
+      grid.appendChild(cell);
+    }
+
+    faceBox.appendChild(grid);
+    bookBox.appendChild(faceBox);
+  }
+
+  area.appendChild(bookBox);
+  updateBookTabs();
+}
+
+async function openSimulator() {
+  document.getElementById("simulator").style.display = "block";
+  setupSimulatorRoman();
+
+  const restored = await loadSimulatorState();
+
+  if (restored) {
+    document.getElementById("simFaces").value = String(simState.faces);
   } else {
-    purchasedCards.add(key);
+    simState.faces = Number(document.getElementById("simFaces").value || 3);
+    simState.books = 2;
+    simState.currentBook = 0;
+    simState.bookItems = [];
+    buildSimulatorBooks();
+    await saveSimulatorState();
   }
 
-  savePurchasedCards();
-  wrap.classList.toggle("purchased", purchasedCards.has(key));
+  simState.books = 2;
+  buildSimulatorBooks();
+  renderSimulator();
 }
 
-function normalize(value) {
-  return String(value ?? "")
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[\\s\\-_]/g, "");
+function closeSimulator() {
+  document.getElementById("simulator").style.display = "none";
+  simState.drag = null;
 }
 
-function cardSearchText(card) {
-  return normalize([
-    card.code,
-    card.name,
-    card.image,
-    card.rarity,
-    card.version,
-    card.set,
-    card.type
-  ].join(" "));
+document.getElementById("simulatorBtn").addEventListener("click", openSimulator);
+document.getElementById("simClose").addEventListener("click", closeSimulator);
+
+document.getElementById("simFaces").addEventListener("change", () => {
+  simState.faces = Number(document.getElementById("simFaces").value);
+  saveSimulatorState();
+  renderSimulator();
+});
+
+document.getElementById("simRoman").addEventListener("change", () => {
+  applySimulatorSelection();
+});
+
+document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button => {
+  button.addEventListener("click", () => {
+    switchSimulatorBook(Number(button.dataset.bookView));
+  });
+});
+
+function applySimulatorSelection() {
+  const base = makeSimulatorList().slice();
+
+  // メダル番号は昇順（小さい番号 → 大きい番号）
+  base.sort((a, b) => extractNumber(a.id) - extractNumber(b.id));
+
+  // 「表示」を押したときは、現在のbookを選択条件で作り直す
+  // これで開始・終了番号、bookNo.を変更した結果が確実に反映される
+  simState.bookItems[simState.currentBook] = base;
+  simState.items = simState.bookItems[simState.currentBook];
+  saveSimulatorState();
+  renderSimulator();
 }
 
-function getImageData(card) {
-  if (card.imageData && typeof card.imageData === "string") {
-    return card.imageData;
-  }
+document.getElementById("simDisplay").addEventListener("click", () => {
+  applySimulatorSelection();
+});
 
-  // 将来 imageData の名前が変わった場合にも対応
-  if (card.imageBase64 && typeof card.imageBase64 === "string") {
-    return card.imageBase64.startsWith("data:")
-      ? card.imageBase64
-      : "data:image/webp;base64," + card.imageBase64;
-  }
+// 開始・終了番号を変更したときも表示を更新
+document.getElementById("simStart").addEventListener("change", () => {
+  applySimulatorSelection();
+});
 
-  return "";
-}
+document.getElementById("simEnd").addEventListener("change", () => {
+  applySimulatorSelection();
+});
 
-function getJASet(code) {
-  const text = String(code ?? "").trim().toUpperCase();
-  const match = text.match(/^JA(\d+)(?:[-_]|$)/);
-  return match ? `JA${Number(match[1])}` : "";
-}
+// シミュレーター内の配置を管理番号順に並べ替える
 
-function buildSetFilter() {
-  const values = [...new Set(
-    allCards
-      .map(card => getJASet(card.code))
+
+// =========================
+// 空きマス → データ追加
+// =========================
+let addTargetIndex = -1;
+
+function setupAddTypeSelect() {
+  const select = document.getElementById("addType");
+  if (!select) return;
+
+  const types = [...new Set(
+    (Array.isArray(data) ? data : [])
+      .map(item => String(item.type || "").trim())
       .filter(Boolean)
   )];
 
-  values.sort((a, b) => {
-    const na = Number(a.slice(2));
-    const nb = Number(b.slice(2));
-    return na - nb;
-  });
+  if (!types.length) types.push("ﾚｷﾞｭﾗｰ");
 
-  const current = setFilter.value;
+  select.innerHTML = "";
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = "種類を選択";
+  select.appendChild(first);
 
-  setFilter.innerHTML = '<option value="">すべてのJA</option>';
-
-  for (const value of values) {
+  types.forEach(type => {
     const option = document.createElement("option");
-    option.value = value;
-    option.textContent = value;
-    setFilter.appendChild(option);
-  }
-
-  if (values.includes(current)) {
-    setFilter.value = current;
-  }
-}
-
-const INK_COLORS = { amber:"#FFE48F", yellow:"#FFE48F", amethyst:"#C7A1E3", purple:"#C7A1E3", emerald:"#9BFFC8", green:"#9BFFC8", ruby:"#FFA7A7", red:"#FFA7A7", sapphire:"#B9EDFF", blue:"#B9EDFF", steel:"#CDCDCD", grey:"#CDCDCD", gray:"#CDCDCD", "琥珀":"#FFE48F", "アンバー":"#FFE48F", "黄":"#FFE48F", "アメジスト":"#C7A1E3", "紫":"#C7A1E3", "エメラルド":"#9BFFC8", "緑":"#9BFFC8", "ルビー":"#FFA7A7", "赤":"#FFA7A7", "サファイア":"#B9EDFF", "青":"#B9EDFF", "鋼鉄":"#CDCDCD", "スティール":"#CDCDCD", "灰":"#CDCDCD", "グレー":"#CDCDCD" };
-function applyInkBackground(wrap, card) {
-  const colors = [];
-  for (const value of [...(Array.isArray(card.colors) ? card.colors : []), card.color, card.color2]) {
-    const color = INK_COLORS[String(value ?? "").trim().toLowerCase()] || INK_COLORS[String(value ?? "").trim()];
-    if (color && !colors.includes(color)) colors.push(color);
-  }
-  if (colors.length >= 2) { wrap.classList.add("ink-dual"); wrap.style.setProperty("--ink-a", colors[0]); wrap.style.setProperty("--ink-b", colors[1]); }
-  else if (colors.length === 1) { const cls = {"#FFE48F":"ink-amber","#C7A1E3":"ink-amethyst","#9BFFC8":"ink-emerald","#FFA7A7":"ink-ruby","#B9EDFF":"ink-sapphire","#CDCDCD":"ink-steel"}[colors[0]]; wrap.classList.add(cls); }
-}
-
-function render() {
-  gallery.innerHTML = "";
-
-  const keyword = normalize(search.value);
-
-  const selectedSet = setFilter.value;
-
-  filteredCards = allCards.filter(card => {
-    const matchesSet =
-      !selectedSet || getJASet(card.code) === selectedSet;
-
-    const matchesSearch =
-      !keyword || cardSearchText(card).includes(keyword);
-    const inkNames = [...(Array.isArray(card.colors) ? card.colors : []), card.color, card.color2]
-      .filter(Boolean).map(v => String(v).trim().toLowerCase());
-    const inkAliases = {"琥珀":"amber","アンバー":"amber","黄":"amber","アメジスト":"amethyst","紫":"amethyst","エメラルド":"emerald","緑":"emerald","ルビー":"ruby","赤":"ruby","サファイア":"sapphire","青":"sapphire","鋼鉄":"steel","スティール":"steel","灰":"steel","グレー":"steel"};
-    const normalizedInks = inkNames.map(v => inkAliases[v] || v);
-    const matchesInk = !selectedInk || normalizedInks.includes(selectedInk) || (selectedInk === "amber" && normalizedInks.includes("yellow")) || (selectedInk === "amethyst" && normalizedInks.includes("purple")) || (selectedInk === "emerald" && normalizedInks.includes("green")) || (selectedInk === "ruby" && normalizedInks.includes("red")) || (selectedInk === "sapphire" && normalizedInks.includes("blue")) || (selectedInk === "steel" && (normalizedInks.includes("grey") || normalizedInks.includes("gray")));
-
-    return matchesSet && matchesSearch && matchesInk;
+    option.value = type;
+    option.textContent = type;
+    select.appendChild(option);
   });
-
-  count.textContent = `${filteredCards.length} / ${allCards.length}枚`;
-
-  empty.style.display = filteredCards.length ? "none" : "block";
-
-  const fragment = document.createDocumentFragment();
-
-  for (const card of filteredCards) {
-    const item = document.createElement("div");
-    item.className = "card";
-
-    const wrap = document.createElement("div");
-    wrap.className = "card-image-wrap";
-    applyInkBackground(wrap, card);
-
-    const imageData = getImageData(card);
-
-    const cardKey = getCardKey(card);
-    if (purchasedCards.has(cardKey)) {
-      wrap.classList.add("purchased");
-    }
-
-    if (imageData) {
-      const img = document.createElement("img");
-      img.className = "card-image";
-      img.loading = "lazy";
-      img.decoding = "async";
-      img.src = imageData;
-      img.alt = card.name || card.code || "";
-      img.title = "タッチすると購入済み／未購入を切り替えます";
-
-      // 画像タッチ：購入済み／未購入を切り替え
-      img.addEventListener("click", () => {
-        togglePurchased(card, wrap);
-      });
-
-      wrap.appendChild(img);
-
-      // 拡大は専用ボタンに分離
-      const zoomButton = document.createElement("button");
-      zoomButton.type = "button";
-      zoomButton.className = "zoom-button";
-      zoomButton.textContent = "🔍 拡大";
-      zoomButton.addEventListener("click", () => {
-        modalImg.src = imageData;
-        modalImg.alt = img.alt;
-        modal.classList.add("show");
-      });
-      item.appendChild(wrap);
-      item.appendChild(zoomButton);
-    } else {
-      const noImage = document.createElement("div");
-      noImage.className = "no-image";
-      noImage.textContent = "画像なし";
-      wrap.appendChild(noImage);
-    }
-
-    if (!imageData) {
-      item.appendChild(wrap);
-    }
-
-    const code = document.createElement("div");
-    code.className = "card-code";
-    code.textContent = card.code || "";
-    item.appendChild(code);
-
-    const name = document.createElement("div");
-    name.className = "card-name";
-    name.textContent = card.name || "";
-    item.appendChild(name);
-
-    if (card.rarity) {
-      const rarity = document.createElement("div");
-      rarity.className = "card-rarity";
-      rarity.textContent = card.rarity;
-      item.appendChild(rarity);
-    }
-
-    // PC側の印刷データと同じN/F枚数を表示
-    const savedCounts = sharedCounts.get(String(card.code || ""));
-    const normal = savedCounts ? Number(savedCounts.normal_count || 0) : Number(card.normal ?? 0);
-    const foil = savedCounts ? Number(savedCounts.foil_count || 0) : Number(card.foil ?? 0);
-    wrap.classList.toggle("owned", normal >= 1);
-    wrap.classList.toggle("not-owned", normal < 1);
-
-    const counts = document.createElement("div");
-    counts.className = "card-counts";
-
-    const normalText = document.createElement("span");
-    normalText.className = "count-n";
-    normalText.textContent = `N：${normal}`;
-
-    const foilText = document.createElement("span");
-    foilText.className =
-      foil >= 1 ? "count-f active" : "count-f";
-    foilText.textContent = `F：${foil}`;
-
-    counts.append(normalText, foilText);
-    item.appendChild(counts);
-
-    fragment.appendChild(item);
-  }
-
-  gallery.appendChild(fragment);
 }
 
-async function loadData() {
-  try {
-    /*
-      データ読み込み方式
-      ① まず従来の missing.json を試す
-      ② なければ missing_001.json, missing_002.json, ... を自動で読み込む
-      ③ split JSON は何個に増えても、連番である限りHTMLの変更不要
-    */
 
-    async function fetchJson(fileName) {
-      const response = await fetch("./" + fileName + "?ts=" + Date.now(), {
-        cache: "no-store"
-      });
+function openAddDataModal(index, editMode = false, bookIndex = 0) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
 
-      if (!response.ok) {
-        return null;
-      }
+  const bookItems = simState.bookItems[bookIndex] || [];
+  const item = editMode ? (bookItems[index] || null) : null;
 
-      return await response.json();
-    }
+  setupAddTypeSelect();
 
-    let data = await fetchJson("missing.json");
-    let updatedAt = data?.updatedAt ?? null;
+  const prefix = document.getElementById("addIdPrefix");
+  const number = document.getElementById("addIdNumber");
+  const type = document.getElementById("addType");
+  const detail = document.getElementById("addDetail");
+  const deleteButton = document.getElementById("addDataDelete");
+  const saveButton = document.getElementById("addDataSave");
+  const message = document.getElementById("addDataMessage");
+  const title = document.getElementById("addDataTitle");
 
-    if (data === null) {
-      // 分割版を自動読み込み
-      const parts = [];
+  if (message) message.textContent = "";
 
-      for (let partNo = 1; ; partNo++) {
-        const fileName =
-          `missing_${String(partNo).padStart(3, "0")}.json`;
-
-        const partData = await fetchJson(fileName);
-
-        // 連番の次が存在しなければ終了
-        if (partData === null) {
-          break;
-        }
-
-        const cards = Array.isArray(partData)
-          ? partData
-          : Array.isArray(partData.cards)
-            ? partData.cards
-            : null;
-
-        if (!cards) {
-          throw new Error(`${fileName} に cards がありません`);
-        }
-
-        parts.push(...cards);
-
-        if (!updatedAt && partData.updatedAt) {
-          updatedAt = partData.updatedAt;
-        }
-
-        // totalParts が入っている場合は、必要数まで読み込んだら終了
-        if (
-          Number.isFinite(Number(partData.totalParts)) &&
-          partNo >= Number(partData.totalParts)
-        ) {
-          break;
-        }
-      }
-
-      if (parts.length === 0) {
-        throw new Error(
-          "missing.json または missing_001.json 以降のデータが見つかりません"
-        );
-      }
-
-      allCards = parts;
-    } else if (Array.isArray(data)) {
-      allCards = data;
-    } else if (Array.isArray(data.cards)) {
-      allCards = data.cards;
-    } else {
-      throw new Error("missing.json に cards がありません");
-    }
-
-    allCards = allCards.filter(card => card && typeof card === "object");
-
-    // JA01 → JA02 → JA03 … の順、同じJA内はカード番号順
-    allCards.sort((a, b) => {
-      const aCode = String(a.code ?? "").toUpperCase();
-      const bCode = String(b.code ?? "").toUpperCase();
-
-      const aSet = getJASet(aCode);
-      const bSet = getJASet(bCode);
-
-      const aSetNo = aSet ? Number(aSet.slice(2)) : 999999;
-      const bSetNo = bSet ? Number(bSet.slice(2)) : 999999;
-
-      if (aSetNo !== bSetNo) {
-        return aSetNo - bSetNo;
-      }
-
-      const aMatch = aCode.match(/(\d+)$/);
-      const bMatch = bCode.match(/(\d+)$/);
-
-      const aNo = aMatch ? Number(aMatch[1]) : 999999;
-      const bNo = bMatch ? Number(bMatch[1]) : 999999;
-
-      return aNo - bNo;
-    });
-
-    buildSetFilter();
-
-    loading.style.display = "none";
-
-    status.textContent =
-      `更新: ${updatedAt ? new Date(updatedAt).toLocaleString("ja-JP") : "不明"}　全${allCards.length}枚`;
-
-    render();
-
-  } catch (error) {
-    loading.textContent =
-      "未取得カードデータを読み込めませんでした。";
-
-    status.textContent = error.message;
-
-    console.error(error);
-  }
-}
-
-search.addEventListener("input", render);
-setFilter.addEventListener("change", render);
-document.querySelectorAll(".ink-filter").forEach(button => button.addEventListener("click", () => {
-  selectedInk = button.dataset.ink || "";
-  document.querySelectorAll(".ink-filter").forEach(b => b.classList.toggle("active", b === button));
-  render();
-}));
-
-close.addEventListener("click", () => {
-  modal.classList.remove("show");
-  modalImg.src = "";
-});
-
-modal.addEventListener("click", event => {
-  if (event.target === modal) {
-    modal.classList.remove("show");
-    modalImg.src = "";
-  }
-});
-
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    modal.classList.remove("show");
-    modalImg.src = "";
-  }
-});
-
-async function refreshSharedCounts() {
-  if (!signedInUser) return;
-  const { data, error } = await supabaseClient
-    .from("lorcana_collection")
-    .select("card_code, normal_count, foil_count")
-    .eq("user_id", signedInUser.id);
-  if (error) throw error;
-  sharedCounts = new Map((data || []).map(row => [
-    String(row.card_code),
-    { normal_count: row.normal_count, foil_count: row.foil_count }
-  ]));
-  render();
-}
-
-function updateAuthUi() {
-  const state = document.getElementById("authState");
-  const login = document.getElementById("loginButton");
-  const logout = document.getElementById("logoutButton");
-  const panel = document.getElementById("authPanel");
-  if (signedInUser) {
-    state.textContent = `Supabase接続中：${signedInUser.email || "ログイン済み"}`;
-    login.style.display = "none";
-    logout.style.display = "";
-    document.getElementById("authEmail").style.display = "none";
-    document.getElementById("authPassword").style.display = "none";
+  if (item) {
+    const m = String(item.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+    prefix.value = m?.[1] || "L";
+    number.value = m?.[2] || "";
+    type.value = item.type || "";
+    detail.value = item.detail || "";
+    deleteButton.style.display = "none";
+    saveButton.textContent = "更新";
+    title.textContent = `${bookIndex + 1}book データ`;
   } else {
-    state.textContent = "枚数共有にはログインが必要です";
-    login.style.display = "";
-    logout.style.display = "none";
-    document.getElementById("authEmail").style.display = "";
-    document.getElementById("authPassword").style.display = "";
+    prefix.value = "L";
+    number.value = "";
+    type.value = "";
+    detail.value = "";
+    deleteButton.style.display = "none";
+    saveButton.textContent = "このマスに追加";
+    title.textContent = `${bookIndex + 1}book にメダルを追加`;
+  }
+
+  modal.dataset.simIndex = String(index);
+  modal.dataset.simBook = String(bookIndex);
+  modal.dataset.editMode = editMode ? "1" : "0";
+  modal.style.display = "block";
+
+  if (!editMode) setTimeout(() => number.focus(), 50);
+}
+
+function closeAddDataModal() {
+  const modal = document.getElementById("addDataModal");
+  if (!modal) return;
+
+  modal.style.display = "none";
+  modal.dataset.simIndex = "-1";
+  modal.dataset.editMode = "0";
+}
+
+async function addSimulatorData() {
+  const modal = document.getElementById("addDataModal");
+  const index = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const editMode = modal.dataset.editMode === "1";
+  const bookItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
+
+  const prefix = document.getElementById("addIdPrefix").value;
+  const rawNumber = document.getElementById("addIdNumber").value
+    .normalize("NFKC")
+    .replace(/\D/g, "");
+  const type = document.getElementById("addType").value.trim();
+  const detail = document.getElementById("addDetail").value.trim();
+  const message = document.getElementById("addDataMessage");
+
+  if (!rawNumber) {
+    message.textContent = "管理番号の数字を入力してください。";
+    return;
+  }
+  if (!type) {
+    message.textContent = "種類を選択してください。";
+    return;
+  }
+
+  const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
+
+  // シミュレーターでは、同じメダルを別bookに配置してもOK。
+  // これはデータの複製ではなく「配置先の記録」です。
+  // 既存データがあれば、その情報を参照して配置します。
+  const source = data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  const oldItem = editMode ? (bookItems[index] || null) : null;
+
+  const item = {
+    ...(source || {}),
+    id,
+    type: type || source?.type || "",
+    detail: detail || source?.detail || "",
+    _simOnly: true
+  };
+
+  if (oldItem) {
+    // 編集時はこのbookの配置だけ更新
+    bookItems[index] = item;
+  } else {
+    bookItems[index] = item;
+  }
+
+  // シミュレーター配置データをPC/iPad内へ自動保存
+  simState.items = simState.bookItems[0] || [];
+  saveSimulatorState();
+  renderSimulator();
+  closeAddDataModal();
+}
+
+async function deleteCurrentAddedData() {
+  const modal = document.getElementById("addDataModal");
+  const index = Number(modal.dataset.simIndex);
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const bookItems = simState.bookItems[bookIndex] || [];
+  const item = bookItems[index];
+
+  if (!item) return;
+  if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
+
+  bookItems[index] = null;
+  simState.items = simState.bookItems[0] || [];
+  saveSimulatorState();
+  renderSimulator();
+  closeAddDataModal();
+}
+
+async function clearAllAddedData() {
+  if (!confirm("保存されている追加データとシミュレーター配置をすべて削除します。\nGitHubのdata.jsonは削除されません。\nこの操作は元に戻せません。\n実行しますか？")) return;
+  try {
+    const db = await openAddedDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
+      tx.objectStore(ADD_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+    });
+    db.close();
+    addedData = [];
+    data = mergeData(masterData, addedData);
+
+    // 「全削除」は追加データだけでなく、
+    // シミュレーターの保存配置も初期化する
+    clearSimulatorState();
+    setupFilter();
+    createLocationSelect();
+    filteredData = data;
+    currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
+    renderPage();
+    setupSimulatorRoman();
+    renderSimulator();
+    closeAddDataModal();
+    alert("保存データをすべて削除しました。");
+  } catch (error) {
+    console.error("iPad追加データ全削除エラー:", error);
+    alert("削除できませんでした。");
   }
 }
 
-document.getElementById("printButton").addEventListener("click", () => window.print());
+document.getElementById("addDataClose").onclick = closeAddDataModal;
+document.getElementById("addDataCancel").onclick = closeAddDataModal;
+document.getElementById("addDataSave").onclick = addSimulatorData;
+document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
+document.getElementById("addDataClearAll").onclick = clearAllAddedData;
 
-document.getElementById("collectionButton").addEventListener("click", () => {
-  window.location.href = "./collection.html";
-});
-
-document.getElementById("loginButton").addEventListener("click", async () => {
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-  const state = document.getElementById("authState");
-  if (!email || !password) {
-    state.textContent = "メールアドレスとパスワードを入力してください";
-    return;
+document.getElementById("addDataModal").onclick = e => {
+  if (e.target.id === "addDataModal") {
+    closeAddDataModal();
   }
-  state.textContent = "ログイン中...";
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    state.textContent = "ログイン失敗：" + error.message;
-    return;
-  }
-  signedInUser = data.user;
-  updateAuthUi();
-  try {
-    await refreshSharedCounts();
-    state.textContent = `Supabase接続中：${signedInUser.email || ""}`;
-  } catch (e) {
-    state.textContent = "データ読込失敗：" + e.message;
-  }
-});
+};
 
-document.getElementById("logoutButton").addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
-  signedInUser = null;
-  sharedCounts = new Map();
-  updateAuthUi();
-  render();
-});
+async function cacheImages(data) {
 
-(async function initSupabaseAuth() {
-  const { data } = await supabaseClient.auth.getSession();
-  signedInUser = data.session?.user || null;
-  updateAuthUi();
-  if (signedInUser) {
-    try { await refreshSharedCounts(); }
-    catch (e) { document.getElementById("authState").textContent = "共有データ読込失敗：" + e.message; }
+  if (!("caches" in window)) return;
+
+  const cache = await caches.open("medal-app-v5");
+
+  const batchSize = 100;
+
+  for (let i = 0; i < data.length; i += batchSize) {
+
+    const batch = data.slice(i, i + batchSize);
+
+    await Promise.all(
+
+      batch.map(async item => {
+
+        const imgId = item.id.split("-").pop();
+
+        const url = `./images/${imgId}.webp`;
+
+        try {
+
+          const cached = await cache.match(url);
+
+          if (!cached) {
+
+            const response = await fetch(url);
+
+            if (response.ok) {
+              await cache.put(url, response.clone());
+            }
+
+          }
+
+        } catch (e) {}
+
+      })
+
+    );
+
+    console.log(
+      `画像キャッシュ ${Math.min(i + batchSize, data.length)} / ${data.length}`
+    );
+
+    // iPadを休ませる
+    await new Promise(resolve => setTimeout(resolve, 200));
+
   }
-})();
 
-loadData();
+  console.log("全画像キャッシュ完了");
+
+}
 </script>
-
 </body>
 </html>
