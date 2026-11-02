@@ -656,7 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.1.1</span>
+<span id="appVersion" aria-label="アプリ更新番号">v1.1.2</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -1061,12 +1061,17 @@ async function migrateLocalAddedDataToCloud() {
   await loadCloudAddedData();
 }
 
-async function saveCloudSimulatorState() {
+async function saveCloudSimulatorState(snapshot = null) {
   if (!cloudUser) return false;
+  // 保存開始時点のスナップショットを使い、次の入力で変化した配列を参照しない。
+  const source = snapshot || {
+    faces: simState.faces,
+    book2: Array.isArray(simState.bookItems?.[1]) ? structuredClone(simState.bookItems[1]) : []
+  };
   const payload = {
     user_id: cloudUser.id,
-    faces: Number(simState.faces) || 3,
-    book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : [],
+    faces: Number(source.faces) || 3,
+    book2: Array.isArray(source.book2) ? source.book2 : [],
     updated_at: new Date().toISOString()
   };
   const { error } = await supabaseClient.from("medal_simulator_state").upsert(payload, { onConflict: "user_id" });
@@ -1116,7 +1121,10 @@ function setupCloudRealtime() {
       if (typeof renderSimulator === "function") renderSimulator();
     })
     .on("postgres_changes", { event:"*", schema:"public", table:"medal_simulator_state", filter:`user_id=eq.${cloudUser.id}` }, async () => {
-      if (cloudSyncBusy) return;
+      const modal = document.getElementById("addDataModal");
+      if (simulatorSaveInProgress || cloudSyncBusy ||
+          (modal && modal.classList.contains("show") &&
+           (modal.dataset.dirty === "1" || modal.dataset.moving === "1" || modal.dataset.saving === "1"))) return;
       cloudSyncBusy = true;
       try {
         const activeBook = simState.currentBook;
@@ -1183,7 +1191,10 @@ supabaseClient.auth.onAuthStateChange((_event, session) => {
 });
 
 document.addEventListener("visibilitychange", async () => {
-  if (document.visibilityState !== "visible" || !(await ensureCloudUser())) return;
+  const modal = document.getElementById("addDataModal");
+  if (document.visibilityState !== "visible" || simulatorSaveInProgress ||
+      (modal && modal.classList.contains("show") && modal.dataset.dirty === "1") ||
+      !(await ensureCloudUser())) return;
   await loadCloudAddedData();
   await loadCloudSimulatorState();
   simState.items = simState.bookItems[simState.currentBook] || [];
@@ -1191,7 +1202,11 @@ document.addEventListener("visibilitychange", async () => {
 });
 
 setInterval(async () => {
-  if (document.visibilityState !== "visible" || !(await ensureCloudUser())) return;
+  const modal = document.getElementById("addDataModal");
+  if (document.visibilityState !== "visible" || simulatorSaveInProgress ||
+      (modal && modal.classList.contains("show") &&
+       (modal.dataset.dirty === "1" || modal.dataset.moving === "1" || modal.dataset.saving === "1")) ||
+      !(await ensureCloudUser())) return;
   await loadCloudSimulatorState();
   simState.items = simState.bookItems[simState.currentBook] || [];
   if (document.getElementById("simulator")?.style.display !== "none") renderSimulator();
@@ -1747,47 +1762,47 @@ let simulatorSaveQueue = Promise.resolve();
 let simulatorSaveInProgress = false;
 
 async function saveSimulatorState() {
-  // 保存要求を直列化し、連続入力時に古い内容が後から上書きされるのを防ぐ。
-  const runSave = async () => {
-  // 1bookはIndexedDB、2bookはSupabaseを正本として保存する。
-  const state = {
-    id: "current",
+  // 呼び出された瞬間の状態を固定し、後続入力による上書きを防ぐ。
+  const snapshot = {
     faces: Number(simState.faces) || 3,
-    books: 2,
     currentBook: Number(simState.currentBook) || 0,
-    bookItems: [Array.isArray(simState.bookItems?.[0]) ? simState.bookItems[0] : [], []]
+    book1: Array.isArray(simState.bookItems?.[0]) ? structuredClone(simState.bookItems[0]) : [],
+    book2: Array.isArray(simState.bookItems?.[1]) ? structuredClone(simState.bookItems[1]) : []
   };
 
-  const db = await openAddedDB();
-  try {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
-      tx.objectStore(SIM_DB_STORE_NAME).put(state);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || new Error("IndexedDB transaction aborted"));
-    });
-  } finally {
-    db.close();
-  }
+  const runSave = async () => {
+    simulatorSaveInProgress = true;
+    try {
+      const state = {
+        id: "current", faces: snapshot.faces, books: 2,
+        currentBook: snapshot.currentBook, bookItems: [snapshot.book1, []]
+      };
+      const db = await openAddedDB();
+      try {
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
+          tx.objectStore(SIM_DB_STORE_NAME).put(state);
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error || new Error("IndexedDB transaction aborted"));
+        });
+      } finally { db.close(); }
 
-  // セッション情報を再確認してからSupabaseへ保存する。
-  await ensureCloudUser();
-  if (cloudUser) {
-    const cloudSaved = await saveCloudSimulatorState();
-    if (!cloudSaved) {
-      throw new Error("Supabaseへの保存に失敗しました。ログイン状態・テーブル権限・通信を確認してください。");
+      await ensureCloudUser();
+      if (cloudUser) {
+        const cloudSaved = await saveCloudSimulatorState({faces:snapshot.faces, book2:snapshot.book2});
+        if (!cloudSaved) throw new Error("Supabaseへの保存に失敗しました。ログイン状態・テーブル権限・通信を確認してください。");
+        return true;
+      }
+      localStorage.setItem("medalSimulatorBook2Pending", JSON.stringify({
+        faces:snapshot.faces, book2:snapshot.book2
+      }));
+      return false;
+    } finally {
+      simulatorSaveInProgress = false;
     }
-    return true;
-  }
-
-  // 未ログイン時だけ一時保存。Supabase保存済みとは扱わない。
-  localStorage.setItem("medalSimulatorBook2Pending", JSON.stringify({
-    faces: simState.faces,
-    book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : []
-  }));
-  return false;
   };
+
   simulatorSaveQueue = simulatorSaveQueue.then(runSave, runSave);
   return simulatorSaveQueue;
 }
