@@ -364,7 +364,7 @@ img.noimage{
   font-size: 13px;
   line-height: 1.25;
   white-space: pre-line;
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -473,7 +473,7 @@ img.noimage{
 .add-delete-button:active{
   opacity:.75;
 }
-#addDataModal.show{display:block;}
+#addDataModal.show{display:block !important; z-index:99999 !important;}
 
 .sim-book{margin:14px 0 22px;padding:10px;border:2px solid #888;border-radius:10px;background:#fafafa;}
 .sim-book-title{font-size:18px;font-weight:700;margin:0 0 8px;}
@@ -2024,12 +2024,16 @@ function renderSimulator() {
       cell.textContent = item ? simItemText(item) : "";
 
       if (!item) {
-        // iPadでは touch-action:none の要素で click が発生しない場合があるため、
-        // 空きマスは pointerup で直接入力画面を開く。
-        cell.addEventListener("pointerup", e => {
-          if (e.pointerType === "mouse" && e.button !== 0) return;
-          e.preventDefault();
-          openAddDataModal(index, false, bookIndex);
+        // 空きマスのタップ処理は simFacesArea 側で一括管理する。
+        // renderSimulator() のたびにセルが作り直されてもイベントが失われない。
+        cell.setAttribute("role", "button");
+        cell.setAttribute("tabindex", "0");
+        cell.setAttribute("aria-label", `${bookIndex + 1}book ${index + 1}マス目に追加`);
+        cell.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openAddDataModal(index, false, bookIndex);
+          }
         });
       } else {
         cell.addEventListener("pointerdown", e => {
@@ -2095,6 +2099,12 @@ function renderSimulator() {
   }
 
   area.appendChild(bookBox);
+
+  // 空きマスのイベントは document 側で一括処理する。
+  // 描画し直してもイベントが消えず、iPadでもクリックを拾える。
+  area.onpointerup = null;
+  area.onclick = null;
+
   updateBookTabs();
   updateSimulatorBookControls();
 }
@@ -2197,6 +2207,36 @@ document.getElementById("simEnd").addEventListener("change", () => {
 // 空きマス → データ追加
 // =========================
 let addTargetIndex = -1;
+
+// 空きマスのタップを画面全体で捕捉する（2bookを含む）。
+// pointerup と click の両方を受けても、短時間の二重起動は防ぐ。
+let lastSimulatorEmptyOpenAt = 0;
+function handleSimulatorEmptyTap(event) {
+  const cell = event.target?.closest?.(".sim-slot.empty");
+  if (!cell) return;
+  const area = document.getElementById("simFacesArea");
+  if (!area || !area.contains(cell)) return;
+  const simulator = document.getElementById("simulator");
+  if (!simulator || getComputedStyle(simulator).display === "none") return;
+  const now = Date.now();
+  if (now - lastSimulatorEmptyOpenAt < 450) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+  lastSimulatorEmptyOpenAt = now;
+  event.preventDefault();
+  event.stopPropagation();
+  const book = Number(cell.dataset.book);
+  const face = Number(cell.dataset.face);
+  const slot = Number(cell.dataset.slot);
+  if (![book, face, slot].every(Number.isFinite)) return;
+  openAddDataModal(face * 15 + slot, false, book);
+}
+
+// capture=true にして、他の要素のイベント処理より先に確実に拾う。
+document.addEventListener("pointerup", handleSimulatorEmptyTap, true);
+document.addEventListener("click", handleSimulatorEmptyTap, true);
 
 function setupAddTypeSelect(selectedType = "") {
   // マスターデータと各bookの既存データから種類の候補を作成する。
@@ -2319,7 +2359,10 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
   modal.dataset.simIndex = String(index);
   modal.dataset.simBook = String(bookIndex);
   modal.dataset.editMode = editMode ? "1" : "0";
-  modal.style.display = "block";
+  modal.classList.add("show");
+  modal.style.setProperty("display", "block", "important");
+  modal.style.setProperty("z-index", "99999", "important");
+  modal.setAttribute("aria-hidden", "false");
 
   if (!editMode) setTimeout(() => number.focus(), 50);
 }
@@ -2328,7 +2371,9 @@ function closeAddDataModal() {
   const modal = document.getElementById("addDataModal");
   if (!modal) return;
 
-  modal.style.display = "none";
+  modal.classList.remove("show");
+  modal.style.setProperty("display", "none", "important");
+  modal.setAttribute("aria-hidden", "true");
   modal.dataset.simIndex = "-1";
   modal.dataset.editMode = "0";
 }
