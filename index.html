@@ -656,7 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.1.2</span>
+<span id="appVersion" aria-label="アプリ更新番号">v1.1.3</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -2305,7 +2305,13 @@ async function moveAddTarget(delta) {
   const currentItem = currentItems[currentIndex] || null;
   // 新規マスの管理番号は自動入力されているため、それだけでは入力済みとみなさない。
   // すでに配置済みのマスを「追加モード」で一時表示している場合も上書きしない。
-  const hasInput = editMode || (!currentItem && modal.dataset.dirty === "1");
+  // dirtyイベントだけに依存すると、iPad等でchange/inputイベントが
+  // 矢印タップより遅れた場合に2件目以降を未入力と誤判定する。
+  // 空きマスを開いた時点の自動採番値と比較し、実際に入力された内容で判定する。
+  const autoNumber = String(modal.dataset.autoNumber || "").replace(/\D/g, "");
+  const hasInput = editMode || Boolean(
+    type || detail || (rawNumber && rawNumber !== autoNumber)
+  );
 
   // 入力途中の内容がある場合は、次のマスへ移る前に保存する。
   // 完全に空の新規マスなら保存せず、そのまま移動できる。
@@ -2363,6 +2369,7 @@ async function moveAddTarget(delta) {
     const m = String(targetItem.id || "").match(/^([A-Za-z]+)-(\d+)$/);
     document.getElementById("addIdPrefix").value = m?.[1] || prefix;
     document.getElementById("addIdNumber").value = m?.[2] || rawNumber;
+    modal.dataset.autoNumber = "";
     setupAddTypeSelect(targetItem.type || type);
     document.getElementById("addType").value = targetItem.type || "";
     document.getElementById("addDetail").value = targetItem.detail || "";
@@ -2373,6 +2380,7 @@ async function moveAddTarget(delta) {
   } else {
     document.getElementById("addIdPrefix").value = prefix;
     document.getElementById("addIdNumber").value = String((Number(rawNumber) || 0) + 1).padStart(4, "0");
+    modal.dataset.autoNumber = document.getElementById("addIdNumber").value;
     setupAddTypeSelect(type);
     document.getElementById("addType").value = type;
     document.getElementById("addDetail").value = "";
@@ -2427,6 +2435,7 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
   modal.dataset.simBook = String(bookIndex);
   modal.dataset.editMode = editMode ? "1" : "0";
   modal.dataset.dirty = "0";
+  modal.dataset.autoNumber = editMode ? "" : number.value;
   modal.classList.add("show");
   modal.style.setProperty("display", "block", "important");
   modal.style.setProperty("z-index", "99999", "important");
