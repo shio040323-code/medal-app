@@ -656,7 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.0.6</span>
+<span id="appVersion" aria-label="アプリ更新番号">v1.0.7</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -2026,17 +2026,11 @@ function renderSimulator() {
       cell.textContent = item ? simItemText(item) : "";
 
       if (!item) {
-        // 空きマスのタップ処理は simFacesArea 側で一括管理する。
-        // renderSimulator() のたびにセルが作り直されてもイベントが失われない。
+        // 空きマスはdocumentのcapture段階で一括検知する。
+        // セル再描画や子要素のイベント停止に影響されにくい。
         cell.setAttribute("role", "button");
         cell.setAttribute("tabindex", "0");
         cell.setAttribute("aria-label", `${bookIndex + 1}book ${index + 1}マス目に追加`);
-        // 空きマス自身にclickを直接登録する。document側の一括検知に依存しない。
-        cell.addEventListener("click", e => {
-          e.preventDefault();
-          e.stopPropagation();
-          openAddDataModal(index, false, bookIndex);
-        });
         cell.addEventListener("keydown", e => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -2116,6 +2110,28 @@ function renderSimulator() {
   updateBookTabs();
   updateSimulatorBookControls();
 }
+
+// 空きマスの入力画面を開く共通イベント（captureで最優先に検知）
+// renderSimulator()でDOMが作り直されてもイベント登録が失われない。
+document.addEventListener("click", event => {
+  const cell = event.target && event.target.closest
+    ? event.target.closest("#simFacesArea .sim-slot.empty")
+    : null;
+  if (!cell) return;
+  const simulator = document.getElementById("simulator");
+  if (!simulator || simulator.style.display === "none") return;
+  event.preventDefault();
+  const bookIndex = Number(cell.dataset.book);
+  const face = Number(cell.dataset.face);
+  const slot = Number(cell.dataset.slot);
+  const index = face * 15 + slot;
+  try {
+    openAddDataModal(index, false, bookIndex);
+  } catch (error) {
+    console.error("2book/空きマス入力画面を開けませんでした:", error);
+    alert("入力画面を開けませんでした。ブラウザのコンソールにエラーを記録しました。");
+  }
+}, true);
 
 async function openSimulator() {
   document.getElementById("simulator").style.display = "block";
@@ -2301,7 +2317,10 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
   const modal = document.getElementById("addDataModal");
   if (!modal) return;
 
-  const bookItems = simState.bookItems[bookIndex] || [];
+  if (!Array.isArray(simState.bookItems)) simState.bookItems = [[], []];
+  while (simState.bookItems.length < 2) simState.bookItems.push([]);
+  if (!Array.isArray(simState.bookItems[bookIndex])) simState.bookItems[bookIndex] = [];
+  const bookItems = simState.bookItems[bookIndex];
   const item = editMode ? (bookItems[index] || null) : null;
 
   setupAddTypeSelect(item?.type || "");
@@ -2340,9 +2359,12 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
   modal.dataset.simIndex = String(index);
   modal.dataset.simBook = String(bookIndex);
   modal.dataset.editMode = editMode ? "1" : "0";
+  modal.hidden = false;
   modal.classList.add("show");
-  modal.style.setProperty("display", "block", "important");
-  modal.style.setProperty("z-index", "99999", "important");
+  modal.style.display = "block";
+  modal.style.zIndex = "99999";
+  modal.style.visibility = "visible";
+  modal.style.pointerEvents = "auto";
   modal.setAttribute("aria-hidden", "false");
 
   if (!editMode) setTimeout(() => number.focus(), 50);
