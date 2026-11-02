@@ -656,7 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.0.9</span>
+<span id="appVersion" aria-label="アプリ更新番号">v1.1.0</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -1745,7 +1745,7 @@ const simState = {
 const SIM_DB_STORE_NAME = "simulatorState";
 
 async function saveSimulatorState() {
-  // 1bookはIndexedDBに保存。2bookはSupabaseを正本とし、未ログイン時だけ端末内に一時退避。
+  // 1bookはIndexedDB、2bookはSupabaseを正本として保存する。
   const state = {
     id: "current",
     faces: Number(simState.faces) || 3,
@@ -1753,30 +1753,36 @@ async function saveSimulatorState() {
     currentBook: Number(simState.currentBook) || 0,
     bookItems: [Array.isArray(simState.bookItems?.[0]) ? simState.bookItems[0] : [], []]
   };
+
+  const db = await openAddedDB();
   try {
-    const db = await openAddedDB();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
       tx.objectStore(SIM_DB_STORE_NAME).put(state);
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+      tx.onabort = () => reject(tx.error || new Error("IndexedDB transaction aborted"));
     });
+  } finally {
     db.close();
-  } catch (error) {
-    console.error("1book保存エラー:", error);
   }
 
+  // セッション情報を再確認してからSupabaseへ保存する。
+  await ensureCloudUser();
   if (cloudUser) {
-    await saveCloudSimulatorState();
-  } else {
-    try {
-      localStorage.setItem("medalSimulatorBook2Pending", JSON.stringify({
-        faces: simState.faces,
-        book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : []
-      }));
-    } catch (e) { console.error("2book一時保存エラー:", e); }
+    const cloudSaved = await saveCloudSimulatorState();
+    if (!cloudSaved) {
+      throw new Error("Supabaseへの保存に失敗しました。ログイン状態・テーブル権限・通信を確認してください。");
+    }
+    return true;
   }
+
+  // 未ログイン時だけ一時保存。Supabase保存済みとは扱わない。
+  localStorage.setItem("medalSimulatorBook2Pending", JSON.stringify({
+    faces: simState.faces,
+    book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : []
+  }));
+  return false;
 }
 
 function loadSimulatorState() {
@@ -2307,11 +2313,16 @@ async function moveAddTarget(delta) {
     try {
       currentItems[currentIndex] = savedItem;
       simState.items = currentItems;
-      await saveSimulatorState();
+      const cloudSaved = await saveSimulatorState();
+      if (bookIndex === 1 && !cloudSaved) {
+        throw new Error(cloudUser
+          ? "Supabase保存の完了を確認できませんでした。通信・テーブル権限を確認してください。"
+          : "Supabaseにログインしていません。ログイン後にもう一度保存してください。");
+      }
       renderSimulator();
     } catch (error) {
       console.error("次のマスへ移動する前の自動保存エラー:", error);
-      message.textContent = "自動保存できませんでした。もう一度お試しください。";
+      message.textContent = `自動保存できませんでした：${error.message || "通信エラー"}`;
       return;
     } finally {
       modal.dataset.moving = "0";
@@ -2464,7 +2475,13 @@ async function addSimulatorData() {
   // シミュレーターの配置データは、どちらのbookもシミュレーター専用として保存する。
   // メイン画面用のaddedData / medal_dataには追加・同期しない。
   simState.items = simState.bookItems[bookIndex] || [];
-  await saveSimulatorState();
+  try {
+    await saveSimulatorState();
+  } catch (error) {
+    console.error("配置データ保存エラー:", error);
+    message.textContent = `保存できませんでした：${error.message || "通信エラー"}`;
+    return;
+  }
   renderSimulator();
 
   if (!editMode) {
