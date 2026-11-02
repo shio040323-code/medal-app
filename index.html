@@ -656,7 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.1.0</span>
+<span id="appVersion" aria-label="アプリ更新番号">v1.1.1</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -1743,8 +1743,12 @@ const simState = {
    IndexedDBへ保存するため、アプリ終了後も保持
 ========================= */
 const SIM_DB_STORE_NAME = "simulatorState";
+let simulatorSaveQueue = Promise.resolve();
+let simulatorSaveInProgress = false;
 
 async function saveSimulatorState() {
+  // 保存要求を直列化し、連続入力時に古い内容が後から上書きされるのを防ぐ。
+  const runSave = async () => {
   // 1bookはIndexedDB、2bookはSupabaseを正本として保存する。
   const state = {
     id: "current",
@@ -1783,6 +1787,9 @@ async function saveSimulatorState() {
     book2: Array.isArray(simState.bookItems?.[1]) ? simState.bookItems[1] : []
   }));
   return false;
+  };
+  simulatorSaveQueue = simulatorSaveQueue.then(runSave, runSave);
+  return simulatorSaveQueue;
 }
 
 function loadSimulatorState() {
@@ -2426,6 +2433,11 @@ function closeAddDataModal() {
 
 async function addSimulatorData() {
   const modal = document.getElementById("addDataModal");
+  if (!modal || modal.dataset.saving === "1") return;
+  modal.dataset.saving = "1";
+  const saveButton = document.getElementById("addDataSave");
+  if (saveButton) saveButton.disabled = true;
+  try {
   const index = Number(modal.dataset.simIndex);
   const bookIndex = Number(modal.dataset.simBook || 0);
   const editMode = modal.dataset.editMode === "1";
@@ -2504,6 +2516,10 @@ async function addSimulatorData() {
     modal.dataset.dirty = "0";
   } else {
     closeAddDataModal();
+  }
+  } finally {
+    modal.dataset.saving = "0";
+    if (saveButton) saveButton.disabled = false;
   }
 }
 
