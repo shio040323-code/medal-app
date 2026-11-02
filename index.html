@@ -600,8 +600,9 @@ style="
   <div class="add-data-panel">
     <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
     <div class="add-data-form">
-      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
-      <label>種類<input id="addType" type="text" placeholder="種類を入力" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></label>
+      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;min-width:0;"><div style="display:flex;flex-direction:column;gap:2px;"><button type="button" id="addIdUp" aria-label="管理番号を1増やす" style="min-width:38px;min-height:24px;line-height:1;font-size:16px;">↑</button><button type="button" id="addIdDown" aria-label="管理番号を1減らす" style="min-width:38px;min-height:24px;line-height:1;font-size:16px;">↓</button></div></div></label>
+      <div style="display:flex;justify-content:space-between;gap:10px;margin:2px 0 8px;"><button type="button" id="addSlotPrev" style="flex:1;min-height:38px;">← 前のメダル</button><button type="button" id="addSlotNext" style="flex:1;min-height:38px;">次のメダル →</button></div>
+      <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option value="">種類を選択</option></select></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
       <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
@@ -2049,12 +2050,83 @@ document.getElementById("simEnd").addEventListener("change", () => {
 // =========================
 let addTargetIndex = -1;
 
-function setupAddTypeSelect() {
-  // 種類はGitHubの選択肢に依存せず、自由入力にする。
-  const input = document.getElementById("addType");
-  if (input) input.placeholder = "種類を自由に入力";
+function setupAddTypeSelect(selectedType = "") {
+  // マスターデータと各bookの既存データから種類の候補を作成する。
+  // 2bookのメダル配置データそのものをGitHubから追加することはありません。
+  const select = document.getElementById("addType");
+  if (!select) return;
+  const values = new Set();
+  const addValue = value => { const v = String(value || "").trim(); if (v) values.add(v); };
+  (Array.isArray(data) ? data : []).forEach(item => addValue(item.type));
+  (simState.bookItems || []).forEach(book => (Array.isArray(book) ? book : []).forEach(item => addValue(item.type)));
+  addValue(selectedType);
+  select.innerHTML = '<option value="">種類を選択</option>';
+  [...values].sort((a, b) => a.localeCompare(b, "ja")).forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+  select.value = String(selectedType || "");
 }
 
+
+function getNextSimulatorNumber(bookIndex, prefix) {
+  const items = simState.bookItems[bookIndex] || [];
+  let max = 0;
+  items.forEach(item => {
+    const match = String(item?.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+    if (match && match[1].toUpperCase() === String(prefix).toUpperCase()) {
+      max = Math.max(max, Number(match[2]) || 0);
+    }
+  });
+  return String(max + 1).padStart(4, "0");
+}
+
+function moveAddTarget(delta) {
+  const modal = document.getElementById("addDataModal");
+  if (!modal || modal.style.display === "none") return;
+  const bookIndex = Number(modal.dataset.simBook || 0);
+  const currentIndex = Number(modal.dataset.simIndex || 0);
+  const maxSlots = simState.faces * 15;
+  const nextIndex = Math.max(0, Math.min(maxSlots - 1, currentIndex + delta));
+  if (nextIndex === currentIndex) return;
+
+  const prefix = document.getElementById("addIdPrefix").value || "L";
+  const number = document.getElementById("addIdNumber").value;
+  const type = document.getElementById("addType").value;
+  const detail = document.getElementById("addDetail").value;
+  const targetItem = (simState.bookItems[bookIndex] || [])[nextIndex] || null;
+
+  modal.dataset.simIndex = String(nextIndex);
+  modal.dataset.editMode = targetItem ? "1" : "0";
+
+  const title = document.getElementById("addDataTitle");
+  const deleteButton = document.getElementById("addDataDelete");
+  const saveButton = document.getElementById("addDataSave");
+  if (targetItem) {
+    const m = String(targetItem.id || "").match(/^([A-Za-z]+)-(\d+)$/);
+    document.getElementById("addIdPrefix").value = m?.[1] || prefix;
+    document.getElementById("addIdNumber").value = m?.[2] || number;
+    setupAddTypeSelect(targetItem.type || type);
+    document.getElementById("addType").value = targetItem.type || "";
+    document.getElementById("addDetail").value = targetItem.detail || "";
+    deleteButton.style.display = "inline-block";
+    deleteButton.textContent = "このマスから外す";
+    saveButton.textContent = "更新";
+    title.textContent = `${bookIndex + 1}book データ`;
+  } else {
+    document.getElementById("addIdPrefix").value = prefix;
+    document.getElementById("addIdNumber").value = number;
+    setupAddTypeSelect(type);
+    document.getElementById("addType").value = type;
+    document.getElementById("addDetail").value = detail;
+    deleteButton.style.display = "none";
+    saveButton.textContent = "このマスに追加";
+    title.textContent = `${bookIndex + 1}book にメダルを追加（${nextIndex + 1}マス目）`;
+  }
+  document.getElementById("addDataMessage").textContent = "";
+}
 
 function openAddDataModal(index, editMode = false, bookIndex = 0) {
   const modal = document.getElementById("addDataModal");
@@ -2063,7 +2135,7 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
   const bookItems = simState.bookItems[bookIndex] || [];
   const item = editMode ? (bookItems[index] || null) : null;
 
-  setupAddTypeSelect();
+  setupAddTypeSelect(item?.type || "");
 
   const prefix = document.getElementById("addIdPrefix");
   const number = document.getElementById("addIdNumber");
@@ -2088,7 +2160,7 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
     title.textContent = `${bookIndex + 1}book データ`;
   } else {
     prefix.value = "L";
-    number.value = "";
+    number.value = getNextSimulatorNumber(bookIndex, prefix.value);
     type.value = "";
     detail.value = "";
     deleteButton.style.display = "none";
@@ -2166,7 +2238,27 @@ async function addSimulatorData() {
   simState.items = simState.bookItems[bookIndex] || [];
   await saveSimulatorState();
   renderSimulator();
-  closeAddDataModal();
+
+  if (!editMode) {
+    const nextIndex = Math.min(index + 1, simState.faces * 15 - 1);
+    modal.dataset.simIndex = String(nextIndex);
+    modal.dataset.editMode = "0";
+    document.getElementById("addIdNumber").value = String(Number(rawNumber) + 1).padStart(4, "0");
+    document.getElementById("addType").value = type;
+    document.getElementById("addDetail").value = "";
+    const nextOccupied = bookItems[nextIndex];
+    if (nextOccupied) {
+      document.getElementById("addDataTitle").textContent = `${bookIndex + 1}book 次のマスは入力済みです`;
+      document.getElementById("addDataMessage").textContent = "←→で別のマスへ移動してください。";
+    } else {
+      document.getElementById("addDataTitle").textContent = `${bookIndex + 1}book 次のメダルを追加`;
+      document.getElementById("addDataMessage").textContent = "次の管理番号を自動入力しました。";
+    }
+    document.getElementById("addDataDelete").style.display = "none";
+    document.getElementById("addDataSave").textContent = "このマスに追加";
+  } else {
+    closeAddDataModal();
+  }
 }
 
 async function deleteCurrentAddedData() {
@@ -2258,6 +2350,19 @@ function exportSimulatorCsv() {
 }
 
 document.getElementById("simExportCsv").addEventListener("click", exportSimulatorCsv);
+
+// 管理番号を左右の矢印ボタンで1ずつ変更
+function changeAddIdNumber(delta) {
+  const input = document.getElementById("addIdNumber");
+  if (!input) return;
+  const digits = String(input.value || "").normalize("NFKC").replace(/\D/g, "");
+  const next = Math.max(0, (Number(digits) || 0) + delta);
+  input.value = String(next).padStart(4, "0");
+}
+document.getElementById("addIdDown").onclick = () => changeAddIdNumber(-1);
+document.getElementById("addIdUp").onclick = () => changeAddIdNumber(1);
+document.getElementById("addSlotPrev").onclick = () => moveAddTarget(-1);
+document.getElementById("addSlotNext").onclick = () => moveAddTarget(1);
 
 document.getElementById("addDataClose").onclick = closeAddDataModal;
 document.getElementById("addDataCancel").onclick = closeAddDataModal;
