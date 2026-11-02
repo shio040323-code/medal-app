@@ -656,7 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.0.8</span>
+<span id="appVersion" aria-label="アプリ更新番号">v1.0.9</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -2256,9 +2256,10 @@ function getNextSimulatorNumber(bookIndex, prefix) {
   return String(max + 1).padStart(4, "0");
 }
 
-function moveAddTarget(delta) {
+async function moveAddTarget(delta) {
   const modal = document.getElementById("addDataModal");
-  if (!modal || modal.style.display === "none") return;
+  if (!modal || modal.style.display === "none" || modal.dataset.moving === "1") return;
+
   const bookIndex = Number(modal.dataset.simBook || 0);
   const currentIndex = Number(modal.dataset.simIndex || 0);
   const maxSlots = simState.faces * 15;
@@ -2266,13 +2267,61 @@ function moveAddTarget(delta) {
   if (nextIndex === currentIndex) return;
 
   const prefix = document.getElementById("addIdPrefix").value || "L";
-  const number = document.getElementById("addIdNumber").value;
-  const type = document.getElementById("addType").value;
-  const detail = document.getElementById("addDetail").value;
-  const targetItem = (simState.bookItems[bookIndex] || [])[nextIndex] || null;
+  const rawNumber = document.getElementById("addIdNumber").value
+    .normalize("NFKC").replace(/\D/g, "");
+  const type = document.getElementById("addType").value.trim();
+  const detail = document.getElementById("addDetail").value.trim();
+  const message = document.getElementById("addDataMessage");
+  const currentItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
+  const editMode = modal.dataset.editMode === "1";
+  const currentItem = currentItems[currentIndex] || null;
+  // 新規マスの管理番号は自動入力されているため、それだけでは入力済みとみなさない。
+  // すでに配置済みのマスを「追加モード」で一時表示している場合も上書きしない。
+  const hasInput = editMode || (!currentItem && modal.dataset.dirty === "1");
 
+  // 入力途中の内容がある場合は、次のマスへ移る前に保存する。
+  // 完全に空の新規マスなら保存せず、そのまま移動できる。
+  if (hasInput) {
+    if (!rawNumber) {
+      message.textContent = "管理番号の数字を入力してください。保存せずに移動する場合は入力欄を空にしてください。";
+      return;
+    }
+    if (!type) {
+      message.textContent = "種類を選択してください。選択後に次のマスへ移動できます。";
+      return;
+    }
+
+    const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
+    const source = bookIndex === 1 ? null : data.find(item => String(item?.id || "").toUpperCase() === id.toUpperCase());
+    const savedItem = {
+      ...(source || {}),
+      id,
+      type,
+      detail,
+      _simOnly: true,
+      ...(bookIndex === 1 ? { _book2Manual: true } : {})
+    };
+
+    modal.dataset.moving = "1";
+    message.textContent = "保存中...";
+    try {
+      currentItems[currentIndex] = savedItem;
+      simState.items = currentItems;
+      await saveSimulatorState();
+      renderSimulator();
+    } catch (error) {
+      console.error("次のマスへ移動する前の自動保存エラー:", error);
+      message.textContent = "自動保存できませんでした。もう一度お試しください。";
+      return;
+    } finally {
+      modal.dataset.moving = "0";
+    }
+  }
+
+  const targetItem = (simState.bookItems[bookIndex] || [])[nextIndex] || null;
   modal.dataset.simIndex = String(nextIndex);
   modal.dataset.editMode = targetItem ? "1" : "0";
+  modal.dataset.dirty = "0";
 
   const title = document.getElementById("addDataTitle");
   const deleteButton = document.getElementById("addDataDelete");
@@ -2280,7 +2329,7 @@ function moveAddTarget(delta) {
   if (targetItem) {
     const m = String(targetItem.id || "").match(/^([A-Za-z]+)-(\d+)$/);
     document.getElementById("addIdPrefix").value = m?.[1] || prefix;
-    document.getElementById("addIdNumber").value = m?.[2] || number;
+    document.getElementById("addIdNumber").value = m?.[2] || rawNumber;
     setupAddTypeSelect(targetItem.type || type);
     document.getElementById("addType").value = targetItem.type || "";
     document.getElementById("addDetail").value = targetItem.detail || "";
@@ -2290,15 +2339,15 @@ function moveAddTarget(delta) {
     title.textContent = `${bookIndex + 1}book データ`;
   } else {
     document.getElementById("addIdPrefix").value = prefix;
-    document.getElementById("addIdNumber").value = number;
+    document.getElementById("addIdNumber").value = String((Number(rawNumber) || 0) + 1).padStart(4, "0");
     setupAddTypeSelect(type);
     document.getElementById("addType").value = type;
-    document.getElementById("addDetail").value = detail;
+    document.getElementById("addDetail").value = "";
     deleteButton.style.display = "none";
     saveButton.textContent = "このマスに追加";
     title.textContent = `${bookIndex + 1}book にメダルを追加（${nextIndex + 1}マス目）`;
   }
-  document.getElementById("addDataMessage").textContent = "";
+  message.textContent = hasInput ? "前のマスを自動保存しました。" : "";
 }
 
 function openAddDataModal(index, editMode = false, bookIndex = 0) {
@@ -2344,6 +2393,7 @@ function openAddDataModal(index, editMode = false, bookIndex = 0) {
   modal.dataset.simIndex = String(index);
   modal.dataset.simBook = String(bookIndex);
   modal.dataset.editMode = editMode ? "1" : "0";
+  modal.dataset.dirty = "0";
   modal.classList.add("show");
   modal.style.setProperty("display", "block", "important");
   modal.style.setProperty("z-index", "99999", "important");
@@ -2434,6 +2484,7 @@ async function addSimulatorData() {
     }
     document.getElementById("addDataDelete").style.display = "none";
     document.getElementById("addDataSave").textContent = "このマスに追加";
+    modal.dataset.dirty = "0";
   } else {
     closeAddDataModal();
   }
@@ -2536,11 +2587,28 @@ function changeAddIdNumber(delta) {
   const digits = String(input.value || "").normalize("NFKC").replace(/\D/g, "");
   const next = Math.max(0, (Number(digits) || 0) + delta);
   input.value = String(next).padStart(4, "0");
+  const modal = document.getElementById("addDataModal");
+  if (modal) modal.dataset.dirty = "1";
 }
 document.getElementById("addIdDown").onclick = () => changeAddIdNumber(-1);
 document.getElementById("addIdUp").onclick = () => changeAddIdNumber(1);
 document.getElementById("addSlotPrev").onclick = () => moveAddTarget(-1);
 document.getElementById("addSlotNext").onclick = () => moveAddTarget(1);
+
+// 入力欄が変更されたら、次のマスへ移動する際の自動保存対象として記録する。
+["addIdPrefix", "addIdNumber", "addType", "addDetail"].forEach(id => {
+  const field = document.getElementById(id);
+  if (field) {
+    field.addEventListener("input", () => {
+      const modal = document.getElementById("addDataModal");
+      if (modal) modal.dataset.dirty = "1";
+    });
+    field.addEventListener("change", () => {
+      const modal = document.getElementById("addDataModal");
+      if (modal) modal.dataset.dirty = "1";
+    });
+  }
+});
 
 document.getElementById("addDataClose").onclick = closeAddDataModal;
 document.getElementById("addDataCancel").onclick = closeAddDataModal;
