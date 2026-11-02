@@ -504,6 +504,125 @@ img.noimage{
 
 /* シミュレーター操作欄：開始番号の前で確実に改行 */
 .sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
+/* =========================
+   iPad用 メダル管理チェックリスト
+   ========================= */
+#checklistModal {
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:4000;
+  background:rgba(0,0,0,.5);
+  padding:8px;
+  box-sizing:border-box;
+  overflow:auto;
+}
+#checklistModal.show { display:block; }
+.checklist-panel {
+  width:100%;
+  max-width:680px;
+  margin:8px auto;
+  padding:14px;
+  box-sizing:border-box;
+  background:#fff;
+  border-radius:14px;
+}
+.checklist-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+.checklist-header strong { font-size:18px; }
+.checklist-summary {
+  background:#f3f5f8;
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:10px;
+}
+.checklist-summary-line {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:700;
+  gap:8px;
+}
+.checklist-progress {
+  height:9px;
+  background:#ddd;
+  border-radius:99px;
+  overflow:hidden;
+  margin-top:8px;
+}
+.checklist-progress > div {
+  height:100%;
+  width:0;
+  background:#2e8b57;
+  transition:width .15s;
+}
+.checklist-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:10px;
+}
+.checklist-actions button {
+  flex:1;
+  min-height:42px;
+  border:1px solid #bbb;
+  border-radius:8px;
+  background:#fff;
+  padding:7px 10px;
+}
+.checklist-category {
+  border:1px solid #ddd;
+  border-radius:10px;
+  margin:9px 0;
+  overflow:hidden;
+}
+.checklist-category summary {
+  cursor:pointer;
+  list-style:none;
+  padding:12px;
+  background:#f5f5f5;
+  font-weight:700;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+.checklist-category summary::-webkit-details-marker { display:none; }
+.checklist-items { padding:4px 10px 8px; }
+.checklist-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:46px;
+  padding:5px 2px;
+  border-bottom:1px solid #eee;
+  font-size:15px;
+}
+.checklist-item:last-child { border-bottom:0; }
+.checklist-item input {
+  width:23px;
+  height:23px;
+  max-width:none;
+  margin:0;
+  flex:0 0 23px;
+  accent-color:#23834b;
+}
+.checklist-item.done span {
+  color:#999;
+  text-decoration:line-through;
+}
+@media screen and (min-width:700px) and (max-width:800px) {
+  #checklistModal { padding:6px; }
+  .checklist-panel { margin:4px auto; padding:12px; }
+  .checklist-item { min-height:50px; font-size:16px; }
+  .checklist-item input { width:25px; height:25px; flex-basis:25px; }
+}
+
+
 </style>
 </head>
 
@@ -535,6 +654,7 @@ style="
 <button onclick="nextPage()">NEXT →</button>
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
+<button id="checklistBtn">チェックリスト</button>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -548,6 +668,30 @@ style="
   <option value="">すべて</option>
 </select>
 </div>
+
+<!-- iPad用 メダル管理チェックリスト -->
+<div id="checklistModal" aria-hidden="true">
+  <div class="checklist-panel">
+    <div class="checklist-header">
+      <strong>メダル管理チェックリスト</strong>
+      <button type="button" id="checklistClose">閉じる</button>
+    </div>
+    <div class="checklist-summary">
+      <div class="checklist-summary-line">
+        <span id="checklistTotalText">全体 0 / 33</span>
+        <span id="checklistPercent">0%</span>
+      </div>
+      <div class="checklist-progress"><div id="checklistProgressBar"></div></div>
+    </div>
+    <div class="checklist-actions">
+      <button type="button" id="checklistUnfinished">未チェックのみ</button>
+      <button type="button" id="checklistAll">すべて表示</button>
+      <button type="button" id="checklistReset">チェックを全解除</button>
+    </div>
+    <div id="checklistCategories"></div>
+  </div>
+</div>
+
 
 <div id="simulator">
   <div class="sim-panel">
@@ -2430,6 +2574,204 @@ async function cacheImages(data) {
   console.log("全画像キャッシュ完了");
 
 }
+
+
+// =========================
+// iPad用 メダル管理チェックリスト
+// メダル本体・配置データとは独立して保存
+// =========================
+const MEDAL_CHECKLIST_KEY = "medal_management_checklist_v1";
+const medalChecklistGroups = [
+  {
+    title: "ディズニーランド",
+    items: [
+      "ペニーアーケード",
+      "パイレーツ・トレジャー",
+      "ゴールデンガリオン",
+      "ホームストア",
+      "トゥモローランド・テラス（店舗外側・北側）",
+      "トゥモローランド・テラス（店舗外側・南側）",
+      "トレジャーコメット",
+      "パン・ギャラクティック・ピザ・ポート",
+      "プラズマ・レイズ・ダイナー",
+      "ビレッジショップス",
+      "プーさんコーナー",
+      "ギャグファクトリー/ファイブ・アンド・ダイム",
+      "ウエスタンウエア",
+      "アドベンチャーランド・バザール"
+    ]
+  },
+  {
+    title: "ディズニーシー",
+    items: [
+      "ガッレリーア・ディズニー",
+      "フィガロズ・クロージアー",
+      "ヴィラ・ドナルド・ホームショップ",
+      "イル・ポスティーノ・ステーショナリー",
+      "スチームボート・ミッキーズ",
+      "アーント・ペグズ・ヴィレッジストア",
+      "ノーチラスギフト",
+      "ロストリバーアウトフィッター",
+      "スリーピーホエール・ショップ",
+      "ファンタジースプリングスギフト"
+    ]
+  },
+  {
+    title: "ディズニーリゾートライン",
+    items: [
+      "リゾートゲートウェイ・ステーション",
+      "東京ディズニーランド・ステーション",
+      "ベイサイド・ステーション",
+      "東京ディズニーシー・ステーション"
+    ]
+  },
+  {
+    title: "ディズニーホテル",
+    items: [
+      "東京ディズニーランドホテル",
+      "ミラコスタ",
+      "アンバサダーホテル",
+      "セレブレーションホテル　ウィッシュ",
+      "セレブレーションホテル　ディスカバー"
+    ]
+  }
+];
+
+let medalChecklistDone = loadMedalChecklist();
+let medalChecklistShowUnfinished = false;
+
+function loadMedalChecklist() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MEDAL_CHECKLIST_KEY) || "{}");
+    return saved && typeof saved === "object" ? saved : {};
+  } catch (error) {
+    console.warn("チェックリストの読み込みに失敗しました", error);
+    return {};
+  }
+}
+
+function saveMedalChecklist() {
+  try {
+    localStorage.setItem(MEDAL_CHECKLIST_KEY, JSON.stringify(medalChecklistDone));
+  } catch (error) {
+    alert("チェック状態を保存できませんでした。");
+    console.error(error);
+  }
+}
+
+function getMedalChecklistCounts() {
+  let total = 0;
+  let done = 0;
+  medalChecklistGroups.forEach((group, groupIndex) => {
+    group.items.forEach((item, itemIndex) => {
+      total++;
+      if (medalChecklistDone[`${groupIndex}-${itemIndex}`]) done++;
+    });
+  });
+  return { total, done };
+}
+
+function updateMedalChecklistSummary() {
+  const { total, done } = getMedalChecklistCounts();
+  const percent = total ? Math.round(done / total * 100) : 0;
+  document.getElementById("checklistTotalText").textContent = `全体 ${done} / ${total}`;
+  document.getElementById("checklistPercent").textContent = `${percent}%`;
+  document.getElementById("checklistProgressBar").style.width = `${percent}%`;
+}
+
+function renderMedalChecklist() {
+  const container = document.getElementById("checklistCategories");
+  if (!container) return;
+  container.innerHTML = "";
+
+  medalChecklistGroups.forEach((group, groupIndex) => {
+    const category = document.createElement("details");
+    category.className = "checklist-category";
+    category.open = true;
+
+    const summary = document.createElement("summary");
+    const title = document.createElement("span");
+    title.textContent = group.title;
+    const groupDone = group.items.reduce((sum, item, itemIndex) =>
+      sum + (medalChecklistDone[`${groupIndex}-${itemIndex}`] ? 1 : 0), 0);
+    const count = document.createElement("span");
+    count.textContent = `${groupDone} / ${group.items.length}`;
+    summary.append(title, count);
+    category.appendChild(summary);
+
+    const itemsBox = document.createElement("div");
+    itemsBox.className = "checklist-items";
+
+    group.items.forEach((item, itemIndex) => {
+      const key = `${groupIndex}-${itemIndex}`;
+      const isDone = !!medalChecklistDone[key];
+      if (medalChecklistShowUnfinished && isDone) return;
+
+      const label = document.createElement("label");
+      label.className = "checklist-item" + (isDone ? " done" : "");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = isDone;
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) medalChecklistDone[key] = true;
+        else delete medalChecklistDone[key];
+        saveMedalChecklist();
+        renderMedalChecklist();
+      });
+      const text = document.createElement("span");
+      text.textContent = item;
+      label.append(checkbox, text);
+      itemsBox.appendChild(label);
+    });
+
+    if (itemsBox.childElementCount === 0 && medalChecklistShowUnfinished) {
+      const none = document.createElement("div");
+      none.style.cssText = "padding:10px;color:#888;font-size:13px;";
+      none.textContent = "未チェック項目はありません";
+      itemsBox.appendChild(none);
+    }
+
+    category.appendChild(itemsBox);
+    container.appendChild(category);
+  });
+
+  updateMedalChecklistSummary();
+}
+
+function openMedalChecklist() {
+  const modal = document.getElementById("checklistModal");
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+  renderMedalChecklist();
+}
+
+function closeMedalChecklist() {
+  const modal = document.getElementById("checklistModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById("checklistBtn").addEventListener("click", openMedalChecklist);
+document.getElementById("checklistClose").addEventListener("click", closeMedalChecklist);
+document.getElementById("checklistModal").addEventListener("click", event => {
+  if (event.target.id === "checklistModal") closeMedalChecklist();
+});
+document.getElementById("checklistUnfinished").addEventListener("click", () => {
+  medalChecklistShowUnfinished = true;
+  renderMedalChecklist();
+});
+document.getElementById("checklistAll").addEventListener("click", () => {
+  medalChecklistShowUnfinished = false;
+  renderMedalChecklist();
+});
+document.getElementById("checklistReset").addEventListener("click", () => {
+  if (!confirm("チェックをすべて解除しますか？")) return;
+  medalChecklistDone = {};
+  saveMedalChecklist();
+  renderMedalChecklist();
+});
+
+
 </script>
 </body>
 </html>
