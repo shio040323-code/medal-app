@@ -364,7 +364,7 @@ img.noimage{
   font-size: 13px;
   line-height: 1.25;
   white-space: pre-line;
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -2024,12 +2024,21 @@ function renderSimulator() {
       cell.textContent = item ? simItemText(item) : "";
 
       if (!item) {
-        // iPadでは touch-action:none の要素で click が発生しない場合があるため、
-        // 空きマスは pointerup で直接入力画面を開く。
-        cell.addEventListener("pointerup", e => {
-          if (e.pointerType === "mouse" && e.button !== 0) return;
+        // 空きマスは click で入力画面を開く。
+        // pointerup と click を併用すると二重起動する端末があるため click に統一。
+        cell.setAttribute("role", "button");
+        cell.setAttribute("tabindex", "0");
+        cell.setAttribute("aria-label", `${bookIndex + 1}book ${index + 1}マス目に追加`);
+        cell.addEventListener("click", e => {
           e.preventDefault();
+          e.stopPropagation();
           openAddDataModal(index, false, bookIndex);
+        });
+        cell.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openAddDataModal(index, false, bookIndex);
+          }
         });
       } else {
         cell.addEventListener("pointerdown", e => {
