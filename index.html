@@ -601,7 +601,7 @@ style="
     <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
     <div class="add-data-form">
       <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;"></div></label>
-      <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></select></label>
+      <label>種類<input id="addType" type="text" placeholder="種類を入力" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"></label>
       <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
 <div id="addDataMessage" class="add-data-message"></div>
       <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
@@ -749,6 +749,9 @@ function mergeData(master, additions) {
   );
 
   (Array.isArray(additions) ? additions : []).forEach(item => {
+    // 1book・2bookのシミュレーター配置データはメイン画面に表示しない
+    if (item?._simOnly) return;
+
     const num = getNumberOnly(item.id);
 
     // 同じ数字がGitHubにあればGitHub側を使用
@@ -925,6 +928,22 @@ async function saveCloudSimulatorState() {
   return true;
 }
 
+function removeGitHubItemsFromBook2() {
+  if (!Array.isArray(simState.bookItems)) simState.bookItems = [[], []];
+  while (simState.bookItems.length < 2) simState.bookItems.push([]);
+  const githubIds = new Set((masterData || []).map(x => String(x?.id || "").toUpperCase()));
+  const before = simState.bookItems[1] || [];
+  // 旧版でGitHub一覧から自動投入されたデータだけを除外。
+  // 今後book2で手入力したデータには _book2Manual を付けて保護する。
+  simState.bookItems[1] = before.map(item => {
+    if (!item) return null;
+    const id = String(item.id || "").toUpperCase();
+    if (githubIds.has(id) && !item._book2Manual) return null;
+    return item;
+  });
+  simState.items = simState.bookItems[simState.currentBook] || [];
+}
+
 async function loadCloudSimulatorState() {
   if (!cloudUser) return false;
   const { data: row, error } = await supabaseClient.from("medal_simulator_state")
@@ -933,6 +952,7 @@ async function loadCloudSimulatorState() {
   if (row) {
     simState.faces = Number(row.faces) || simState.faces || 3;
     simState.bookItems[1] = Array.isArray(row.book2) ? row.book2 : [];
+    removeGitHubItemsFromBook2();
     try { localStorage.removeItem("medalSimulatorBook2Pending"); } catch (_) {}
     return true;
   }
@@ -1797,9 +1817,22 @@ function switchSimulatorBook(bookIndex) {
 
   simState.currentBook = book;
   simState.items = simState.bookItems[book] || (simState.bookItems[book] = []);
+  updateSimulatorBookControls();
   saveSimulatorState();
   updateBookTabs();
   renderSimulator();
+}
+
+function updateSimulatorBookControls() {
+  const isBook2 = simState.currentBook === 1;
+  ["simRoman", "simStart", "simEnd", "simDisplay"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = isBook2;
+  });
+  const help = document.querySelector(".sim-help");
+  if (help) help.textContent = isBook2
+    ? "2bookはGitHubの登録データを表示しません。空きマスをタップして管理番号・種類・詳細を自由に入力できます。PC・iPad間はSupabaseで同期します。"
+    : "空きマスをタップすると入力できます。ドラッグすると配置を入れ替えできます。";
 }
 
 function renderSimulator() {
@@ -1914,6 +1947,7 @@ function renderSimulator() {
 
   area.appendChild(bookBox);
   updateBookTabs();
+  updateSimulatorBookControls();
 }
 
 async function openSimulator() {
@@ -1945,6 +1979,7 @@ async function openSimulator() {
 
   simState.books = 2;
   simState.currentBook = Math.min(Math.max(Number(simState.currentBook) || 0, 0), 1);
+  removeGitHubItemsFromBook2();
   simState.items = simState.bookItems[simState.currentBook] || [];
   document.getElementById("simFaces").value = String(simState.faces);
   renderSimulator();
@@ -1975,6 +2010,11 @@ document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button 
 });
 
 function applySimulatorSelection() {
+  // 2bookはGitHubの一覧・番号範囲・bookNo.から独立した自由入力専用。
+  if (simState.currentBook === 1) {
+    renderSimulator();
+    return;
+  }
   const base = makeSimulatorList().slice();
 
   // メダル番号は昇順（小さい番号 → 大きい番号）
@@ -2010,29 +2050,9 @@ document.getElementById("simEnd").addEventListener("change", () => {
 let addTargetIndex = -1;
 
 function setupAddTypeSelect() {
-  const select = document.getElementById("addType");
-  if (!select) return;
-
-  const types = [...new Set(
-    (Array.isArray(data) ? data : [])
-      .map(item => String(item.type || "").trim())
-      .filter(Boolean)
-  )];
-
-  if (!types.length) types.push("ﾚｷﾞｭﾗｰ");
-
-  select.innerHTML = "";
-  const first = document.createElement("option");
-  first.value = "";
-  first.textContent = "種類を選択";
-  select.appendChild(first);
-
-  types.forEach(type => {
-    const option = document.createElement("option");
-    option.value = type;
-    option.textContent = type;
-    select.appendChild(option);
-  });
+  // 種類はGitHubの選択肢に依存せず、自由入力にする。
+  const input = document.getElementById("addType");
+  if (input) input.placeholder = "種類を自由に入力";
 }
 
 
@@ -2122,7 +2142,7 @@ async function addSimulatorData() {
   // シミュレーターでは、同じメダルを別bookに配置してもOK。
   // これはデータの複製ではなく「配置先の記録」です。
   // 既存データがあれば、その情報を参照して配置します。
-  const source = data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
+  const source = bookIndex === 1 ? null : data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
   const oldItem = editMode ? (bookItems[index] || null) : null;
 
   const item = {
@@ -2130,7 +2150,8 @@ async function addSimulatorData() {
     id,
     type: type || source?.type || "",
     detail: detail || source?.detail || "",
-    _simOnly: true
+    _simOnly: true,
+    ...(bookIndex === 1 ? { _book2Manual: true } : {})
   };
 
   if (oldItem) {
@@ -2140,15 +2161,8 @@ async function addSimulatorData() {
     bookItems[index] = item;
   }
 
-  // GitHub元データは変更しない。手入力の新規データだけを追加データとして保存・同期。
-  const isGitHubMaster = (masterData || []).some(x => String(x.id).toUpperCase() === id.toUpperCase());
-  if (!isGitHubMaster) {
-    const existingIndex = (addedData || []).findIndex(x => String(x.id).toUpperCase() === id.toUpperCase());
-    if (existingIndex >= 0) addedData[existingIndex] = item;
-    else addedData.push(item);
-    await saveAddedData(item);
-    if (cloudUser) await cloudUpsertAddedItem(item);
-  }
+  // シミュレーターの配置データは、どちらのbookもシミュレーター専用として保存する。
+  // メイン画面用のaddedData / medal_dataには追加・同期しない。
   simState.items = simState.bookItems[bookIndex] || [];
   await saveSimulatorState();
   renderSimulator();
