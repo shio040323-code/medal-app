@@ -623,6 +623,7 @@ img.noimage{
 }
 
 
+#appVersion{display:inline-block;font-size:11px;color:#666;background:#f2f2f2;border:1px solid #ccc;border-radius:10px;padding:2px 7px;margin-left:4px;white-space:nowrap;}
 </style>
 </head>
 
@@ -655,6 +656,7 @@ style="
 <button id="missingBtn">欠番</button>
 <button id="simulatorBtn">配置シミュレーター</button>
 <button id="checklistBtn">チェックリスト</button>
+<span id="appVersion" aria-label="アプリ更新番号">v1.0.6</span>
 <button onclick="clearFilters()">□</button>
 <div class="legend">
   L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
@@ -2029,6 +2031,12 @@ function renderSimulator() {
         cell.setAttribute("role", "button");
         cell.setAttribute("tabindex", "0");
         cell.setAttribute("aria-label", `${bookIndex + 1}book ${index + 1}マス目に追加`);
+        // 空きマス自身にclickを直接登録する。document側の一括検知に依存しない。
+        cell.addEventListener("click", e => {
+          e.preventDefault();
+          e.stopPropagation();
+          openAddDataModal(index, false, bookIndex);
+        });
         cell.addEventListener("keydown", e => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -2208,35 +2216,8 @@ document.getElementById("simEnd").addEventListener("change", () => {
 // =========================
 let addTargetIndex = -1;
 
-// 空きマスのタップを画面全体で捕捉する（2bookを含む）。
-// pointerup と click の両方を受けても、短時間の二重起動は防ぐ。
-let lastSimulatorEmptyOpenAt = 0;
-function handleSimulatorEmptyTap(event) {
-  const cell = event.target?.closest?.(".sim-slot.empty");
-  if (!cell) return;
-  const area = document.getElementById("simFacesArea");
-  if (!area || !area.contains(cell)) return;
-  const simulator = document.getElementById("simulator");
-  if (!simulator || getComputedStyle(simulator).display === "none") return;
-  const now = Date.now();
-  if (now - lastSimulatorEmptyOpenAt < 450) {
-    event.preventDefault();
-    event.stopPropagation();
-    return;
-  }
-  lastSimulatorEmptyOpenAt = now;
-  event.preventDefault();
-  event.stopPropagation();
-  const book = Number(cell.dataset.book);
-  const face = Number(cell.dataset.face);
-  const slot = Number(cell.dataset.slot);
-  if (![book, face, slot].every(Number.isFinite)) return;
-  openAddDataModal(face * 15 + slot, false, book);
-}
-
-// capture=true にして、他の要素のイベント処理より先に確実に拾う。
-document.addEventListener("pointerup", handleSimulatorEmptyTap, true);
-document.addEventListener("click", handleSimulatorEmptyTap, true);
+// 空きマスの入力画面は renderSimulator() 内で各セルに直接click登録する。
+// 画面全体のイベント捕捉には依存しない。
 
 function setupAddTypeSelect(selectedType = "") {
   // マスターデータと各bookの既存データから種類の候補を作成する。
