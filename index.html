@@ -2,2940 +2,803 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>スーベニアメダル管理</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#081a36">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="メダル管理">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ロルカナ未取得">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ロルカナ 未取得カード</title>
+
 <style>
-body {
-  font-family: sans-serif;
-  margin: 10px;
-}
-
-input {
-  max-width: 100px;
-  padding: 10px;
-  font-size: 16px;
-  margin-bottom: 4px;
-  width: 80%;
-  max-width: 300px;
+  * {
+    box-sizing: border-box;
   }
 
-button {
-  margin: 5px 0;
-}
-.grid {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.card {
-  width: 180px;
-  margin: 2px;
-  padding: 2px;
-}
-
-
-/* =========================
-   画像表示 高速化
-   ========================= */
-.card {
-  content-visibility: auto;
-  contain-intrinsic-size: 180px 180px;
-}
-
-.card img.medal-image {
-  display: block;
-  width: 100%;
-  height: 120px;
-  object-fit: contain;
-  background: #f5f5f5;
-  border-radius: 10px;
-  padding: 1px;
-  box-sizing: border-box;
-  aspect-ratio: 3 / 2;
-}
-
-/* 画像がない場合は背景の四角を表示しない */
-.card img.medal-image.noimage {
-  background: transparent;
-  border-radius: 0;
-  padding: 0;
-  object-fit: contain;
-}
-
-@media screen and (min-width: 700px) and (max-width: 800px) {
-  .card {
-    contain-intrinsic-size: 1px 180px;
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f5f5f5;
+    color: #222;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+                 "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
   }
-  .card img.medal-image {
-    height: 120px;
+
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    overscroll-behavior-y: contain;
   }
-}
-
-img {
-  width: 100%;
-  height: 120px;
-  object-fit: contain;
-  background: #f5f5f5;
-  border-radius: 10px;
-  padding: 1px;
-}
-img.noimage{
-  background: transparent;
-}
-.id {
-     font-size: 18px;
-     font-weight: bold; 
-    }
-.name {
-  font-size: 12px;
-}
-
-.location {
-  font-size: 12px;
-  color: gray;
-}
-
-.date {
-  font-size: 11px;
-  color: #999;
-}
-
-.type {
-  font-size: 12px;
-  color: #999;
-}
-
-.detail {
-  font-size: 12px;
-  font-weight: bold;
-}
-.filters {
-  display: flex;
-  flex-wrap: nowrap;
-
-  gap: 8px;
-
-  overflow-x: auto;
-
-  padding-bottom: 4px;
-}
-
-.filters label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  padding: 6px 30px;
-
-  background: #f3f3f3;
-  border-radius: 999px;
-
-  font-size: 15px;
-
-  cursor: pointer;
-
-  user-select: none;
-
-  transition: 0.2s;
-
-  white-space: nowrap;
-
-  flex: 0 0 auto;
-}
-
-.filters label:hover {
-  background: #e0e0e0;
-}
-
-.filters input[type="checkbox"] {
-  margin: 0;
-}
-.topbar {
-  position: sticky;
-  top: 0;
-
-  background: white;
-
-  z-index: 999;
-
-  padding: 4px 0;
-
-  border-bottom: 1px solid #ddd;
-}
-.book{
-  margin-left: 6px;
-  font-size: 12px;
-  color: #999;
-}
-.legend {
-  font-size: 12px;
-  color: #666;
-  padding: 3px 0;
-  white-space: nowrap;
-  overflow-x: auto;
-}
-/* =========================
-   iPad mini 6 縦向き
-   ========================= */
-@media screen and (min-width: 700px) and (max-width: 800px) {
 
   body {
-    margin: 6px;
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-left: env(safe-area-inset-left);
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-x: hidden;
   }
 
-  .topbar {
-    padding: 3px 0;
+  #header {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(10px);
+    padding: 10px 10px 8px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .sub-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 36px;
+    margin-bottom: 8px;
+  }
+
+  #title {
+    margin: 0;
+    min-width: 0;
+    font-size: clamp(16px, 4.8vw, 20px);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  #collectionLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid #315f9e;
+    border-radius: 8px;
+    background: #176fc1;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  #count {
+    font-size: 14px;
+    color: #666;
+    white-space: nowrap;
+  }
+
+  #setFilter {
+    width: 100%;
+    height: 42px;
+    margin-bottom: 7px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 0 10px;
+    font-size: 16px;
+    background: white;
+    color: #222;
   }
 
   #search {
-    width: 95% !important;
-    max-width: none !important;
-    box-sizing: border-box;
-    padding: 10px !important;
-    font-size: 16px !important;
-  }
-
-  #printIds {
-    width: 100px !important;
-    padding: 8px !important;
-    font-size: 16px !important;
-  }
-
-  button {
-    min-height: 40px;
-    padding: 6px 10px;
-    font-size: 15px;
-    touch-action: manipulation;
-  }
-
-  #pageInput {
-    width: 50px !important;
-    height: 36px;
-    padding: 4px !important;
-    font-size: 16px !important;
-    box-sizing: border-box;
-    text-align: center;
-  }
-
-  .filters {
-    gap: 6px;
-    padding: 5px 0;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .filters label {
-    padding: 9px 14px;
-    font-size: 15px;
-  }
-
-  .filters input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-  }
-
-  #locationSelect,
-  #nameSelect {
-    min-height: 40px;
-    padding: 6px 10px;
-    font-size: 15px;
-    max-width: 48%;
-  }
-
-  /* ★ 3列表示 */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
     width: 100%;
-    box-sizing: border-box;
+    height: 42px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 16px;
+    background: white;
+    outline: none;
+  }
+
+  #search:focus {
+    border-color: #888;
+  }
+
+  #status {
+    margin-top: 7px;
+    font-size: 12px;
+    color: #777;
+    min-height: 16px;
+  }
+
+  #gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px 5px 20px;
+    align-items: start;
   }
 
   .card {
-    width: auto;
-    margin: 0;
-    padding: 3px;
-    box-sizing: border-box;
     min-width: 0;
+    text-align: center;
   }
 
-  .card img {
+  .card-image-wrap {
+    position: relative;
     width: 100%;
-    height: 120px;
-    object-fit: contain;
+    aspect-ratio: 5 / 7;
+    background: #eee;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
+  }
+
+  /* Fが1枚以上：金枠 */
+  .card-image-wrap.foil:not(.purchased) {
+    box-shadow: 0 0 0 3px #d4a017, 0 1px 5px rgba(0,0,0,.25);
+  }
+
+  /* 購入済み：赤枠。Fありの場合は内側に金枠も残す */
+  .card-image-wrap.purchased {
+    box-shadow: 0 0 0 3px #b91c1c, 0 1px 5px rgba(0,0,0,.25);
+  }
+
+  .card-image-wrap.purchased.foil {
+    box-shadow: 0 0 0 3px #b91c1c,
+                inset 0 0 0 3px #d4a017,
+                0 1px 5px rgba(0,0,0,.25);
+  }
+
+  /* 購入済み：赤いハンコ風スタンプ */
+  .card-image-wrap.purchased::after {
+    content: "購入済";
+    position: absolute;
+    top: 10px; right: 8px; z-index: 2;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
     box-sizing: border-box;
+    border: 3px solid #b91c1c;
+    border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    color: #b91c1c;
+    font-size: 12px; font-weight: 900;
+    letter-spacing: 1px; text-align: center;
+    transform: rotate(-12deg);
+    pointer-events: none; opacity: .9;
   }
 
-  .id {
-    font-size: 16px;
+  .card-image-wrap.purchased::before {
+    content: "";
+    position: absolute;
+    top: 14px; right: 12px; z-index: 2;
+    width: 40px; height: 40px;
+    border: 1px solid #b91c1c; border-radius: 50%;
+    transform: rotate(-12deg);
+    pointer-events: none; opacity: .75;
   }
 
-  .name {
+  .card-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: pointer;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .zoom-button {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 5px 8px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    background: #fff;
+    color: #333;
     font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
-  .location {
+  .zoom-button:active {
+    background: #eee;
+  }
+
+  .no-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 12px;
+    background: transparent;
+  }
+
+  .card-code {
+    margin-top: 3px;
+    font-size: 14px;
+    line-height: 1.05;
+    font-weight: 700;
+    word-break: break-all;
+  }
+
+  .card-name {
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.15;
+    min-height: 25px;
+    word-break: break-word;
+  }
+
+  .card-rarity {
+    margin-top: 1px;
     font-size: 10px;
+    color: #777;
+    line-height: 1.1;
+  }
+
+  .card-counts {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .count-n,
+  .count-f {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
-  .date,
-  .type,
-  .detail,
-  .book {
-    font-size: 10px;
+  .count-n {
+    color: #555;
   }
-}
 
-/* =========================
-   配置シミュレーター
-   ========================= */
-#simulator {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0,0,0,.45);
-  overflow: auto;
-  padding: 10px;
-  box-sizing: border-box;
-}
-#simulator .sim-panel {
-  background: #fff;
-  max-width: 760px;
-  margin: 0 auto;
-  border-radius: 12px;
-  padding: 12px;
-  box-sizing: border-box;
-}
-.sim-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.sim-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-.sim-controls input,
-.sim-controls select {
-  min-height: 38px;
-  box-sizing: border-box;
-  font-size: 16px;
-  padding: 5px 8px;
-}
-.sim-controls input[type="number"] { width: 75px; }
-.sim-face {
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  padding: 8px;
-  margin-top: 10px;
-}
-.sim-face-title {
-  font-weight: bold;
-  margin-bottom: 6px;
-}
-.sim-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-}
-.sim-slot {
-  min-height: 62px;
-  border: 2px solid #888;
-  border-radius: 6px;
-  background: #fafafa;
-  padding: 4px;
-  box-sizing: border-box;
-  text-align: center;
-  font-size: 13px;
-  line-height: 1.25;
-  white-space: pre-line;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.sim-slot.empty { color: #aaa; }
-.sim-slot.drag-over { outline: 3px solid #333; }
-.sim-help {
-  font-size: 12px;
-  color: #666;
-  margin-top: 6px;
-}
-@media screen and (min-width: 700px) and (max-width: 800px) {
-  #simulator { padding: 6px; }
-  #simulator .sim-panel { width: 100%; }
-  .sim-slot { min-height: 68px; font-size: 13px; }
-}
+  .count-f {
+    color: #7a4d00;
+  }
 
-/* iPad用 データ追加画面 */
-#addDataModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  background: rgba(0,0,0,.45);
-  padding: 10px;
-  box-sizing: border-box;
-  overflow: auto;
-}
+  .count-f.active {
+    color: red;
+    font-size: 14px;
+    font-weight: 800;
+  }
 
-#addDataModal .add-data-panel {
-  background: #fff;
-  max-width: 520px;
-  margin: 20px auto;
-  border-radius: 12px;
-  padding: 14px;
-  box-sizing: border-box;
-}
+  #empty {
+    display: none;
+    text-align: center;
+    padding: 50px 20px;
+    color: #777;
+  }
 
-.add-data-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 17px;
-}
+  #loading {
+    text-align: center;
+    padding: 50px 20px;
+    color: #777;
+  }
 
-.add-data-form {
-  display: grid;
-  gap: 9px;
-}
+  #modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.94);
+    padding: 20px;
+  }
 
-.add-data-form label {
-  display: grid;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: bold;
-}
+  #modal.show {
+    display: flex;
+  }
 
-.add-data-form input {
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-  min-height: 42px;
-  padding: 7px 9px;
-  margin: 0;
-  font-size: 16px;
-  border: 1px solid #bbb;
-  border-radius: 7px;
-}
+  #modal-img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 5px;
+  }
 
-.add-data-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
+  #close {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: 18px;
+    color: white;
+    font-size: 38px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+  }
 
-.add-data-buttons button {
-  flex: 1;
-  min-height: 44px;
-}
+  @media (min-width: 700px) {
+    #gallery {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      padding: 10px;
+    }
 
-.add-data-message {
-  min-height: 18px;
-  font-size: 13px;
-  color: #b00020;
-}
+    .card-code {
+      font-size: 16px;
+    }
 
-.sim-slot.empty {
-  cursor: pointer;
-}
-
-.sim-slot.empty::after {
-  content: "タップして追加";
-  display: block;
-  font-size: 11px;
-  color: #aaa;
-  margin-top: 8px;
-}
-
-
-.add-delete-button{
-  background:#c62828 !important;
-  color:#fff !important;
-  border:none;
-}
-.add-delete-button:active{
-  opacity:.75;
-}
-#addDataModal.show{display:block !important; z-index:99999 !important;}
-
-.sim-book{margin:14px 0 22px;padding:10px;border:2px solid #888;border-radius:10px;background:#fafafa;}
-.sim-book-title{font-size:18px;font-weight:700;margin:0 0 8px;}
-
-.sim-book-tabs {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.sim-book-tabs button {
-  padding: 8px 14px;
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-}
-.sim-book-tabs button.active {
-  font-weight: bold;
-  border-width: 2px;
-}
-
-
-/* シミュレーター：開始番号から次の行に配置 */
-.sim-start-label {
-  flex-basis: 100%;
-  width: 100%;
-}
-
-/* シミュレーター操作欄：開始番号の前で確実に改行 */
-.sim-force-break { flex-basis:100%; width:100%; height:0; padding:0; margin:0; }
-/* =========================
-   iPad用 メダル管理チェックリスト
-   ========================= */
-#checklistModal {
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:4000;
-  background:rgba(0,0,0,.5);
-  padding:8px;
-  box-sizing:border-box;
-  overflow:auto;
-}
-#checklistModal.show { display:block; }
-.checklist-panel {
-  width:100%;
-  max-width:680px;
-  margin:8px auto;
-  padding:14px;
-  box-sizing:border-box;
-  background:#fff;
-  border-radius:14px;
-}
-.checklist-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
-  margin-bottom:10px;
-}
-.checklist-header strong { font-size:18px; }
-.checklist-summary {
-  background:#f3f5f8;
-  border-radius:10px;
-  padding:10px;
-  margin-bottom:10px;
-}
-.checklist-summary-line {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-weight:700;
-  gap:8px;
-}
-.checklist-progress {
-  height:9px;
-  background:#ddd;
-  border-radius:99px;
-  overflow:hidden;
-  margin-top:8px;
-}
-.checklist-progress > div {
-  height:100%;
-  width:0;
-  background:#2e8b57;
-  transition:width .15s;
-}
-.checklist-actions {
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-bottom:10px;
-}
-.checklist-actions button {
-  flex:1;
-  min-height:42px;
-  border:1px solid #bbb;
-  border-radius:8px;
-  background:#fff;
-  padding:7px 10px;
-}
-.checklist-category {
-  border:1px solid #ddd;
-  border-radius:10px;
-  margin:9px 0;
-  overflow:hidden;
-}
-.checklist-category summary {
-  cursor:pointer;
-  list-style:none;
-  padding:12px;
-  background:#f5f5f5;
-  font-weight:700;
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-}
-.checklist-category summary::-webkit-details-marker { display:none; }
-.checklist-items { padding:4px 10px 8px; }
-.checklist-item {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-height:46px;
-  padding:5px 2px;
-  border-bottom:1px solid #eee;
-  font-size:15px;
-}
-.checklist-item:last-child { border-bottom:0; }
-.checklist-item input {
-  width:23px;
-  height:23px;
-  max-width:none;
-  margin:0;
-  flex:0 0 23px;
-  accent-color:#23834b;
-}
-.checklist-item.done span {
-  color:#999;
-  text-decoration:line-through;
-}
-@media screen and (min-width:700px) and (max-width:800px) {
-  #checklistModal { padding:6px; }
-  .checklist-panel { margin:4px auto; padding:12px; }
-  .checklist-item { min-height:50px; font-size:16px; }
-  .checklist-item input { width:25px; height:25px; flex-basis:25px; }
-}
-
-
-#appVersion{display:inline-block;font-size:11px;color:#666;background:#f2f2f2;border:1px solid #ccc;border-radius:10px;padding:2px 7px;margin-left:4px;white-space:nowrap;}
+    .card-name {
+      font-size: 12px;
+    }
+  }
 </style>
 </head>
 
 <body>
-<div class="topbar">
-<input type="text" id="search" placeholder="検索（番号・名前・場所・詳細・ID）"
-style="
-  width:250px;
-  padding:2px 4px;
-  font-size:12px;
-   margin-bottom: 0;
-  "
->
-<br>
-<button onclick="prevPage()">← BACK</button>
-<input
-  type="number"
-  id="pageInput"
-  min="1"
-  style="
-  width:30px;
-  padding:2px 4px;
-  font-size:12px;
-  "
->
-<span id="totalPages"></span>
 
-<button onclick="nextPage()">NEXT →</button>
-<button id="missingBtn">欠番</button>
-<button id="simulatorBtn">配置シミュレーター</button>
-<button id="checklistBtn">チェックリスト</button>
-<span id="appVersion" aria-label="アプリ更新番号">v1.1.4</span>
-<button onclick="clearFilters()">□</button>
-<div class="legend">
-  L:ﾗﾝﾄﾞ　S:ｼｰ　B:ﾎﾞﾝﾎﾞﾔｰｼﾞｭ　D:ﾘｿﾞｰﾄﾗｲﾝ　H:ﾎﾃﾙ　A:特別付録　LS:共通
-</div>
-<div id="typeFilters" class="filters"></div>
-<select id="locationSelect">
-  <option value="">すべて</option>
-</select>
-
-<select id="nameSelect">
-  <option value="">すべて</option>
-</select>
-</div>
-
-<!-- iPad用 メダル管理チェックリスト -->
-<div id="checklistModal" aria-hidden="true">
-  <div class="checklist-panel">
-    <div class="checklist-header">
-      <strong>メダル管理チェックリスト</strong>
-      <button type="button" id="checklistClose">閉じる</button>
-    </div>
-    <div class="checklist-summary">
-      <div class="checklist-summary-line">
-        <span id="checklistTotalText">全体 0 / 33</span>
-        <span id="checklistPercent">0%</span>
-      </div>
-      <div class="checklist-progress"><div id="checklistProgressBar"></div></div>
-    </div>
-    <div class="checklist-actions">
-      <button type="button" id="checklistUnfinished">未チェックのみ</button>
-      <button type="button" id="checklistAll">すべて表示</button>
-      <button type="button" id="checklistReset">チェックを全解除</button>
-    </div>
-    <div id="checklistCategories"></div>
+<header id="header">
+  <div class="title-row">
+    <h1 id="title">ロルカナ 未取得カード</h1>
   </div>
-</div>
 
-
-<div id="simulator">
-  <div class="sim-panel">
-    <div class="sim-header">
-      <strong>スーベニアメダル配置シミュレーター</strong>
-      <button id="simClose">閉じる</button>
-    </div>
-
-    <div class="sim-controls">
-      <label>面数
-        <select id="simFaces">
-          <option value="3">3面</option>
-          <option value="4">4面</option>
-        </select>
-      </label>
-
-      <label>bookNo.
-        <select id="simRoman"></select>
-      </label>
-
-      <div id="simBookTabs" class="sim-book-tabs">
-        <button type="button" data-book-view="0" class="active">1book</button>
-        <button type="button" data-book-view="1">2book</button>
-      </div>
-
-      <div class="sim-force-break"></div>
-
-      <label>開始
-        <input id="simStart" type="number" value="1" min="1">
-      </label>
-
-      <label>終了
-        <input id="simEnd" type="number" value="45" min="1">
-      </label>
-
-      <button id="simDisplay">表示</button>
-      <button id="simExportCsv" type="button">CSV出力</button>
-      
-    </div>
-
-    <div class="sim-help">
-      空きマスをタップすると入力できます。メダルをタップすると編集・このマスから外す操作ができます。GitHubの元データは削除されません。ドラッグすると配置を入れ替えできます。2bookはSupabaseに同期します。
-    </div>
-    <div id="simFacesArea"></div>
+  <div class="sub-title-row">
+    <a id="collectionLink" href="./collection.html">コレクション表</a>
+    <div id="count">読み込み中...</div>
   </div>
+
+  <select id="setFilter" aria-label="カードセット選択">
+    <option value="">すべてのJA</option>
+  </select>
+
+  <input
+    id="search"
+    type="search"
+    placeholder="カード番号・カード名で検索"
+    autocomplete="off"
+    autocapitalize="off"
+    spellcheck="false"
+  >
+
+  <div id="status"></div>
+</header>
+
+<div id="loading">未取得カードデータを読み込んでいます...</div>
+<div id="empty">該当する未取得カードがありません。</div>
+<div id="gallery"></div>
+
+<div id="modal">
+  <span id="close">×</span>
+  <img id="modal-img" alt="">
 </div>
 
-<!-- iPad用 データ入力画面 -->
-<div id="addDataModal">
-  <div class="add-data-panel">
-    <div class="add-data-header"><strong id="addDataTitle">メダルデータを追加</strong><button type="button" id="addDataClose">閉じる</button></div>
-    <div class="add-data-form">
-      <label>管理番号<div style="display:flex;align-items:center;gap:6px;"><select id="addIdPrefix" style="min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option>L</option><option>S</option><option>B</option><option>D</option><option>H</option><option>A</option><option>LS</option></select><span>-</span><input id="addIdNumber" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0001" style="flex:1;min-width:0;"><div style="display:flex;flex-direction:column;gap:2px;"><button type="button" id="addIdUp" aria-label="管理番号を1増やす" style="min-width:38px;min-height:24px;line-height:1;font-size:16px;">↑</button><button type="button" id="addIdDown" aria-label="管理番号を1減らす" style="min-width:38px;min-height:24px;line-height:1;font-size:16px;">↓</button></div></div></label>
-      <div style="display:flex;justify-content:space-between;gap:10px;margin:2px 0 8px;"><button type="button" id="addSlotPrev" style="flex:1;min-height:38px;">← 前のメダル</button><button type="button" id="addSlotNext" style="flex:1;min-height:38px;">次のメダル →</button></div>
-      <label>種類<select id="addType" style="width:100%;box-sizing:border-box;min-height:42px;padding:7px 9px;font-size:16px;border:1px solid #bbb;border-radius:7px;"><option value="">種類を選択</option></select></label>
-      <label>詳細<input id="addDetail" type="text" placeholder="詳細"></label>
-<div id="addDataMessage" class="add-data-message"></div>
-      <div class="add-data-buttons"><button type="button" id="addDataCancel">キャンセル</button><button id="addDataDelete" type="button" class="add-delete-button" style="display:none;">このデータを削除</button><button id="addDataClearAll" type="button" class="add-delete-button">保存データを全削除</button><button type="button" id="addDataSave">このマスに追加</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="grid" id="grid"></div>
-<div id="cloudPanel" style="position:fixed;right:10px;top:10px;z-index:1500;background:#fff;border:1px solid #bbb;border-radius:10px;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:13px;max-width:320px;">
-  <div id="cloudStatus" style="font-weight:bold;margin-bottom:4px;">☁ 未ログイン（2bookは端末内の一時保存）</div>
-  <div id="cloudLoginArea">
-    <input id="cloudEmail" type="email" placeholder="メールアドレス" style="width:145px;max-width:145px;padding:6px;margin:2px;">
-    <input id="cloudPassword" type="password" placeholder="パスワード" style="width:145px;max-width:145px;padding:6px;margin:2px;">
-    <button id="cloudLogin" type="button">Supabaseログイン</button>
-  </div>
-  <button id="cloudLogout" type="button" style="display:none;">ログアウト</button>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const locationGroups = {
+"use strict";
 
-  "ランド": [
-    "ﾜｰﾙﾄﾞﾊﾞｻﾞｰﾙ",
-    "ｱﾄﾞﾍﾞﾝﾁｬｰﾗﾝﾄﾞ",
-    "ｳｴｽﾀﾝﾗﾝﾄﾞ",
-    "ﾌｧﾝﾀｼﾞｰﾗﾝﾄﾞ",
-    "ﾄｩｰﾝﾀｳﾝ",
-    "ﾄｩﾓﾛｰﾗﾝﾄﾞ"
-  ],
+let allCards = [];
+let filteredCards = [];
 
-  "シー": [
-    "ﾒﾃﾞｨﾃﾚｰﾆｱﾝﾊｰﾊﾞｰ",
-    "ｱﾒﾘｶﾝｳｫｰﾀｰﾌﾛﾝﾄ",
-    "ﾛｽﾄﾘﾊﾞｰﾃﾞﾙﾀ",
-    "ﾏｰﾒｲﾄﾞﾗｸﾞｰﾝ",
-    "ﾐｽﾃﾘｱｽｱｲﾗﾝﾄﾞ",
-    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽ"
-  ],
+const gallery = document.getElementById("gallery");
+const search = document.getElementById("search");
+const setFilter = document.getElementById("setFilter");
+const count = document.getElementById("count");
+const status = document.getElementById("status");
+const loading = document.getElementById("loading");
+const empty = document.getElementById("empty");
+const modal = document.getElementById("modal");
+const modalImg = document.getElementById("modal-img");
+const close = document.getElementById("close");
 
-  "ホテル": [
-    "ﾐﾗｺｽﾀ",
-    "ﾃﾞｨｽﾞﾆｰﾗﾝﾄﾞﾎﾃﾙ",
-    "ｱﾝﾊﾞｻﾀﾞｰﾎﾃﾙ",
-    "ｾﾚﾌﾞﾚｰｼｮﾝﾎﾃﾙ",
-    "ﾄｲｽﾄｰﾘｰﾎﾃﾙ",
-    "ﾌｧﾝﾀｼﾞｰｽﾌﾟﾘﾝｸﾞｽﾎﾃﾙ"
-  ],
+// iPad側だけで管理する「購入済み」情報
+const PURCHASED_KEY = "lorcana_ipad_purchased_v1";
+let purchasedCards = loadPurchasedCards();
 
-  "リゾートライン": [
-    "ﾘｿﾞｰﾄﾗｲﾝ",  
-  ],
-  "特別付録": [
-    "特別付録",  
-  ]
-}
-let data = []
-let masterData = []
-let addedData = []
-let imageFolder = "images"
-let currentPage = 1
-const pageSize = 50
-let filteredData = []
-
-// Supabase（2book・iPad追加データの共有保存）
-const SUPABASE_URL = "https://tdlhidndalgctmpqggxu.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_2eJD9STd9kUIti6zHRmmAg_2zTVk4bJ";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let cloudUser = null;
-let cloudChannel = null;
-let cloudSyncBusy = false;
-
-
-// データ読み込み
-async function loadData() {
+function loadPurchasedCards() {
   try {
-    const response = await fetch("./data.json", {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      throw new Error(`data.json読み込みエラー: ${response.status}`);
-    }
-
-    masterData = await response.json();
-
-    // iPad内に保存した追加データを読み込む
-    addedData = await loadAddedData();
-
-    // GitHubのdata.jsonを優先して合体
-    data = mergeData(masterData, addedData);
-
-    setupFilter();
-    createLocationSelect();
-
-    filteredData = data;
-
-    // アプリ起動時は必ずメイン画面の最終ページを表示
-    currentPage = Math.max(
-      1,
-      Math.ceil(filteredData.length / pageSize)
-    );
-    localStorage.setItem("currentPage", currentPage);
-
-    renderPage();
-    setupSimulatorRoman();
-    // 全画像の先読みは行わない。必要な画像だけ表示時に読み込む。
-
-    console.log("GitHubのdata.json + iPad追加データを読み込みました");
+    const saved = localStorage.getItem(PURCHASED_KEY);
+    const list = saved ? JSON.parse(saved) : [];
+    return new Set(Array.isArray(list) ? list.map(String) : []);
   } catch (error) {
-    console.error("data.jsonの読み込みに失敗しました", error);
-
-    // オフライン時はiPad保存分だけでも表示
-    try {
-      addedData = await loadAddedData();
-      data = mergeData([], addedData);
-      setupFilter();
-      createLocationSelect();
-      filteredData = data;
-      // オフライン起動時も最終ページを表示
-      currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
-      localStorage.setItem("currentPage", currentPage);
-      renderPage();
-      setupSimulatorRoman();
-    } catch (e) {
-      console.error("iPad保存データの読み込みにも失敗しました", e);
-    }
+    console.warn("購入情報の読み込みに失敗しました", error);
+    return new Set();
   }
 }
 
-// 管理番号の数字だけを取り出す
-// L-0001 / S-0001 / H-0001 / LS-0001 → 1
-function getNumberOnly(id) {
-  const match = String(id || "").match(/\d+/);
-  return match ? String(Number(match[0])) : "";
+function savePurchasedCards() {
+  localStorage.setItem(PURCHASED_KEY, JSON.stringify([...purchasedCards]));
 }
 
-// GitHub側を優先してデータを合体
-function mergeData(master, additions) {
-  const result = Array.isArray(master) ? [...master] : [];
-
-  const masterNumbers = new Set(
-    result
-      .map(item => getNumberOnly(item.id))
-      .filter(Boolean)
-  );
-
-  (Array.isArray(additions) ? additions : []).forEach(item => {
-    // 1book・2bookのシミュレーター配置データはメイン画面に表示しない
-    if (item?._simOnly) return;
-
-    const num = getNumberOnly(item.id);
-
-    // 同じ数字がGitHubにあればGitHub側を使用
-    if (num && masterNumbers.has(num)) return;
-
-    result.push(item);
-  });
-
-  return result;
+function getCardKey(card) {
+  return String(card.code || card.id || card.image || card.name || "");
 }
 
-// =========================
-// iPad内データ保存 IndexedDB
-// =========================
-const ADD_DB_NAME = "medalAppDB";
-const ADD_STORE_NAME = "addedData";
-const ADD_DB_VERSION = 2;
+function togglePurchased(card, wrap) {
+  const key = getCardKey(card);
+  if (!key) return;
 
-function openAddedDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(ADD_DB_NAME, ADD_DB_VERSION);
-
-    request.onupgradeneeded = event => {
-      const db = event.target.result;
-
-      if (!db.objectStoreNames.contains(ADD_STORE_NAME)) {
-        db.createObjectStore(ADD_STORE_NAME, { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains(SIM_DB_STORE_NAME)) {
-        db.createObjectStore(SIM_DB_STORE_NAME, { keyPath: "id" });
-      }
-    };
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function loadAddedData() {
-  return openAddedDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(ADD_STORE_NAME, "readonly");
-      const request = tx.objectStore(ADD_STORE_NAME).getAll();
-
-      request.onsuccess = () => {
-        resolve((request.result || []).map(item => ({ ...item, _local: true })));
-        db.close();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-        db.close();
-      };
-    });
-  });
-}
-
-function saveAddedData(item) {
-  return openAddedDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
-      tx.objectStore(ADD_STORE_NAME).put(item);
-
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    });
-  });
-}
-
-
-
-// ===== Supabase同期 =====
-function updateCloudUI() {
-  const status = document.getElementById("cloudStatus");
-  const login = document.getElementById("cloudLoginArea");
-  const logout = document.getElementById("cloudLogout");
-  if (!status) return;
-  if (cloudUser) {
-    status.textContent = "☁ Supabase同期中";
-    status.style.color = "green";
-    if (login) login.style.display = "none";
-    if (logout) logout.style.display = "inline-block";
+  if (purchasedCards.has(key)) {
+    purchasedCards.delete(key);
   } else {
-    status.textContent = "☁ 未ログイン（2bookは端末内の一時保存）";
-    status.style.color = "#b00";
-    if (login) login.style.display = "block";
-    if (logout) logout.style.display = "none";
-  }
-}
-
-async function ensureCloudUser() {
-  if (cloudUser) return cloudUser;
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    cloudUser = session?.user || null;
-    updateCloudUI();
-  } catch (e) { console.error("Supabaseセッション取得エラー", e); }
-  return cloudUser;
-}
-
-async function cloudUpsertAddedItem(item) {
-  if (!cloudUser || !item?.id) return false;
-  const row = {
-    id: stableCloudId(item.id), medal_id: String(item.id),
-    name: item.name || "", location: item.location || "", date: item.date || "",
-    type: item.type || "", detail: item.detail || "", book_no: item.book_no || ""
-  };
-  const { error } = await supabaseClient.from("medal_data").upsert(row, { onConflict: "medal_id" });
-  if (error) { console.error("medal_data同期エラー", error); return false; }
-  return true;
-}
-
-function stableCloudId(id) {
-  let h = 2166136261n;
-  for (const ch of String(id || "")) { h ^= BigInt(ch.codePointAt(0)); h = (h * 16777619n) & 0x1fffffffffffffn; }
-  return Number(h % 9000000000000000n) || 1;
-}
-
-async function loadCloudAddedData() {
-  if (!cloudUser) return [];
-  const { data: rows, error } = await supabaseClient.from("medal_data")
-    .select("medal_id,name,location,date,type,detail,book_no")
-    .order("medal_id", { ascending: true });
-  if (error) { console.error("Supabase追加データ取得エラー", error); return []; }
-  const cloudRows = (rows || []).map(r => ({
-    id:r.medal_id, name:r.name||"", location:r.location||"", date:r.date||"",
-    type:r.type||"", detail:r.detail||"", book_no:r.book_no||"", _local:true, _cloud:true, _simOnly:true
-  }));
-  addedData = cloudRows;
-  const db = await openAddedDB();
-  await new Promise((resolve,reject) => {
-    const tx = db.transaction(ADD_STORE_NAME, "readwrite");
-    const store = tx.objectStore(ADD_STORE_NAME);
-    store.clear();
-    cloudRows.forEach(item => store.put(item));
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
-  data = mergeData(masterData, addedData);
-  setupFilter(); createLocationSelect(); filteredData = data; renderPage(); setupSimulatorRoman();
-  return cloudRows;
-}
-
-async function migrateLocalAddedDataToCloud() {
-  if (!cloudUser) return;
-  const localRows = await loadAddedData();
-  for (const item of localRows) {
-    // GitHubのdata.jsonに存在するIDはクラウド追加データとして登録しない
-    const fromGitHub = (masterData || []).some(x => String(x.id).toUpperCase() === String(item.id).toUpperCase());
-    if (!fromGitHub) await cloudUpsertAddedItem(item);
-  }
-  await loadCloudAddedData();
-}
-
-async function saveCloudSimulatorState(snapshot = null) {
-  if (!cloudUser) return false;
-  // 保存開始時点のスナップショットを使い、次の入力で変化した配列を参照しない。
-  const source = snapshot || {
-    faces: simState.faces,
-    book2: Array.isArray(simState.bookItems?.[1]) ? structuredClone(simState.bookItems[1]) : []
-  };
-  const payload = {
-    user_id: cloudUser.id,
-    faces: Number(source.faces) || 3,
-    book2: Array.isArray(source.book2) ? source.book2 : [],
-    updated_at: new Date().toISOString()
-  };
-  const { error } = await supabaseClient.from("medal_simulator_state").upsert(payload, { onConflict: "user_id" });
-  if (error) { console.error("2book Supabase保存エラー", error); return false; }
-  try { localStorage.removeItem("medalSimulatorBook2Pending"); } catch (_) {}
-  return true;
-}
-
-function removeGitHubItemsFromBook2() {
-  if (!Array.isArray(simState.bookItems)) simState.bookItems = [[], []];
-  while (simState.bookItems.length < 2) simState.bookItems.push([]);
-  const githubIds = new Set((masterData || []).map(x => String(x?.id || "").toUpperCase()));
-  const before = simState.bookItems[1] || [];
-  // 旧版でGitHub一覧から自動投入されたデータだけを除外。
-  // 今後book2で手入力したデータには _book2Manual を付けて保護する。
-  simState.bookItems[1] = before.map(item => {
-    if (!item) return null;
-    const id = String(item.id || "").toUpperCase();
-    if (githubIds.has(id) && !item._book2Manual) return null;
-    return item;
-  });
-  simState.items = simState.bookItems[simState.currentBook] || [];
-}
-
-async function loadCloudSimulatorState() {
-  if (!cloudUser) return false;
-  const { data: row, error } = await supabaseClient.from("medal_simulator_state")
-    .select("faces,book2").eq("user_id", cloudUser.id).maybeSingle();
-  if (error) { console.error("2book Supabase読込エラー", error); return false; }
-  if (row) {
-    simState.faces = Number(row.faces) || simState.faces || 3;
-    simState.bookItems[1] = Array.isArray(row.book2) ? row.book2 : [];
-    removeGitHubItemsFromBook2();
-    try { localStorage.removeItem("medalSimulatorBook2Pending"); } catch (_) {}
-    return true;
-  }
-  // 未登録なら呼び出し元（ローカル復元後）が必要に応じて初期保存する。
-  return false;
-}
-
-function setupCloudRealtime() {
-  if (!cloudUser) return;
-  if (cloudChannel) { try { supabaseClient.removeChannel(cloudChannel); } catch (_) {} }
-  cloudChannel = supabaseClient.channel("medal-sync-" + cloudUser.id)
-    .on("postgres_changes", { event:"*", schema:"public", table:"medal_data" }, async () => {
-      await loadCloudAddedData();
-      if (typeof renderSimulator === "function") renderSimulator();
-    })
-    .on("postgres_changes", { event:"*", schema:"public", table:"medal_simulator_state", filter:`user_id=eq.${cloudUser.id}` }, async () => {
-      const modal = document.getElementById("addDataModal");
-      if (simulatorSaveInProgress || cloudSyncBusy ||
-          (modal && modal.classList.contains("show") &&
-           (modal.dataset.dirty === "1" || modal.dataset.moving === "1" || modal.dataset.saving === "1"))) return;
-      cloudSyncBusy = true;
-      try {
-        const activeBook = simState.currentBook;
-        await loadCloudSimulatorState();
-        simState.currentBook = activeBook;
-        simState.items = simState.bookItems[activeBook] || [];
-        const faceSelect = document.getElementById("simFaces");
-        if (faceSelect) faceSelect.value = String(simState.faces);
-        if (typeof renderSimulator === "function") renderSimulator();
-      } finally { cloudSyncBusy = false; }
-    })
-    .subscribe();
-}
-
-async function initializeCloudSync() {
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    cloudUser = session?.user || null;
-    updateCloudUI();
-    if (cloudUser) {
-      await migrateLocalAddedDataToCloud();
-      setupCloudRealtime();
-    }
-  } catch (e) { console.error("Supabase初期化エラー", e); }
-}
-
-document.getElementById("cloudLogin")?.addEventListener("click", async () => {
-  const email = document.getElementById("cloudEmail").value.trim();
-  const password = document.getElementById("cloudPassword").value;
-  if (!email || !password) { alert("メールアドレスとパスワードを入力してください。"); return; }
-  const status = document.getElementById("cloudStatus");
-  if (status) status.textContent = "☁ ログイン中…";
-  const { data: authData, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) { console.error(error); updateCloudUI(); alert("Supabaseにログインできませんでした。\n" + error.message); return; }
-  cloudUser = authData.user;
-  updateCloudUI();
-  await migrateLocalAddedDataToCloud();
-  if (document.getElementById("simulator")?.style.display !== "none") {
-    const restored = await loadSimulatorState();
-    if (!restored) { simState.bookItems = [[], []]; buildSimulatorBooks(); }
-    const cloudStateExists = await loadCloudSimulatorState();
-    if (!cloudStateExists) await saveCloudSimulatorState();
-    await saveSimulatorState();
-    simState.items = simState.bookItems[simState.currentBook] || [];
-    renderSimulator();
-  }
-  setupCloudRealtime();
-});
-
-document.getElementById("cloudLogout")?.addEventListener("click", async () => {
-  if (cloudChannel) { try { await supabaseClient.removeChannel(cloudChannel); } catch (_) {} cloudChannel = null; }
-  await supabaseClient.auth.signOut();
-  cloudUser = null;
-  updateCloudUI();
-});
-
-supabaseClient.auth.onAuthStateChange((_event, session) => {
-  cloudUser = session?.user || null;
-  updateCloudUI();
-  if (!cloudUser && cloudChannel) {
-    try { supabaseClient.removeChannel(cloudChannel); } catch (_) {}
-    cloudChannel = null;
-  }
-});
-
-document.addEventListener("visibilitychange", async () => {
-  const modal = document.getElementById("addDataModal");
-  if (document.visibilityState !== "visible" || simulatorSaveInProgress ||
-      (modal && modal.classList.contains("show") && modal.dataset.dirty === "1") ||
-      !(await ensureCloudUser())) return;
-  await loadCloudAddedData();
-  await loadCloudSimulatorState();
-  simState.items = simState.bookItems[simState.currentBook] || [];
-  if (document.getElementById("simulator")?.style.display !== "none") renderSimulator();
-});
-
-setInterval(async () => {
-  const modal = document.getElementById("addDataModal");
-  if (document.visibilityState !== "visible" || simulatorSaveInProgress ||
-      (modal && modal.classList.contains("show") &&
-       (modal.dataset.dirty === "1" || modal.dataset.moving === "1" || modal.dataset.saving === "1")) ||
-      !(await ensureCloudUser())) return;
-  await loadCloudSimulatorState();
-  simState.items = simState.bookItems[simState.currentBook] || [];
-  if (document.getElementById("simulator")?.style.display !== "none") renderSimulator();
-}, 30000);
-
-
-loadData()
-
-
-
-
-// 検索イベント
-document.getElementById("search").addEventListener("input", applyFilter)
-
-
-// チェックボックス生成
-function setupFilter() {
-  const container = document.getElementById("typeFilters")
-  container.innerHTML = ""
-
-  const types = [...new Set(data.map(item => item.type))]
-
-  types.forEach(type => {
-    const label = document.createElement("label")
-    label.style.marginRight = "10px"
-
-    const cb = document.createElement("input")
-    cb.type = "checkbox"
-    cb.value = type
-    cb.checked = true
-
-    cb.addEventListener("change", applyFilter)
-
-    label.appendChild(cb)
-    label.appendChild(document.createTextNode(" " + type))
-
-    container.appendChild(label)
-  })
-}
-function createLocationSelect() {
-
-  const locationSelect =
-    document.getElementById("locationSelect")
-
-  const nameSelect =
-    document.getElementById("nameSelect")
-
-  // エリアを初期化
-  locationSelect.innerHTML =
-    `<option value="">すべて</option>`
-
-  // 今まで通りグループ分け
-  for (const groupName in locationGroups) {
-
-    const optgroup =
-      document.createElement("optgroup")
-
-    optgroup.label = groupName
-
-    locationGroups[groupName]
-      .forEach(location => {
-
-        const option =
-          document.createElement("option")
-
-        option.value = location
-        option.textContent = location
-
-        optgroup.appendChild(option)
-      })
-
-    locationSelect.appendChild(optgroup)
+    purchasedCards.add(key);
   }
 
-
-  // エリアが変更されたとき
-  locationSelect.addEventListener(
-    "change",
-    () => {
-
-      createNameSelect()
-
-      applyFilter()
-    }
-  )
-
-
-  // 店舗が変更されたとき
-  nameSelect.onchange = applyFilter
-
-
-  // 最初の店舗一覧を作る
-  createNameSelect()
+  savePurchasedCards();
+  wrap.classList.toggle("purchased", purchasedCards.has(key));
 }
-function createNameSelect() {
 
-  const locationSelect =
-    document.getElementById("locationSelect")
+function normalize(value) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\\s\\-_]/g, "");
+}
 
-  const nameSelect =
-    document.getElementById("nameSelect")
+function cardSearchText(card) {
+  return normalize([
+    card.code,
+    card.name,
+    card.image,
+    card.rarity,
+    card.version,
+    card.set,
+    card.type
+  ].join(" "));
+}
 
-  const selectedLocation =
-    locationSelect.value
-
-
-  // 店舗プルダウンを初期化
-  nameSelect.innerHTML =
-    `<option value="">すべて</option>`
-
-
-  // 選択されたエリアのデータだけ取得
-  let targetData = data
-
-  if (selectedLocation !== "") {
-
-    targetData =
-      data.filter(item =>
-        item.location === selectedLocation
-      )
+function getImageData(card) {
+  if (card.imageData && typeof card.imageData === "string") {
+    return card.imageData;
   }
 
-
-  // nameだけ取り出して重複削除
-  const names = [
-    ...new Set(
-      targetData
-        .map(item => item.name)
-        .filter(name => name)
-    )
-  ]
-
-
-  // 名前順
-  names.sort()
-
-
-  // 店舗プルダウン作成
-  names.forEach(name => {
-
-    const option =
-      document.createElement("option")
-
-    option.value = name
-    option.textContent = name
-
-    nameSelect.appendChild(option)
-  })
-}
-
-function applyFilter() {
-
-  const keyword = normalize(
-    document.getElementById("search").value
-  )
-
-  // typeチェック
-  const checkedTypes = [
-    ...document.querySelectorAll("#typeFilters input:checked")
-  ].map(cb => cb.value)
-
-  // locationチェック
-  const selectedLocation = 
-  document.getElementById("locationSelect").value
-  const selectedName =
-  document.getElementById("nameSelect").value
-
-
-  const filtered = data.filter(item => {
-
-    const matchKeyword =
-
-      normalize(item.id).includes(keyword) ||
-      normalize(item.name).includes(keyword) ||
-      normalize(item.location).includes(keyword) ||
-      normalize(item.type).includes(keyword) ||
-      normalize(item.detail).includes(keyword) ||
-      normalize(String(item.bookNum || "")).includes(keyword) ||
-      normalize(toRoman(item.bookNum || 0)).includes(keyword)
-
-    const matchType =
-      checkedTypes.length === 0
-        ? true
-        : checkedTypes.includes(item.type)
-
-    const matchLocation =
-  selectedLocation === ""
-    ? true
-    : item.location === selectedLocation
-    const matchName =
-  selectedName === ""
-    ? true
-    : item.name === selectedName
-
-    return (
-  matchKeyword &&
-  matchType &&
-  matchLocation &&
-  matchName
-)
-  })
-
-filteredData = filtered;
-
-const savedPage =
-  parseInt(localStorage.getItem("currentPage")) || 1;
-
-const totalPages =
-  Math.max(
-    1,
-    Math.ceil(filteredData.length / pageSize)
-  );
-
-currentPage =
-  Math.min(savedPage, totalPages);
-
-renderPage();
-
-}
-
-function render(list){
-  const grid = document.getElementById("grid");
-  if (!grid) return;
-
-  // 前回の監視を解除
-  if (window._medalImageObserver) {
-    window._medalImageObserver.disconnect();
+  // 将来 imageData の名前が変わった場合にも対応
+  if (card.imageBase64 && typeof card.imageBase64 === "string") {
+    return card.imageBase64.startsWith("data:")
+      ? card.imageBase64
+      : "data:image/webp;base64," + card.imageBase64;
   }
 
-  grid.innerHTML = "";
-
-  const BATCH_SIZE = 15;
-  let rendered = 0;
-
-  // 画像監視を1つだけ作る
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-
-      const img = entry.target;
-      const src = img.dataset.src;
-      if (src && !img.src) {
-        img.src = src;
-      }
-      observer.unobserve(img);
-    });
-  }, {
-    root: null,
-    rootMargin: "500px 0px",
-    threshold: 0.01
-  });
-
-  window._medalImageObserver = observer;
-
-  function appendBatch() {
-    const fragment = document.createDocumentFragment();
-    const end = Math.min(rendered + BATCH_SIZE, list.length);
-
-    for (let i = rendered; i < end; i++) {
-      const item = list[i];
-      const imgId = String(item.id || "").split("-").pop();
-      const finalImg = `${imageFolder}/${imgId}.webp`;
-
-      const div = document.createElement("div");
-      div.className = "card";
-
-      div.innerHTML = `
-        <img
-          class="medal-image"
-          data-src="${finalImg}"
-          loading="${i < 6 ? "eager" : "lazy"}"
-          decoding="async"
-          width="180"
-          height="120"
-          alt=""
-        >
-        <div>
-          <span class="id">${item.id || ""}</span> /
-          <span class="type">${item.type || ""}</span>
-          <span class="book">${toRoman(item.bookNum)}</span>
-        </div>
-        <div class="detail">${item.detail || ""}</div>
-        <div class="date">${item.date || ""}</div>
-        <div class="location">${item.location || ""}</div>
-        <div class="name">${item.name || ""}</div>
-      `;
-
-      const img = div.querySelector(".medal-image");
-
-      img.onerror = function() {
-        if (this.dataset.fallback === "1") return;
-        this.dataset.fallback = "1";
-        this.removeAttribute("data-src");
-        this.src = "./noimage.png";
-        this.classList.add("noimage");
-      };
-
-      fragment.appendChild(div);
-    }
-
-    grid.appendChild(fragment);
-
-    // 最初の6枚は即読み込み、それ以外はObserverに任せる
-    const imgs = grid.querySelectorAll(".medal-image");
-    imgs.forEach(img => {
-      if (img.dataset.src && !img.src) {
-        if (img.loading === "eager") {
-          img.src = img.dataset.src;
-        } else {
-          observer.observe(img);
-        }
-      }
-    });
-
-    rendered = end;
-
-    if (rendered < list.length) {
-      const sentinel = document.createElement("div");
-      sentinel.className = "medal-load-sentinel";
-      sentinel.style.cssText = "height:1px;width:100%;";
-      grid.appendChild(sentinel);
-
-      const sentinelObserver = new IntersectionObserver(entries => {
-        if (!entries[0].isIntersecting) return;
-        sentinelObserver.disconnect();
-        sentinel.remove();
-        appendBatch();
-      }, { rootMargin: "700px 0px" });
-
-      sentinelObserver.observe(sentinel);
-    }
-  }
-
-  appendBatch();
+  return "";
 }
 
-
-function normalize(text) {
-  return (text || "")
-    .toString()
-    .normalize("NFKC")      // 半角→全角統一
-    .toLowerCase()          // 小文字化
-    .replace(/\s/g, "")     // 半角/全角スペース削除
-    .replace(/-/g, "")      // ハイフン削除
-}
-function toRoman(num) {
-
-  if (!num) return ""
-
-  const roman = [
-    ["M",1000],
-    ["CM",900],
-    ["D",500],
-    ["CD",400],
-    ["C",100],
-    ["XC",90],
-    ["L",50],
-    ["XL",40],
-    ["X",10],
-    ["IX",9],
-    ["V",5],
-    ["IV",4],
-    ["I",1]
-  ]
-
-  let result = ""
-
-  for (const [letter, value] of roman) {
-
-    while (num >= value) {
-      result += letter
-      num -= value
-    }
-  }
-
-  return result
-}
-function clearFilters() {
-
-  // type全部OFF
-  document
-    .querySelectorAll("#typeFilters input")
-    .forEach(cb => cb.checked = false)
-
-  // location初期化
-  document.getElementById("locationSelect").value = ""
-
-  applyFilter()
+function getJASet(code) {
+  const text = String(code ?? "").trim().toUpperCase();
+  const match = text.match(/^JA(\d+)(?:[-_]|$)/);
+  return match ? `JA${Number(match[1])}` : "";
 }
 
-
-function checkMissing() {
-
-  if (!data || data.length === 0) {
-    alert("データがまだ読み込まれていません")
-    return
-  }
-
-  const nums = data
-    .map(item => parseInt(item.id.match(/\d+/)?.[0]))
-    .filter(n => !isNaN(n))
-
-  const set = new Set(nums)
-
-  const min = Math.min(...nums)
-  const max = Math.max(...nums)
-
-  let missing = []
-
-  for (let n = min; n <= max; n++) {
-    if (!set.has(n)) missing.push(n)
-  }
-
-  alert(
-    missing.length
-      ? "欠番:\n" + missing.map(n => String(n).padStart(4, "0")).join(", ")
-      : "欠番なし"
-  )
-}
-document.getElementById("missingBtn")
-  .addEventListener("click", checkMissing);
-
-function updateFolderPath() {
-
-  const el =
-    document.getElementById("folderPath")
-
-  if (!el) return
-
-  el.textContent =
-    "画像: " + imageFolder
-}
-
-async function selectImageFolder() {
-
-  const folder =
-    await window.electronAPI.selectFolder()
-
-  if (!folder) return
-
-  imageFolder = folder
-
-  localStorage.setItem(
-    "imageFolder",
-    folder
-  )
-
-
-  applyFilter()
-}
-function renderPage() {
-
-  const start =
-    (currentPage - 1) * pageSize
-
-  const end =
-    start + pageSize
-
-  const pageData =
-    filteredData.slice(start, end)
-
-  render(pageData)
-
-  const totalPages =
-    Math.ceil(filteredData.length / pageSize)
-
-document.getElementById("pageInput")
-  .value = currentPage
-
-   document.getElementById("totalPages")
-  .textContent = ` / ${totalPages}`
-   // 現在のページを記憶
-  localStorage.setItem("currentPage", currentPage);
-}
-
-
-function nextPage() {
-
-  const totalPages =
-    Math.ceil(filteredData.length / pageSize)
-
-  if (currentPage < totalPages) {
-
-    currentPage++
-
-    renderPage()
-  }
-}
-
-function prevPage() {
-
-  if (currentPage > 1) {
-
-    currentPage--
-
-    renderPage()
-  }
-}
-function goPage() {
-
-  const totalPages =
-    Math.ceil(filteredData.length / pageSize)
-
-  const value =
-    parseInt(
-      document.getElementById("pageInput").value
-    )
-
-  if (
-    isNaN(value) ||
-    value < 1 ||
-    value > totalPages
-  ) {
-    return
-  }
-
-  currentPage = value
-
-  renderPage()
-}
-document
-  .getElementById("pageInput")
-  .addEventListener("keydown", e => {
-
-    if (e.key === "Enter") {
-
-      goPage()
-    }
-  })
-
-updateFolderPath()
-
-
-/* =========================
-   iPad用 配置シミュレーター
-   VBA版の機能をJavaScriptへ移植
-   ========================= */
-const simState = {
-  faces: 3,
-  books: 2,
-  currentBook: 0,
-  items: [],
-  bookItems: [],
-  drag: null
-};
-
-/* =========================
-   配置シミュレーター自動保存
-   IndexedDBへ保存するため、アプリ終了後も保持
-========================= */
-const SIM_DB_STORE_NAME = "simulatorState";
-let simulatorSaveQueue = Promise.resolve();
-let simulatorSaveInProgress = false;
-
-async function saveSimulatorState() {
-  // 呼び出された瞬間の状態を固定し、後続入力による上書きを防ぐ。
-  const snapshot = {
-    faces: Number(simState.faces) || 3,
-    currentBook: Number(simState.currentBook) || 0,
-    book1: Array.isArray(simState.bookItems?.[0]) ? structuredClone(simState.bookItems[0]) : [],
-    book2: Array.isArray(simState.bookItems?.[1]) ? structuredClone(simState.bookItems[1]) : []
-  };
-
-  const runSave = async () => {
-    simulatorSaveInProgress = true;
-    try {
-      const state = {
-        id: "current", faces: snapshot.faces, books: 2,
-        currentBook: snapshot.currentBook, bookItems: [snapshot.book1, []]
-      };
-      const db = await openAddedDB();
-      try {
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
-          tx.objectStore(SIM_DB_STORE_NAME).put(state);
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
-          tx.onabort = () => reject(tx.error || new Error("IndexedDB transaction aborted"));
-        });
-      } finally { db.close(); }
-
-      await ensureCloudUser();
-      if (cloudUser) {
-        const cloudSaved = await saveCloudSimulatorState({faces:snapshot.faces, book2:snapshot.book2});
-        if (!cloudSaved) throw new Error("Supabaseへの保存に失敗しました。ログイン状態・テーブル権限・通信を確認してください。");
-        return true;
-      }
-      localStorage.setItem("medalSimulatorBook2Pending", JSON.stringify({
-        faces:snapshot.faces, book2:snapshot.book2
-      }));
-      return false;
-    } finally {
-      simulatorSaveInProgress = false;
-    }
-  };
-
-  simulatorSaveQueue = simulatorSaveQueue.then(runSave, runSave);
-  return simulatorSaveQueue;
-}
-
-function loadSimulatorState() {
-  return openAddedDB().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SIM_DB_STORE_NAME, "readonly");
-    const request = tx.objectStore(SIM_DB_STORE_NAME).get("current");
-    request.onsuccess = () => {
-      const saved = request.result;
-      if (!saved || !Array.isArray(saved.bookItems)) {
-        db.close();
-        resolve(false);
-        return;
-      }
-      simState.faces = Number(saved.faces) || 3;
-      simState.books = 2;
-      simState.currentBook = Math.min(Math.max(Number(saved.currentBook) || 0, 0), 1);
-      simState.bookItems = [Array.isArray(saved.bookItems[0]) ? saved.bookItems[0] : [], []];
-      // 旧バージョンで端末内に保存されていた2bookを、Supabase初回移行用に一時保持
-      const legacyBook2 = Array.isArray(saved.bookItems[1]) ? saved.bookItems[1] : [];
-      try {
-        const pending = JSON.parse(localStorage.getItem("medalSimulatorBook2Pending") || "null");
-        simState.bookItems[1] = Array.isArray(pending?.book2) ? pending.book2 : legacyBook2;
-      } catch (_) { simState.bookItems[1] = legacyBook2; }
-      simState.items = simState.bookItems[simState.currentBook] || [];
-      db.close();
-      resolve(true);
-    };
-    request.onerror = () => { db.close(); reject(request.error); };
-  })).catch(error => {
-    console.error("シミュレーター復元エラー:", error);
-    return false;
-  });
-}
-
-async function clearSimulatorState() {
-  try {
-    const db = await openAddedDB();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(SIM_DB_STORE_NAME, "readwrite");
-      tx.objectStore(SIM_DB_STORE_NAME).clear();
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
-    });
-    db.close();
-    localStorage.removeItem("medalSimulatorBook2Pending");
-    simState.bookItems = [[], []];
-    simState.items = simState.bookItems[0];
-    simState.currentBook = 0;
-    if (cloudUser) await saveCloudSimulatorState();
-  } catch (error) {
-    console.error("シミュレーター全削除エラー:", error);
-  }
-}
-
-function romanToNumber(text) {
-  const values = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
-  let total = 0;
-  text = String(text || "").toUpperCase().trim();
-  for (let i = 0; i < text.length; i++) {
-    const cur = values[text[i]] || 0;
-    const next = i + 1 < text.length ? (values[text[i+1]] || 0) : 0;
-    total += cur < next ? -cur : cur;
-  }
-  return total;
-}
-
-function extractNumber(text) {
-  const m = String(text || "").match(/\d+/);
-  return m ? Number(m[0]) : -1;
-}
-
-function setupSimulatorRoman() {
-  const select = document.getElementById("simRoman");
-  if (!select || !Array.isArray(data)) return;
-
-  const romans = [...new Set(
-    data.map(item => String(item.bookNum || "").trim()).filter(Boolean)
+function buildSetFilter() {
+  const values = [...new Set(
+    allCards
+      .map(card => getJASet(card.code))
+      .filter(Boolean)
   )];
 
-  // bookNo.は数字・ローマ数字のどちらでも大きい番号から小さい番号へ降順
-  romans.sort((a, b) => {
-    const na = Number(a);
-    const nb = Number(b);
-
-    if (Number.isFinite(na) && Number.isFinite(nb)) {
-      return nb - na;
-    }
-
-    return romanToNumber(b) - romanToNumber(a);
+  values.sort((a, b) => {
+    const na = Number(a.slice(2));
+    const nb = Number(b.slice(2));
+    return na - nb;
   });
 
-  select.innerHTML = '<option value="">すべて</option>';
-  romans.forEach(roman => {
-    const option = document.createElement("option");
-    option.value = roman;
-    option.textContent = roman;
-    select.appendChild(option);
-  });
-}
+  const current = setFilter.value;
 
-function makeSimulatorList() {
-  const start = Number(document.getElementById("simStart").value || 1);
-  const end = Number(document.getElementById("simEnd").value || 45);
-  const roman = document.getElementById("simRoman").value;
+  setFilter.innerHTML = '<option value="">すべてのJA</option>';
 
-  if (start > end) {
-    alert("開始番号が終了番号より大きくなっています。");
-    return [];
-  }
-
-  return data.filter(item => {
-    const num = extractNumber(item.id);
-    if (roman === "") {
-      return num >= start && num <= end;
-    }
-    return String(item.bookNum || "").trim() === roman;
-  });
-}
-
-function simItemText(item) {
-  if (!item) return "";
-  return [
-    item.id || "",
-    item.type || "",
-    item.detail || ""
-  ].filter(Boolean).join("\n");
-}
-
-function buildSimulatorBooks() {
-  const base = makeSimulatorList();
-
-  if (!Array.isArray(simState.bookItems)) {
-    simState.bookItems = [];
-  }
-
-  while (simState.bookItems.length < simState.books) {
-    simState.bookItems.push([]);
-  }
-
-  if (simState.bookItems.length > simState.books) {
-    simState.bookItems.length = simState.books;
-  }
-
-  /*
-    1book:
-    ・保存済みの配置があれば、その配置をそのまま使用
-    ・まだ保存データがない場合だけ、選択条件の既存データを初期表示
-  */
-  const hasSavedBook1 = simState.bookItems[0].some(item => item);
-  if (!hasSavedBook1) {
-    simState.bookItems[0] = base.slice();
-  }
-
-  /*
-    2book:
-    ・保存済みの配置をそのまま使用
-    ・未保存なら空のまま
-  */
-
-  simState.currentBook = Math.min(
-    simState.currentBook,
-    simState.books - 1
-  );
-
-  simState.items = simState.bookItems[simState.currentBook] || [];
-}
-
-function updateBookTabs() {
-  const tabs = document.getElementById("simBookTabs");
-  if (!tabs) return;
-
-  tabs.style.display = simState.books >= 2 ? "flex" : "none";
-
-  tabs.querySelectorAll("button[data-book-view]").forEach(button => {
-    const book = Number(button.dataset.bookView);
-    button.style.display = book < simState.books ? "" : "none";
-    button.classList.toggle("active", book === simState.currentBook);
-  });
-}
-
-function switchSimulatorBook(bookIndex) {
-  const book = Number(bookIndex);
-  if (book < 0 || book >= simState.books) return;
-
-  simState.currentBook = book;
-  simState.items = simState.bookItems[book] || (simState.bookItems[book] = []);
-  updateSimulatorBookControls();
-  saveSimulatorState();
-  updateBookTabs();
-  renderSimulator();
-}
-
-function updateSimulatorBookControls() {
-  const isBook2 = simState.currentBook === 1;
-  ["simRoman", "simStart", "simEnd", "simDisplay"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = isBook2;
-  });
-  const help = document.querySelector(".sim-help");
-  if (help) help.textContent = isBook2
-    ? "2bookはGitHubの登録データを表示しません。空きマスをタップして管理番号・種類・詳細を自由に入力できます。PC・iPad間はSupabaseで同期します。"
-    : "空きマスをタップすると入力できます。ドラッグすると配置を入れ替えできます。";
-}
-
-function renderSimulator() {
-  const area = document.getElementById("simFacesArea");
-  if (!area) return;
-
-  area.innerHTML = "";
-
-  const slotsPerFace = 15;
-  const bookIndex = simState.currentBook;
-  const currentBook = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
-
-  const bookBox = document.createElement("div");
-  bookBox.className = "sim-book";
-
-  const bookTitle = document.createElement("div");
-  bookTitle.className = "sim-book-title";
-  bookTitle.textContent = `${bookIndex + 1}book`;
-  bookBox.appendChild(bookTitle);
-
-  for (let face = 0; face < simState.faces; face++) {
-    const faceBox = document.createElement("div");
-    faceBox.className = "sim-face";
-
-    const title = document.createElement("div");
-    title.className = "sim-face-title";
-    title.textContent = `${face + 1}面`;
-    faceBox.appendChild(title);
-
-    const grid = document.createElement("div");
-    grid.className = "sim-grid";
-
-    for (let slot = 0; slot < slotsPerFace; slot++) {
-      const index = face * slotsPerFace + slot;
-      const item = currentBook[index] || null;
-
-      const cell = document.createElement("div");
-      cell.className = "sim-slot" + (item ? "" : " empty");
-      if (item?._local) cell.classList.add("local-data");
-
-      cell.dataset.book = String(bookIndex);
-      cell.dataset.face = String(face);
-      cell.dataset.slot = String(slot);
-      cell.textContent = item ? simItemText(item) : "";
-
-      if (!item) {
-        // 空きマスのタップ処理は simFacesArea 側で一括管理する。
-        // renderSimulator() のたびにセルが作り直されてもイベントが失われない。
-        cell.setAttribute("role", "button");
-        cell.setAttribute("tabindex", "0");
-        cell.setAttribute("aria-label", `${bookIndex + 1}book ${index + 1}マス目に追加`);
-        // 空きマス自身にclickを直接登録する。document側の一括検知に依存しない。
-        cell.addEventListener("click", e => {
-          e.preventDefault();
-          e.stopPropagation();
-          openAddDataModal(index, false, bookIndex);
-        });
-        cell.addEventListener("keydown", e => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            openAddDataModal(index, false, bookIndex);
-          }
-        });
-      } else {
-        cell.addEventListener("pointerdown", e => {
-          if (e.pointerType === "mouse" && e.button !== 0) return;
-          simState.drag = {
-            book: bookIndex,
-            index,
-            pointerId: e.pointerId,
-            startX: e.clientX,
-            startY: e.clientY
-          };
-          cell.setPointerCapture?.(e.pointerId);
-          cell.style.opacity = "0.55";
-        });
-
-        cell.addEventListener("pointerup", e => {
-          const drag = simState.drag;
-          if (!drag || drag.pointerId !== e.pointerId) return;
-          cell.style.opacity = "";
-
-          const dx = e.clientX - drag.startX;
-          const dy = e.clientY - drag.startY;
-          const moved = Math.sqrt(dx * dx + dy * dy) > 12;
-
-          if (!moved) {
-            // 登録元がGitHubのデータでも、配置マス単位で削除できるようにする
-            openAddDataModal(index, true, bookIndex);
-            simState.drag = null;
-            return;
-          }
-
-          const target = document.elementFromPoint(e.clientX, e.clientY);
-          const targetCell = target?.closest?.(".sim-slot");
-
-          if (targetCell && targetCell !== cell) {
-            const targetBook = Number(targetCell.dataset.book || bookIndex);
-            const targetIndex =
-              Number(targetCell.dataset.face) * slotsPerFace +
-              Number(targetCell.dataset.slot);
-
-            if (targetBook === bookIndex) {
-              [currentBook[index], currentBook[targetIndex]] =
-                [currentBook[targetIndex], currentBook[index]];
-              saveSimulatorState();
-              renderSimulator();
-            }
-          }
-
-          simState.drag = null;
-        });
-
-        cell.addEventListener("pointercancel", () => {
-          cell.style.opacity = "";
-          simState.drag = null;
-        });
-      }
-
-      grid.appendChild(cell);
-    }
-
-    faceBox.appendChild(grid);
-    bookBox.appendChild(faceBox);
-  }
-
-  area.appendChild(bookBox);
-
-  // 空きマスのイベントは document 側で一括処理する。
-  // 描画し直してもイベントが消えず、iPadでもクリックを拾える。
-  area.onpointerup = null;
-  area.onclick = null;
-
-  updateBookTabs();
-  updateSimulatorBookControls();
-}
-
-async function openSimulator() {
-  document.getElementById("simulator").style.display = "block";
-  setupSimulatorRoman();
-
-  const restored = await loadSimulatorState();
-  if (!restored) {
-    simState.faces = Number(document.getElementById("simFaces").value || 3);
-    simState.books = 2;
-    simState.currentBook = 0;
-    simState.bookItems = [[], []];
-    buildSimulatorBooks();
-  }
-
-  if (cloudUser) {
-    // ローカルの旧2bookを保持した状態でクラウドを読む。クラウドに未登録なら初回移行する。
-    const cloudStateExists = await loadCloudSimulatorState();
-    if (!cloudStateExists) await saveCloudSimulatorState();
-    // 旧版で端末内に残っていた2bookをローカル保存から外し、以後はSupabaseを正本にする
-    await saveSimulatorState();
-    await loadCloudAddedData();
-  } else {
-    try {
-      const pending = JSON.parse(localStorage.getItem("medalSimulatorBook2Pending") || "null");
-      if (Array.isArray(pending?.book2)) simState.bookItems[1] = pending.book2;
-    } catch (_) {}
-  }
-
-  simState.books = 2;
-  simState.currentBook = Math.min(Math.max(Number(simState.currentBook) || 0, 0), 1);
-  removeGitHubItemsFromBook2();
-  simState.items = simState.bookItems[simState.currentBook] || [];
-  document.getElementById("simFaces").value = String(simState.faces);
-  renderSimulator();
-}
-
-function closeSimulator() {
-  document.getElementById("simulator").style.display = "none";
-  simState.drag = null;
-}
-
-document.getElementById("simulatorBtn").addEventListener("click", openSimulator);
-document.getElementById("simClose").addEventListener("click", closeSimulator);
-
-document.getElementById("simFaces").addEventListener("change", () => {
-  simState.faces = Number(document.getElementById("simFaces").value);
-  saveSimulatorState();
-  renderSimulator();
-});
-
-document.getElementById("simRoman").addEventListener("change", () => {
-  applySimulatorSelection();
-});
-
-document.querySelectorAll("#simBookTabs button[data-book-view]").forEach(button => {
-  button.addEventListener("click", () => {
-    switchSimulatorBook(Number(button.dataset.bookView));
-  });
-});
-
-function applySimulatorSelection() {
-  // 2bookはGitHubの一覧・番号範囲・bookNo.から独立した自由入力専用。
-  if (simState.currentBook === 1) {
-    renderSimulator();
-    return;
-  }
-  const base = makeSimulatorList().slice();
-
-  // メダル番号は昇順（小さい番号 → 大きい番号）
-  base.sort((a, b) => extractNumber(a.id) - extractNumber(b.id));
-
-  // 「表示」を押したときは、現在のbookを選択条件で作り直す
-  // これで開始・終了番号、bookNo.を変更した結果が確実に反映される
-  simState.bookItems[simState.currentBook] = base;
-  simState.items = simState.bookItems[simState.currentBook];
-  saveSimulatorState();
-  renderSimulator();
-}
-
-document.getElementById("simDisplay").addEventListener("click", () => {
-  applySimulatorSelection();
-});
-
-// 開始・終了番号を変更したときも表示を更新
-document.getElementById("simStart").addEventListener("change", () => {
-  applySimulatorSelection();
-});
-
-document.getElementById("simEnd").addEventListener("change", () => {
-  applySimulatorSelection();
-});
-
-// シミュレーター内の配置を管理番号順に並べ替える
-
-
-// =========================
-// 空きマス → データ追加
-// =========================
-let addTargetIndex = -1;
-
-// 空きマスの入力画面は renderSimulator() 内で各セルに直接click登録する。
-// 画面全体のイベント捕捉には依存しない。
-
-function setupAddTypeSelect(selectedType = "") {
-  // マスターデータと各bookの既存データから種類の候補を作成する。
-  // 2bookのメダル配置データそのものをGitHubから追加することはありません。
-  const select = document.getElementById("addType");
-  if (!select) return;
-  const values = new Set();
-  const addValue = value => { const v = String(value || "").trim(); if (v) values.add(v); };
-  // 2bookではGitHub由来の配置を除外するため、配列内に null が入ることがある。
-  // null.type を参照すると入力画面を開く途中で例外になるため、必ず安全に参照する。
-  (Array.isArray(data) ? data : []).forEach(item => addValue(item?.type));
-  (Array.isArray(simState.bookItems) ? simState.bookItems : []).forEach(book => {
-    (Array.isArray(book) ? book : []).forEach(item => addValue(item?.type));
-  });
-  addValue(selectedType);
-  select.innerHTML = '<option value="">種類を選択</option>';
-  [...values].sort((a, b) => a.localeCompare(b, "ja")).forEach(value => {
+  for (const value of values) {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = value;
-    select.appendChild(option);
+    setFilter.appendChild(option);
+  }
+
+  if (values.includes(current)) {
+    setFilter.value = current;
+  }
+}
+
+function render() {
+  gallery.innerHTML = "";
+
+  const keyword = normalize(search.value);
+
+  const selectedSet = setFilter.value;
+
+  filteredCards = allCards.filter(card => {
+    const matchesSet =
+      !selectedSet || getJASet(card.code) === selectedSet;
+
+    const matchesSearch =
+      !keyword || cardSearchText(card).includes(keyword);
+
+    return matchesSet && matchesSearch;
   });
-  select.value = String(selectedType || "");
-}
 
+  count.textContent = `${filteredCards.length} / ${allCards.length}枚`;
 
-function getNextSimulatorNumber(bookIndex, prefix) {
-  const items = simState.bookItems[bookIndex] || [];
-  let max = 0;
-  items.forEach(item => {
-    const match = String(item?.id || "").match(/^([A-Za-z]+)-(\d+)$/);
-    if (match && match[1].toUpperCase() === String(prefix).toUpperCase()) {
-      max = Math.max(max, Number(match[2]) || 0);
-    }
-  });
-  return String(max + 1).padStart(4, "0");
-}
+  empty.style.display = filteredCards.length ? "none" : "block";
 
-async function moveAddTarget(delta) {
-  const modal = document.getElementById("addDataModal");
-  if (!modal || modal.style.display === "none" || modal.dataset.moving === "1") return;
+  const fragment = document.createDocumentFragment();
 
-  const bookIndex = Number(modal.dataset.simBook || 0);
-  const currentIndex = Number(modal.dataset.simIndex || 0);
-  const maxSlots = simState.faces * 15;
-  const nextIndex = Math.max(0, Math.min(maxSlots - 1, currentIndex + delta));
-  if (nextIndex === currentIndex) return;
+  for (const card of filteredCards) {
+    const item = document.createElement("div");
+    item.className = "card";
 
-  const prefix = document.getElementById("addIdPrefix").value || "L";
-  const rawNumber = document.getElementById("addIdNumber").value
-    .normalize("NFKC").replace(/\D/g, "");
-  const type = document.getElementById("addType").value.trim();
-  const detail = document.getElementById("addDetail").value.trim();
-  const message = document.getElementById("addDataMessage");
-  const currentItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
-  const editMode = modal.dataset.editMode === "1";
-  const currentItem = currentItems[currentIndex] || null;
-  // 新規マスの管理番号は自動入力されているため、それだけでは入力済みとみなさない。
-  // すでに配置済みのマスを「追加モード」で一時表示している場合も上書きしない。
-  // dirtyイベントだけに依存すると、iPad等でchange/inputイベントが
-  // 矢印タップより遅れた場合に2件目以降を未入力と誤判定する。
-  // 空きマスを開いた時点の自動採番値と比較し、実際に入力された内容で判定する。
-  const autoNumber = String(modal.dataset.autoNumber || "").replace(/\D/g, "");
-  const hasInput = editMode || Boolean(
-    type || detail || (rawNumber && rawNumber !== autoNumber)
-  );
+    const wrap = document.createElement("div");
+    wrap.className = "card-image-wrap";
 
-  // 入力途中の内容がある場合は、次のマスへ移る前に保存する。
-  // 完全に空の新規マスなら保存せず、そのまま移動できる。
-  if (hasInput) {
-    if (!rawNumber) {
-      message.textContent = "管理番号の数字を入力してください。保存せずに移動する場合は入力欄を空にしてください。";
-      return;
-    }
-    if (!type) {
-      message.textContent = "種類を選択してください。選択後に次のマスへ移動できます。";
-      return;
+    const imageData = getImageData(card);
+
+    const cardKey = getCardKey(card);
+    if (purchasedCards.has(cardKey)) {
+      wrap.classList.add("purchased");
     }
 
-    const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
-    const source = bookIndex === 1 ? null : data.find(item => String(item?.id || "").toUpperCase() === id.toUpperCase());
-    const savedItem = {
-      ...(source || {}),
-      id,
-      type,
-      detail,
-      _simOnly: true,
-      ...(bookIndex === 1 ? { _book2Manual: true } : {})
-    };
+    if (imageData) {
+      const img = document.createElement("img");
+      img.className = "card-image";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = imageData;
+      img.alt = card.name || card.code || "";
+      img.title = "タッチすると購入済み／未購入を切り替えます";
 
-    modal.dataset.moving = "1";
-    message.textContent = "保存中...";
-    try {
-      currentItems[currentIndex] = savedItem;
-      simState.items = currentItems;
-      const cloudSaved = await saveSimulatorState();
-      if (bookIndex === 1 && !cloudSaved) {
-        throw new Error(cloudUser
-          ? "Supabase保存の完了を確認できませんでした。通信・テーブル権限を確認してください。"
-          : "Supabaseにログインしていません。ログイン後にもう一度保存してください。");
-      }
-      renderSimulator();
-    } catch (error) {
-      console.error("次のマスへ移動する前の自動保存エラー:", error);
-      message.textContent = `自動保存できませんでした：${error.message || "通信エラー"}`;
-      return;
-    } finally {
-      modal.dataset.moving = "0";
-    }
-  }
+      // 画像タッチ：購入済み／未購入を切り替え
+      img.addEventListener("click", () => {
+        togglePurchased(card, wrap);
+      });
 
-  const targetItem = (simState.bookItems[bookIndex] || [])[nextIndex] || null;
-  modal.dataset.simIndex = String(nextIndex);
-  modal.dataset.editMode = targetItem ? "1" : "0";
-  modal.dataset.dirty = "0";
+      wrap.appendChild(img);
 
-  const title = document.getElementById("addDataTitle");
-  const deleteButton = document.getElementById("addDataDelete");
-  const saveButton = document.getElementById("addDataSave");
-  if (targetItem) {
-    const m = String(targetItem.id || "").match(/^([A-Za-z]+)-(\d+)$/);
-    document.getElementById("addIdPrefix").value = m?.[1] || prefix;
-    document.getElementById("addIdNumber").value = m?.[2] || rawNumber;
-    modal.dataset.autoNumber = "";
-    setupAddTypeSelect(targetItem.type || type);
-    document.getElementById("addType").value = targetItem.type || "";
-    document.getElementById("addDetail").value = targetItem.detail || "";
-    deleteButton.style.display = "inline-block";
-    deleteButton.textContent = "このマスから外す";
-    saveButton.textContent = "更新";
-    title.textContent = `${bookIndex + 1}book データ`;
-  } else {
-    document.getElementById("addIdPrefix").value = prefix;
-    document.getElementById("addIdNumber").value = String((Number(rawNumber) || 0) + 1).padStart(4, "0");
-    modal.dataset.autoNumber = document.getElementById("addIdNumber").value;
-    setupAddTypeSelect(type);
-    document.getElementById("addType").value = type;
-    document.getElementById("addDetail").value = "";
-    deleteButton.style.display = "none";
-    saveButton.textContent = "このマスに追加";
-    title.textContent = `${bookIndex + 1}book にメダルを追加（${nextIndex + 1}マス目）`;
-  }
-  message.textContent = hasInput ? "前のマスを自動保存しました。" : "";
-}
-
-function openAddDataModal(index, editMode = false, bookIndex = 0) {
-  const modal = document.getElementById("addDataModal");
-  if (!modal) return;
-
-  const bookItems = simState.bookItems[bookIndex] || [];
-  const item = editMode ? (bookItems[index] || null) : null;
-
-  setupAddTypeSelect(item?.type || "");
-
-  const prefix = document.getElementById("addIdPrefix");
-  const number = document.getElementById("addIdNumber");
-  const type = document.getElementById("addType");
-  const detail = document.getElementById("addDetail");
-  const deleteButton = document.getElementById("addDataDelete");
-  const saveButton = document.getElementById("addDataSave");
-  const message = document.getElementById("addDataMessage");
-  const title = document.getElementById("addDataTitle");
-
-  if (message) message.textContent = "";
-
-  if (item) {
-    const m = String(item.id || "").match(/^([A-Za-z]+)-(\d+)$/);
-    prefix.value = m?.[1] || "L";
-    number.value = m?.[2] || "";
-    type.value = item.type || "";
-    detail.value = item.detail || "";
-    deleteButton.style.display = "inline-block";
-    deleteButton.textContent = "このマスから外す";
-    saveButton.textContent = "更新";
-    title.textContent = `${bookIndex + 1}book データ`;
-  } else {
-    prefix.value = "L";
-    number.value = getNextSimulatorNumber(bookIndex, prefix.value);
-    type.value = "";
-    detail.value = "";
-    deleteButton.style.display = "none";
-    saveButton.textContent = "このマスに追加";
-    title.textContent = `${bookIndex + 1}book にメダルを追加`;
-  }
-
-  modal.dataset.simIndex = String(index);
-  modal.dataset.simBook = String(bookIndex);
-  modal.dataset.editMode = editMode ? "1" : "0";
-  modal.dataset.dirty = "0";
-  modal.dataset.autoNumber = editMode ? "" : number.value;
-  modal.classList.add("show");
-  modal.style.setProperty("display", "block", "important");
-  modal.style.setProperty("z-index", "99999", "important");
-  modal.setAttribute("aria-hidden", "false");
-
-  if (!editMode) setTimeout(() => number.focus(), 50);
-}
-
-function closeAddDataModal() {
-  const modal = document.getElementById("addDataModal");
-  if (!modal) return;
-
-  modal.classList.remove("show");
-  modal.style.setProperty("display", "none", "important");
-  modal.setAttribute("aria-hidden", "true");
-  modal.dataset.simIndex = "-1";
-  modal.dataset.editMode = "0";
-}
-
-async function addSimulatorData() {
-  const modal = document.getElementById("addDataModal");
-  if (!modal || modal.dataset.saving === "1") return;
-  modal.dataset.saving = "1";
-  const saveButton = document.getElementById("addDataSave");
-  if (saveButton) saveButton.disabled = true;
-  try {
-  const index = Number(modal.dataset.simIndex);
-  const bookIndex = Number(modal.dataset.simBook || 0);
-  const editMode = modal.dataset.editMode === "1";
-  const bookItems = simState.bookItems[bookIndex] || (simState.bookItems[bookIndex] = []);
-
-  const prefix = document.getElementById("addIdPrefix").value;
-  const rawNumber = document.getElementById("addIdNumber").value
-    .normalize("NFKC")
-    .replace(/\D/g, "");
-  const type = document.getElementById("addType").value.trim();
-  const detail = document.getElementById("addDetail").value.trim();
-  const message = document.getElementById("addDataMessage");
-
-  if (!rawNumber) {
-    message.textContent = "管理番号の数字を入力してください。";
-    return;
-  }
-  if (!type) {
-    message.textContent = "種類を選択してください。";
-    return;
-  }
-
-  const id = `${prefix}-${rawNumber.padStart(4, "0")}`;
-
-  // シミュレーターでは、同じメダルを別bookに配置してもOK。
-  // これはデータの複製ではなく「配置先の記録」です。
-  // 既存データがあれば、その情報を参照して配置します。
-  const source = bookIndex === 1 ? null : data.find(item => String(item.id).toUpperCase() === id.toUpperCase());
-  const oldItem = editMode ? (bookItems[index] || null) : null;
-
-  const item = {
-    ...(source || {}),
-    id,
-    type: type || source?.type || "",
-    detail: detail || source?.detail || "",
-    _simOnly: true,
-    ...(bookIndex === 1 ? { _book2Manual: true } : {})
-  };
-
-  if (oldItem) {
-    // 編集時はこのbookの配置だけ更新
-    bookItems[index] = item;
-  } else {
-    bookItems[index] = item;
-  }
-
-  // シミュレーターの配置データは、どちらのbookもシミュレーター専用として保存する。
-  // メイン画面用のaddedData / medal_dataには追加・同期しない。
-  simState.items = simState.bookItems[bookIndex] || [];
-  try {
-    await saveSimulatorState();
-  } catch (error) {
-    console.error("配置データ保存エラー:", error);
-    message.textContent = `保存できませんでした：${error.message || "通信エラー"}`;
-    return;
-  }
-  renderSimulator();
-
-  if (!editMode) {
-    const nextIndex = Math.min(index + 1, simState.faces * 15 - 1);
-    modal.dataset.simIndex = String(nextIndex);
-    modal.dataset.editMode = "0";
-    document.getElementById("addIdNumber").value = String(Number(rawNumber) + 1).padStart(4, "0");
-    document.getElementById("addType").value = type;
-    document.getElementById("addDetail").value = "";
-    const nextOccupied = bookItems[nextIndex];
-    if (nextOccupied) {
-      document.getElementById("addDataTitle").textContent = `${bookIndex + 1}book 次のマスは入力済みです`;
-      document.getElementById("addDataMessage").textContent = "←→で別のマスへ移動してください。";
+      // 拡大は専用ボタンに分離
+      const zoomButton = document.createElement("button");
+      zoomButton.type = "button";
+      zoomButton.className = "zoom-button";
+      zoomButton.textContent = "🔍 拡大";
+      zoomButton.addEventListener("click", () => {
+        modalImg.src = imageData;
+        modalImg.alt = img.alt;
+        modal.classList.add("show");
+      });
+      item.appendChild(wrap);
+      item.appendChild(zoomButton);
     } else {
-      document.getElementById("addDataTitle").textContent = `${bookIndex + 1}book 次のメダルを追加`;
-      document.getElementById("addDataMessage").textContent = "次の管理番号を自動入力しました。";
+      const noImage = document.createElement("div");
+      noImage.className = "no-image";
+      noImage.textContent = "画像なし";
+      wrap.appendChild(noImage);
     }
-    document.getElementById("addDataDelete").style.display = "none";
-    document.getElementById("addDataSave").textContent = "このマスに追加";
-    modal.dataset.dirty = "0";
-  } else {
-    closeAddDataModal();
-  }
-  } finally {
-    modal.dataset.saving = "0";
-    if (saveButton) saveButton.disabled = false;
-  }
-}
 
-async function deleteCurrentAddedData() {
-  const modal = document.getElementById("addDataModal");
-  const index = Number(modal.dataset.simIndex);
-  const bookIndex = Number(modal.dataset.simBook || 0);
-  const bookItems = simState.bookItems[bookIndex] || [];
-  const item = bookItems[index];
-
-  if (!item) return;
-  if (!confirm(`「${item.id}」を${bookIndex + 1}bookから外しますか？`)) return;
-
-  bookItems[index] = null;
-  simState.items = simState.bookItems[bookIndex] || [];
-  await saveSimulatorState();
-  renderSimulator();
-  closeAddDataModal();
-}
-
-async function clearAllAddedData() {
-  if (!confirm("保存されている追加データとシミュレーター配置をすべて削除します。\nGitHubのdata.jsonは削除されません。\nこの操作は元に戻せません。\n実行しますか？")) return;
-  try {
-    const db = await openAddedDB();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(ADD_STORE_NAME, "readwrite");
-      tx.objectStore(ADD_STORE_NAME).clear();
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
-    });
-    db.close();
-    if (cloudUser) {
-      const { error: dataDeleteError } = await supabaseClient.from("medal_data").delete().neq("medal_id", "__never__");
-      if (dataDeleteError) throw dataDeleteError;
-      const { error: simDeleteError } = await supabaseClient.from("medal_simulator_state").delete().eq("user_id", cloudUser.id);
-      if (simDeleteError) throw simDeleteError;
+    if (!imageData) {
+      item.appendChild(wrap);
     }
-    addedData = [];
-    data = mergeData(masterData, addedData);
 
-    // 「全削除」は追加データだけでなく、
-    // シミュレーターの保存配置も初期化する
-    await clearSimulatorState();
-    if (cloudUser) await saveCloudSimulatorState();
-    setupFilter();
-    createLocationSelect();
-    filteredData = data;
-    currentPage = Math.max(1, Math.ceil(filteredData.length / pageSize));
-    renderPage();
-    setupSimulatorRoman();
-    renderSimulator();
-    closeAddDataModal();
-    alert("保存データをすべて削除しました。");
-  } catch (error) {
-    console.error("iPad追加データ全削除エラー:", error);
-    alert("削除できませんでした。");
+    const code = document.createElement("div");
+    code.className = "card-code";
+    code.textContent = card.code || "";
+    item.appendChild(code);
+
+    const name = document.createElement("div");
+    name.className = "card-name";
+    name.textContent = card.name || "";
+    item.appendChild(name);
+
+    if (card.rarity) {
+      const rarity = document.createElement("div");
+      rarity.className = "card-rarity";
+      rarity.textContent = card.rarity;
+      item.appendChild(rarity);
+    }
+
+    // PC側の印刷データと同じN/F枚数を表示
+    const normal = Number(card.normal ?? 0);
+    const foil = Number(card.foil ?? 0);
+
+    // Fが1枚以上なら金枠を付ける（購入済みの赤枠とは独立）
+    wrap.classList.toggle("foil", foil >= 1);
+
+    const counts = document.createElement("div");
+    counts.className = "card-counts";
+
+    const normalText = document.createElement("span");
+    normalText.className = "count-n";
+    normalText.textContent = `N：${normal}`;
+
+    const foilText = document.createElement("span");
+    foilText.className =
+      foil >= 1 ? "count-f active" : "count-f";
+    foilText.textContent = `F：${foil}`;
+
+    counts.append(normalText, foilText);
+    item.appendChild(counts);
+
+    fragment.appendChild(item);
   }
+
+  gallery.appendChild(fragment);
 }
 
-// 現在表示中のbookを、空きマスを除いてCSV出力する
-function exportSimulatorCsv() {
-  const bookIndex = simState.currentBook;
-  const bookItems = simState.bookItems[bookIndex] || [];
-  const rows = [["管理番号", "種類", "詳細"]];
-
-  bookItems.forEach(item => {
-    if (!item) return;
-    rows.push([item.id || "", item.type || "", item.detail || ""]);
-  });
-
-  if (rows.length === 1) {
-    alert("CSVに出力するメダルがありません。");
-    return;
-  }
-
-  const csv = rows.map(row =>
-    row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
-  ).join("\r\n");
-
-  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `メダル配置_${bookIndex + 1}book.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("simExportCsv").addEventListener("click", exportSimulatorCsv);
-
-// 管理番号を左右の矢印ボタンで1ずつ変更
-function changeAddIdNumber(delta) {
-  const input = document.getElementById("addIdNumber");
-  if (!input) return;
-  const digits = String(input.value || "").normalize("NFKC").replace(/\D/g, "");
-  const next = Math.max(0, (Number(digits) || 0) + delta);
-  input.value = String(next).padStart(4, "0");
-  const modal = document.getElementById("addDataModal");
-  if (modal) modal.dataset.dirty = "1";
-}
-document.getElementById("addIdDown").onclick = () => changeAddIdNumber(-1);
-document.getElementById("addIdUp").onclick = () => changeAddIdNumber(1);
-document.getElementById("addSlotPrev").onclick = () => moveAddTarget(-1);
-document.getElementById("addSlotNext").onclick = () => moveAddTarget(1);
-
-// 入力欄が変更されたら、次のマスへ移動する際の自動保存対象として記録する。
-["addIdPrefix", "addIdNumber", "addType", "addDetail"].forEach(id => {
-  const field = document.getElementById(id);
-  if (field) {
-    field.addEventListener("input", () => {
-      const modal = document.getElementById("addDataModal");
-      if (modal) modal.dataset.dirty = "1";
-    });
-    field.addEventListener("change", () => {
-      const modal = document.getElementById("addDataModal");
-      if (modal) modal.dataset.dirty = "1";
-    });
-  }
-});
-
-document.getElementById("addDataClose").onclick = closeAddDataModal;
-document.getElementById("addDataCancel").onclick = closeAddDataModal;
-document.getElementById("addDataSave").onclick = addSimulatorData;
-document.getElementById("addDataDelete").onclick = deleteCurrentAddedData;
-document.getElementById("addDataClearAll").onclick = clearAllAddedData;
-
-document.getElementById("addDataModal").onclick = e => {
-  if (e.target.id === "addDataModal") {
-    closeAddDataModal();
-  }
-};
-
-initializeCloudSync();
-
-async function cacheImages(data) {
-
-  if (!("caches" in window)) return;
-
-  const cache = await caches.open("medal-app-v5");
-
-  const batchSize = 100;
-
-  for (let i = 0; i < data.length; i += batchSize) {
-
-    const batch = data.slice(i, i + batchSize);
-
-    await Promise.all(
-
-      batch.map(async item => {
-
-        const imgId = item.id.split("-").pop();
-
-        const url = `./images/${imgId}.webp`;
-
-        try {
-
-          const cached = await cache.match(url);
-
-          if (!cached) {
-
-            const response = await fetch(url);
-
-            if (response.ok) {
-              await cache.put(url, response.clone());
-            }
-
-          }
-
-        } catch (e) {}
-
-      })
-
-    );
-
-    console.log(
-      `画像キャッシュ ${Math.min(i + batchSize, data.length)} / ${data.length}`
-    );
-
-    // iPadを休ませる
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-  }
-
-  console.log("全画像キャッシュ完了");
-
-}
-
-
-// =========================
-// iPad用 メダル管理チェックリスト
-// メダル本体・配置データとは独立して保存
-// =========================
-const MEDAL_CHECKLIST_KEY = "medal_management_checklist_v1";
-const medalChecklistGroups = [
-  {
-    title: "ディズニーランド",
-    items: [
-      "ペニーアーケード",
-      "パイレーツ・トレジャー",
-      "ゴールデンガリオン",
-      "ホームストア",
-      "トゥモローランド・テラス（店舗外側・北側）",
-      "トゥモローランド・テラス（店舗外側・南側）",
-      "トレジャーコメット",
-      "パン・ギャラクティック・ピザ・ポート",
-      "プラズマ・レイズ・ダイナー",
-      "ビレッジショップス",
-      "プーさんコーナー",
-      "ギャグファクトリー/ファイブ・アンド・ダイム",
-      "ウエスタンウエア",
-      "アドベンチャーランド・バザール"
-    ]
-  },
-  {
-    title: "ディズニーシー",
-    items: [
-      "ガッレリーア・ディズニー",
-      "フィガロズ・クロージアー",
-      "ヴィラ・ドナルド・ホームショップ",
-      "イル・ポスティーノ・ステーショナリー",
-      "スチームボート・ミッキーズ",
-      "アーント・ペグズ・ヴィレッジストア",
-      "ノーチラスギフト",
-      "ロストリバーアウトフィッター",
-      "スリーピーホエール・ショップ",
-      "ファンタジースプリングスギフト"
-    ]
-  },
-  {
-    title: "ボンボヤージュ",
-    items: [
-      "ボンボヤージュ"
-    ]
-  },
-  {
-    title: "ディズニーリゾートライン",
-    items: [
-      "リゾートゲートウェイ・ステーション",
-      "東京ディズニーランド・ステーション",
-      "ベイサイド・ステーション",
-      "東京ディズニーシー・ステーション"
-    ]
-  },
-  {
-    title: "ディズニーホテル",
-    items: [
-      "東京ディズニーランドホテル",
-      "ミラコスタ",
-      "アンバサダーホテル",
-      "セレブレーションホテル　ウィッシュ",
-      "セレブレーションホテル　ディスカバー"
-    ]
-  }
-];
-
-let medalChecklistDone = loadMedalChecklist();
-let medalChecklistShowUnfinished = false;
-
-function loadMedalChecklist() {
+async function loadData() {
   try {
-    const saved = JSON.parse(localStorage.getItem(MEDAL_CHECKLIST_KEY) || "{}");
-    return saved && typeof saved === "object" ? saved : {};
-  } catch (error) {
-    console.warn("チェックリストの読み込みに失敗しました", error);
-    return {};
-  }
-}
+    /*
+      データ読み込み方式
+      ① まず従来の missing.json を試す
+      ② なければ missing_001.json, missing_002.json, ... を自動で読み込む
+      ③ split JSON は何個に増えても、連番である限りHTMLの変更不要
+    */
 
-function saveMedalChecklist() {
-  try {
-    localStorage.setItem(MEDAL_CHECKLIST_KEY, JSON.stringify(medalChecklistDone));
+    async function fetchJson(fileName) {
+      // 25MB未満の missing.json は分割せず、そのまま読み込む。
+      // 通信に時間がかかる場合があるため、固定時間で中断しない。
+      // URLを毎回変えず、ブラウザのHTTPキャッシュを利用しながら更新を確認する。
+      // no-cache はキャッシュを無条件に使う設定ではなく、サーバーに更新確認を行う。
+      const response = await fetch("./" + fileName, {
+        cache: "no-cache"
+      });
+
+      if (response.status === 404) return null;
+      if (!response.ok) {
+        throw new Error(`${fileName} の取得に失敗しました（HTTP ${response.status}）`);
+      }
+
+      try {
+        return await response.json();
+      } catch (error) {
+        throw new Error(`${fileName} のJSON解析に失敗しました。ファイルの内容を確認してください。`);
+      }
+    }
+
+    let data = await fetchJson("missing.json");
+    let updatedAt = data?.updatedAt ?? null;
+
+    if (data === null) {
+      // 分割版を自動読み込み
+      const parts = [];
+
+      for (let partNo = 1; ; partNo++) {
+        const fileName =
+          `missing_${String(partNo).padStart(3, "0")}.json`;
+
+        loading.textContent = `${fileName} を読み込んでいます...`;
+        status.textContent = `読み込み済み：${parts.length}枚`;
+        const partData = await fetchJson(fileName);
+
+        // 連番の次が存在しなければ終了
+        if (partData === null) {
+          break;
+        }
+
+        const cards = Array.isArray(partData)
+          ? partData
+          : Array.isArray(partData.cards)
+            ? partData.cards
+            : null;
+
+        if (!cards) {
+          throw new Error(`${fileName} に cards がありません`);
+        }
+
+        parts.push(...cards);
+
+        if (!updatedAt && partData.updatedAt) {
+          updatedAt = partData.updatedAt;
+        }
+
+        // totalParts が入っている場合は、必要数まで読み込んだら終了
+        if (
+          Number.isFinite(Number(partData.totalParts)) &&
+          partNo >= Number(partData.totalParts)
+        ) {
+          break;
+        }
+      }
+
+      if (parts.length === 0) {
+        throw new Error(
+          "missing.json または missing_001.json 以降のデータが見つかりません。GitHubにJSONが配置されているか確認してください。"
+        );
+      }
+
+      allCards = parts;
+    } else if (Array.isArray(data)) {
+      allCards = data;
+    } else if (Array.isArray(data.cards)) {
+      allCards = data.cards;
+    } else {
+      throw new Error("missing.json に cards がありません");
+    }
+
+    allCards = allCards.filter(card => card && typeof card === "object");
+
+    // JA01 → JA02 → JA03 … の順、同じJA内はカード番号順
+    allCards.sort((a, b) => {
+      const aCode = String(a.code ?? "").toUpperCase();
+      const bCode = String(b.code ?? "").toUpperCase();
+
+      const aSet = getJASet(aCode);
+      const bSet = getJASet(bCode);
+
+      const aSetNo = aSet ? Number(aSet.slice(2)) : 999999;
+      const bSetNo = bSet ? Number(bSet.slice(2)) : 999999;
+
+      if (aSetNo !== bSetNo) {
+        return aSetNo - bSetNo;
+      }
+
+      const aMatch = aCode.match(/(\d+)$/);
+      const bMatch = bCode.match(/(\d+)$/);
+
+      const aNo = aMatch ? Number(aMatch[1]) : 999999;
+      const bNo = bMatch ? Number(bMatch[1]) : 999999;
+
+      return aNo - bNo;
+    });
+
+    buildSetFilter();
+
+    loading.style.display = "none";
+
+    status.textContent =
+      `更新: ${updatedAt ? new Date(updatedAt).toLocaleString("ja-JP") : "不明"}　全${allCards.length}枚`;
+
+    render();
+
   } catch (error) {
-    alert("チェック状態を保存できませんでした。");
+    loading.textContent =
+      "未取得カードデータを読み込めませんでした。";
+
+    status.textContent = error.message;
+
     console.error(error);
   }
 }
 
-function getMedalChecklistCounts() {
-  let total = 0;
-  let done = 0;
-  medalChecklistGroups.forEach((group, groupIndex) => {
-    group.items.forEach((item, itemIndex) => {
-      total++;
-      if (medalChecklistDone[`${groupIndex}-${itemIndex}`]) done++;
-    });
-  });
-  return { total, done };
-}
+search.addEventListener("input", render);
+setFilter.addEventListener("change", render);
 
-function updateMedalChecklistSummary() {
-  const { total, done } = getMedalChecklistCounts();
-  const percent = total ? Math.round(done / total * 100) : 0;
-  document.getElementById("checklistTotalText").textContent = `全体 ${done} / ${total}`;
-  document.getElementById("checklistPercent").textContent = `${percent}%`;
-  document.getElementById("checklistProgressBar").style.width = `${percent}%`;
-}
-
-function renderMedalChecklist() {
-  const container = document.getElementById("checklistCategories");
-  if (!container) return;
-  container.innerHTML = "";
-
-  medalChecklistGroups.forEach((group, groupIndex) => {
-    const category = document.createElement("details");
-    category.className = "checklist-category";
-    category.open = true;
-
-    const summary = document.createElement("summary");
-    const title = document.createElement("span");
-    title.textContent = group.title;
-    const groupDone = group.items.reduce((sum, item, itemIndex) =>
-      sum + (medalChecklistDone[`${groupIndex}-${itemIndex}`] ? 1 : 0), 0);
-    const count = document.createElement("span");
-    count.textContent = `${groupDone} / ${group.items.length}`;
-    summary.append(title, count);
-    category.appendChild(summary);
-
-    const itemsBox = document.createElement("div");
-    itemsBox.className = "checklist-items";
-
-    group.items.forEach((item, itemIndex) => {
-      const key = `${groupIndex}-${itemIndex}`;
-      const isDone = !!medalChecklistDone[key];
-      if (medalChecklistShowUnfinished && isDone) return;
-
-      const label = document.createElement("label");
-      label.className = "checklist-item" + (isDone ? " done" : "");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = isDone;
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) medalChecklistDone[key] = true;
-        else delete medalChecklistDone[key];
-        saveMedalChecklist();
-        renderMedalChecklist();
-      });
-      const text = document.createElement("span");
-      text.textContent = item;
-      label.append(checkbox, text);
-      itemsBox.appendChild(label);
-    });
-
-    if (itemsBox.childElementCount === 0 && medalChecklistShowUnfinished) {
-      const none = document.createElement("div");
-      none.style.cssText = "padding:10px;color:#888;font-size:13px;";
-      none.textContent = "未チェック項目はありません";
-      itemsBox.appendChild(none);
-    }
-
-    category.appendChild(itemsBox);
-    container.appendChild(category);
-  });
-
-  updateMedalChecklistSummary();
-}
-
-function openMedalChecklist() {
-  const modal = document.getElementById("checklistModal");
-  modal.classList.add("show");
-  modal.setAttribute("aria-hidden", "false");
-  renderMedalChecklist();
-}
-
-function closeMedalChecklist() {
-  const modal = document.getElementById("checklistModal");
+close.addEventListener("click", () => {
   modal.classList.remove("show");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-document.getElementById("checklistBtn").addEventListener("click", openMedalChecklist);
-document.getElementById("checklistClose").addEventListener("click", closeMedalChecklist);
-document.getElementById("checklistModal").addEventListener("click", event => {
-  if (event.target.id === "checklistModal") closeMedalChecklist();
-});
-document.getElementById("checklistUnfinished").addEventListener("click", () => {
-  medalChecklistShowUnfinished = true;
-  renderMedalChecklist();
-});
-document.getElementById("checklistAll").addEventListener("click", () => {
-  medalChecklistShowUnfinished = false;
-  renderMedalChecklist();
-});
-document.getElementById("checklistReset").addEventListener("click", () => {
-  if (!confirm("チェックをすべて解除しますか？")) return;
-  medalChecklistDone = {};
-  saveMedalChecklist();
-  renderMedalChecklist();
+  modalImg.src = "";
 });
 
+modal.addEventListener("click", event => {
+  if (event.target === modal) {
+    modal.classList.remove("show");
+    modalImg.src = "";
+  }
+});
 
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    modal.classList.remove("show");
+    modalImg.src = "";
+  }
+});
+
+loadData();
 </script>
+
 </body>
 </html>
